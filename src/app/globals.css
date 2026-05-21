@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 34 36% 97%;
+  --foreground: 215 20% 14%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 20% 14%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 20% 14%;
+  --primary: 29 46% 46%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 36 28% 92%;
+  --secondary-foreground: 214 18% 18%;
+  --muted: 38 18% 92%;
+  --muted-foreground: 214 10% 42%;
+  --accent: 36 40% 90%;
+  --accent-foreground: 214 18% 18%;
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 32 20% 84%;
+  --input: 32 20% 84%;
+  --ring: 29 46% 46%;
+}
+
+.dark {
+  --background: 215 24% 8%;
+  --foreground: 35 18% 93%;
+  --card: 214 24% 11%;
+  --card-foreground: 35 18% 93%;
+  --popover: 214 24% 11%;
+  --popover-foreground: 35 18% 93%;
+  --primary: 30 56% 61%;
+  --primary-foreground: 220 24% 10%;
+  --secondary: 218 18% 15%;
+  --secondary-foreground: 35 18% 93%;
+  --muted: 217 18% 16%;
+  --muted-foreground: 35 8% 66%;
+  --accent: 215 18% 18%;
+  --accent-foreground: 35 18% 93%;
+  --destructive: 0 63% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 217 12% 22%;
+  --input: 217 12% 22%;
+  --ring: 30 56% 61%;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  background-image:
+    radial-gradient(circle at top, rgba(223, 194, 162, 0.18), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(111, 116, 99, 0.12), transparent 22%);
+}
+
+* {
+  @apply border-border;
+}
+
+.grid-fade {
+  background-image: linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
