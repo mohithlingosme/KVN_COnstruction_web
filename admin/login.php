@@ -1,27 +1,46 @@
 <?php
 
 declare(strict_types=1);
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+
 /*
 |--------------------------------------------------------------------------
-| SESSION SECURITY
+| DEVELOPMENT ERRORS
 |--------------------------------------------------------------------------
 */
 
-ini_set('session.use_strict_mode', '1');
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_samesite', 'Lax');
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
+/*
+|--------------------------------------------------------------------------
+| SESSION
+|--------------------------------------------------------------------------
+*/
 
 session_start();
 
+// Regenerate session ID on new session for security
+if (!isset($_SESSION['_initialized'])) {
+    session_regenerate_id(true);
+    $_SESSION['_initialized'] = true;
+}
+
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
+| DATABASE
 |--------------------------------------------------------------------------
 */
 
-require_once __DIR__ . "/includes/db.php";
+require_once __DIR__ . '/includes/db.php';
+
+/*
+|--------------------------------------------------------------------------
+| DEFAULT ERROR & SUCCESS
+|--------------------------------------------------------------------------
+*/
+
+$error = '';
+$success = '';
 
 /*
 |--------------------------------------------------------------------------
@@ -29,19 +48,22 @@ require_once __DIR__ . "/includes/db.php";
 |--------------------------------------------------------------------------
 */
 
-if (isset($_SESSION['admin_id'])) {
-
-    header("Location: dashboard.php");
+if (isset($_SESSION['admin_id']) && !empty($_SESSION['admin_id'])) {
+    header('Location: dashboard.php');
     exit();
 }
 
 /*
 |--------------------------------------------------------------------------
-| ERROR VARIABLE
+| CSRF TOKEN GENERATION
 |--------------------------------------------------------------------------
 */
 
-$error = "";
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$csrf_token = $_SESSION['csrf_token'];
 
 /*
 |--------------------------------------------------------------------------
@@ -49,158 +71,182 @@ $error = "";
 |--------------------------------------------------------------------------
 */
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /*
     |--------------------------------------------------------------------------
-    | GET FORM DATA
+    | VERIFY CSRF TOKEN
     |--------------------------------------------------------------------------
     */
 
-    $email = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if ($email === '' || $password === '') {
-
-        $error = "Please fill all fields.";
-
+    $post_csrf = $_POST['csrf_token'] ?? '';
+    if (empty($post_csrf) || !hash_equals($csrf_token, $post_csrf)) {
+        $error = 'Security token mismatch. Please try again.';
     } else {
-
-        try {
-
-            /*
-            |--------------------------------------------------------------------------
-            | FIND ADMIN
-            |--------------------------------------------------------------------------
-            */
-            $stmt = $conn->prepare(
-    "SELECT id, name, email, password
-     FROM admins
-     WHERE email = ?
-     LIMIT 1"
-);
-
-if (!$stmt) {
-
-    $error = "Database query failed.";
-
-} else {
-
-    /*
-    |--------------------------------------------------------------------------
-    | BIND EMAIL
-    |--------------------------------------------------------------------------
-    */
-
-    $stmt->bind_param(
-        "s",
-        $email
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | EXECUTE QUERY
-    |--------------------------------------------------------------------------
-    */
-
-    $stmt->execute();
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET RESULT
-    |--------------------------------------------------------------------------
-    */
-
-    $result = $stmt->get_result();
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK ADMIN EXISTS
-    |--------------------------------------------------------------------------
-    */
-
-    if ($result->num_rows === 1) {
-
-        $admin = $result->fetch_assoc();
 
         /*
         |--------------------------------------------------------------------------
-        | VERIFY PASSWORD
+        | GET INPUTS
         |--------------------------------------------------------------------------
         */
 
-        if (
-            password_verify(
-                $password,
-                $admin['password']
-            )
-        ) {
+        $email = trim($_POST['email'] ?? '');
+        $password = trim($_POST['password'] ?? '');
 
-            /*
-            |--------------------------------------------------------------------------
-            | REGENERATE SESSION
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATION
+        |--------------------------------------------------------------------------
+        */
 
-            session_regenerate_id(true);
-
-            /*
-            |--------------------------------------------------------------------------
-            | STORE SESSION
-            |--------------------------------------------------------------------------
-            */
-
-            $_SESSION['admin_id'] =
-                (int)$admin['id'];
-
-            $_SESSION['admin_name'] =
-                (string)$admin['name'];
-
-            $_SESSION['admin_email'] =
-                (string)$admin['email'];
-
-            /*
-            |--------------------------------------------------------------------------
-            | REDIRECT
-            |--------------------------------------------------------------------------
-            */
-
-            header(
-                "Location: dashboard.php"
-            );
-
-            exit();
-
+        if ($email === '' || $password === '') {
+            $error = 'Please fill all fields.';
         } else {
 
-            $error = "Invalid password.";
-        }
+            try {
 
-    } else {
+                /*
+                |--------------------------------------------------------------------------
+                | PREPARE QUERY
+                |--------------------------------------------------------------------------
+                */
 
-        $error = "Admin account not found.";
-    }
+                $stmt = $conn->prepare(
+                    "SELECT
+                        id,
+                        name,
+                        email,
+                        password
+                     FROM admins
+                     WHERE email = ?
+                     LIMIT 1"
+                );
 
-    /*
-    |--------------------------------------------------------------------------
-    | CLOSE STATEMENT
-    |--------------------------------------------------------------------------
-    */
+                /*
+                |--------------------------------------------------------------------------
+                | CHECK QUERY
+                |--------------------------------------------------------------------------
+                */
 
-    $stmt->close();
-}
-           
-        } catch (Throwable $e) {
+                if (!$stmt) {
+                    $error = 'Database query failed.';
+                    error_log('Database prepare error: ' . $conn->error);
+                } else {
 
-            $error =
-                "Login failed: " .
-                $e->getMessage();
+                    /*
+                    |--------------------------------------------------------------------------
+                    | BIND EMAIL
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $stmt->bind_param('s', $email);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | EXECUTE QUERY
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $stmt->execute();
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | STORE RESULT
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $stmt->store_result();
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CHECK ACCOUNT
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($stmt->num_rows === 1) {
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | BIND RESULT
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $stmt->bind_result(
+                            $admin_id,
+                            $admin_name,
+                            $admin_email,
+                            $admin_password
+                        );
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | FETCH DATA
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $stmt->fetch();
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | VERIFY PASSWORD
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (password_verify($password, $admin_password)) {
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | SECURE SESSION
+                            |--------------------------------------------------------------------------
+                            */
+
+                            session_regenerate_id(true);
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | STORE SESSION
+                            |--------------------------------------------------------------------------
+                            */
+
+                            $_SESSION['admin_id'] = (int)$admin_id;
+                            $_SESSION['admin_name'] = (string)$admin_name;
+                            $_SESSION['admin_email'] = (string)$admin_email;
+                            $_SESSION['login_time'] = time();
+
+                            error_log("Admin login successful: {$admin_email}");
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | REDIRECT
+                            |--------------------------------------------------------------------------
+                            */
+
+                            header('Location: dashboard.php');
+                            exit();
+
+                        } else {
+                            $error = 'Invalid email or password.';
+                            error_log("Failed login attempt for: {$email}");
+                        }
+
+                    } else {
+                        $error = 'Invalid email or password.';
+                        error_log("Login attempt for non-existent email: {$email}");
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CLOSE STATEMENT
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $stmt->close();
+                }
+
+            } catch (Throwable $e) {
+                $error = 'Login failed due to a system error.';
+                error_log('Login exception: ' . $e->getMessage());
+            }
         }
     }
 }
@@ -221,7 +267,7 @@ if (!$stmt) {
     >
 
     <title>
-        Admin Login | KVN Construction
+        Admin Login
     </title>
 
     <style>
@@ -236,9 +282,9 @@ if (!$stmt) {
 
             font-family:Arial,sans-serif;
 
-            background:#f5f7fb;
+            background:#f5f5f5;
 
-            height:100vh;
+            min-height:100vh;
 
             display:flex;
 
@@ -251,7 +297,7 @@ if (!$stmt) {
 
             width:100%;
 
-            max-width:420px;
+            max-width:400px;
 
             background:#fff;
 
@@ -260,30 +306,69 @@ if (!$stmt) {
             border-radius:20px;
 
             box-shadow:
-                0 10px 40px rgba(0,0,0,0.08);
+                0 5px 20px rgba(0,0,0,0.08);
         }
 
-        .logo{
+        h2{
 
-            text-align:center;
-
-            margin-bottom:25px;
-        }
-
-        .logo h1{
-
-            font-size:28px;
+            margin-bottom:10px;
 
             color:#222;
         }
 
-        .logo p{
+        p{
 
-            margin-top:8px;
+            color:#666;
 
-            color:#777;
+            margin-bottom:25px;
+        }
 
-            font-size:14px;
+        input{
+
+            width:100%;
+
+            padding:14px;
+
+            margin-bottom:20px;
+
+            border:1px solid #ddd;
+
+            border-radius:10px;
+
+            outline:none;
+
+            font-size:15px;
+        }
+
+        input:focus{
+
+            border-color:#f5b400;
+        }
+
+        button{
+
+            width:100%;
+
+            padding:14px;
+
+            background:#f5b400;
+
+            border:none;
+
+            color:#fff;
+
+            border-radius:10px;
+
+            font-weight:bold;
+
+            font-size:15px;
+
+            cursor:pointer;
+        }
+
+        button:hover{
+
+            background:#d89d00;
         }
 
         .error{
@@ -297,83 +382,6 @@ if (!$stmt) {
             border-radius:10px;
 
             margin-bottom:20px;
-
-            font-size:14px;
-        }
-
-        .input-group{
-
-            margin-bottom:20px;
-        }
-
-        .input-group label{
-
-            display:block;
-
-            margin-bottom:8px;
-
-            font-size:14px;
-
-            font-weight:600;
-
-            color:#333;
-        }
-
-        .input-group input{
-
-            width:100%;
-
-            padding:14px;
-
-            border:1px solid #ddd;
-
-            border-radius:12px;
-
-            font-size:15px;
-
-            outline:none;
-        }
-
-        .input-group input:focus{
-
-            border-color:#f5b400;
-        }
-
-        button{
-
-            width:100%;
-
-            padding:15px;
-
-            background:#f5b400;
-
-            color:#fff;
-
-            border:none;
-
-            border-radius:12px;
-
-            font-size:16px;
-
-            font-weight:bold;
-
-            cursor:pointer;
-        }
-
-        button:hover{
-
-            background:#d99d00;
-        }
-
-        .footer{
-
-            margin-top:20px;
-
-            text-align:center;
-
-            font-size:13px;
-
-            color:#777;
         }
 
     </style>
@@ -384,19 +392,15 @@ if (!$stmt) {
 
 <div class="login-box">
 
-    <div class="logo">
+    <h2>
+        KVN Construction
+    </h2>
 
-        <h1>
-            KVN Construction
-        </h1>
+    <p>
+        Admin Panel Login
+    </p>
 
-        <p>
-            Admin Panel Login
-        </p>
-
-    </div>
-
-    <?php if ($error !== "") : ?>
+    <?php if ($error !== '') : ?>
 
         <div class="error">
 
@@ -408,48 +412,31 @@ if (!$stmt) {
 
     <form method="POST">
 
-        <div class="input-group">
+        <input
+            type="hidden"
+            name="csrf_token"
+            value="<?php echo htmlspecialchars($csrf_token); ?>"
+        >
 
-            <label>
-                Email Address
-            </label>
+        <input
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            required
+        >
 
-            <input
-                type="email"
-                name="email"
-                required
-            >
-
-        </div>
-
-        <div class="input-group">
-
-            <label>
-                Password
-            </label>
-
-            <input
-                type="password"
-                name="password"
-                required
-            >
-
-        </div>
+        <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+        >
 
         <button type="submit">
-
             Login
-
         </button>
 
     </form>
-
-    <div class="footer">
-
-        © <?php echo date('Y'); ?>
-        KVN Construction
-
-    </div>
 
 </div>
 

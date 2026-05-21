@@ -1,27 +1,16 @@
 <?php
 
-$email = $_POST['email'];
-$password = $_POST['password'];
+declare(strict_types=1);
 
-/* DEMO LOGIN */
+/*
+|--------------------------------------------------------------------------
+| PUBLIC LOGIN - NOT USED
+|--------------------------------------------------------------------------
+| This is a placeholder. Public users should use the website contact form.
+| Admin users should use /admin/login.php
+|--------------------------------------------------------------------------
+*/
 
-if($email == "admin@gmail.com"
-   && $password == "admin123"){
-
-    echo "
-    <script>
-        alert('Login Successful');
-        window.location.href='dashboard.php';
-    </script>
-    ";
-
-}else{
-
-    echo "
-    <script>
-        alert('Invalid Email or Password');
-        window.location.href='index.php';
-    </script>
-    ";
-}
+header("Location: index.php");
+exit();
 ?>

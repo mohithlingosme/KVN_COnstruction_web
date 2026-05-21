@@ -2,15 +2,19 @@
 
 declare(strict_types=1);
 
-require_once "includes/auth.php";
-require_once "includes/db.php";
+session_start();
+
+require_once __DIR__ . '/includes/middleware/AuthMiddleware.php';
+require_once __DIR__ . '/includes/db.php';
+
+// Require authentication
+AuthMiddleware::requireAuth();
 
 function safe_int($v): int {
     return (int)$v;
 }
 
 function count_rows(mysqli $conn, string $table): int {
-    // Restrict to only the tables used by this dashboard to avoid accidental injection.
     $allowed = ["leads", "projects", "appointments"];
     if (!in_array($table, $allowed, true)) {
         return 0;
@@ -31,19 +35,29 @@ function count_rows(mysqli $conn, string $table): int {
 
         return $row ? safe_int($row["total"] ?? 0) : 0;
     } catch (Throwable $e) {
+        error_log("Error counting rows in {$table}: " . $e->getMessage());
         return 0;
     }
 }
 
-$totalLeads = count_rows($conn, "leads");
-$totalProjects = count_rows($conn, "projects");
-$totalAppointments = count_rows($conn, "appointments");
+try {
+    $totalLeads = count_rows($conn, "leads");
+    $totalProjects = count_rows($conn, "projects");
+    $totalAppointments = count_rows($conn, "appointments");
+} catch (Throwable $e) {
+    $totalLeads = 0;
+    $totalProjects = 0;
+    $totalAppointments = 0;
+    error_log("Dashboard error: " . $e->getMessage());
+}
 
+$admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Admin', ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | KVN Construction</title>
     <link rel="stylesheet" href="assets/css/admin.css">
 </head>
@@ -53,21 +67,20 @@ $totalAppointments = count_rows($conn, "appointments");
         <h2>KVN Admin</h2>
 
         <ul>
-            <li>Dashboard</li>
-            <li>Leads</li>
-            <li>Projects</li>
-            <li>Clients</li>
-            <li>Quotations</li>
-            <li>Appointments</li>
-            <li>Packages</li>
+            <li><a href="dashboard.php">Dashboard</a></li>
+            <li><a href="leads.php">Leads</a></li>
+            <li><a href="projects.php">Projects</a></li>
+            <li><a href="clients.php">Clients</a></li>
+            <li><a href="quotations.php">Quotations</a></li>
+            <li><a href="appointments.php">Appointments</a></li>
+            <li><a href="admin-packages.php">Packages</a></li>
             <li><a href="logout.php">Logout</a></li>
         </ul>
     </aside>
 
     <main class="main-content">
         <h1>
-            Welcome,
-            <?php echo htmlspecialchars($_SESSION["admin_name"] ?? "Admin", ENT_QUOTES, "UTF-8"); ?>
+            Welcome, <?php echo $admin_name; ?>
         </h1>
 
         <div class="cards">
