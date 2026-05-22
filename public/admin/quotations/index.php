@@ -4,10 +4,10 @@
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
-| BLOG MANAGEMENT
+| QUOTATIONS MANAGEMENT
 |--------------------------------------------------------------------------
 | File:
-| /public/admin/blogs/index.php
+| /public/admin/quotations/index.php
 |--------------------------------------------------------------------------
 */
 
@@ -17,9 +17,9 @@ require_once '../../../middleware/admin.php';
 
 require_once '../../../helpers/security.php';
 
-require_once '../../../helpers/session.php';
-
 require_once '../../../helpers/csrf.php';
+
+require_once '../../../helpers/session.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
@@ -30,184 +30,36 @@ require_once '../../../helpers/rateLimiter.php';
 */
 
 $pageTitle =
-'Blog Management | ' . APP_NAME;
+'Quotation Management | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE DELETE
+| FETCH QUOTATIONS
 |--------------------------------------------------------------------------
 */
 
-if (
-
-    isset($_GET['delete'])
-
-    &&
-
-    is_numeric($_GET['delete'])
-) {
-
-    validateCsrf();
-
-    /*
-    |--------------------------------------------------------------------------
-    | RATE LIMIT
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        !checkRateLimit(
-
-            'delete_blog',
-
-            10,
-
-            300
-        )
-    ) {
-
-        $_SESSION['error'] =
-        'Too many delete requests.';
-
-        redirect('admin/blogs/index.php');
-    }
-
-    $blogId =
-    (int) $_GET['delete'];
-
-    try {
-
-        /*
-        |--------------------------------------------------------------------------
-        | FETCH IMAGE
-        |--------------------------------------------------------------------------
-        */
-
-        $fetchQuery = "
-
-            SELECT featured_image
-
-            FROM blogs
-
-            WHERE id = :id
-
-            LIMIT 1
-        ";
-
-        $fetchStmt =
-        $conn->prepare($fetchQuery);
-
-        $fetchStmt->execute([
-
-            ':id' => $blogId
-        ]);
-
-        $blog =
-        $fetchStmt->fetch();
-
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE IMAGE
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-
-            $blog
-
-            &&
-
-            !empty($blog['featured_image'])
-        ) {
-
-            $imagePath =
-            ROOT_PATH
-            .
-            '/uploads/blogs/'
-            .
-            $blog['featured_image'];
-
-            if(file_exists($imagePath)){
-
-                unlink($imagePath);
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE BLOG
-        |--------------------------------------------------------------------------
-        */
-
-        $deleteQuery = "
-
-            DELETE FROM blogs
-
-            WHERE id = :id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':id' => $blogId
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOG EVENT
-        |--------------------------------------------------------------------------
-        */
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'blog_deleted',
-
-            'warning',
-
-            'Blog deleted'
-        );
-
-        $_SESSION['success'] =
-        'Blog deleted successfully.';
-
-        redirect('admin/blogs/index.php');
-
-    } catch(Exception $e){
-
-        $_SESSION['error'] =
-        'Failed to delete blog.';
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH BLOGS
-|--------------------------------------------------------------------------
-*/
-
-$blogs = [];
+$quotations = [];
 
 try {
 
     $query = "
 
         SELECT
+            q.*,
 
-            b.*,
+            u.full_name AS client_name,
 
-            u.full_name AS author_name
+            p.project_name
 
-        FROM blogs b
+        FROM quotations q
 
         LEFT JOIN users u
-        ON b.author_id = u.id
+        ON q.client_id = u.id
 
-        ORDER BY b.id DESC
+        LEFT JOIN projects p
+        ON q.project_id = p.id
+
+        ORDER BY q.id DESC
     ";
 
     $stmt =
@@ -215,13 +67,13 @@ try {
 
     $stmt->execute();
 
-    $blogs =
+    $quotations =
     $stmt->fetchAll();
 
 } catch(Exception $e){
 
     $_SESSION['error'] =
-    'Failed to load blogs.';
+    'Failed to load quotations.';
 }
 
 /*
@@ -230,61 +82,61 @@ try {
 |--------------------------------------------------------------------------
 */
 
-$totalBlogs =
-count($blogs);
+$totalQuotations =
+count($quotations);
 
-$publishedBlogs =
-count(
-
-    array_filter(
-
-        $blogs,
-
-        function($item){
-
-            return
-
-            strtolower(
-                $item['status']
-            )
-
-            ===
-
-            'published';
-        }
-    )
-);
-
-$draftBlogs =
-count(
-
-    array_filter(
-
-        $blogs,
-
-        function($item){
-
-            return
-
-            strtolower(
-                $item['status']
-            )
-
-            ===
-
-            'draft';
-        }
-    )
-);
-
-$totalViews =
+$totalValue =
 array_sum(
 
     array_column(
 
-        $blogs,
+        $quotations,
 
-        'views'
+        'grand_total'
+    )
+);
+
+$approvedQuotations =
+count(
+
+    array_filter(
+
+        $quotations,
+
+        function($item){
+
+            return
+
+            strtolower(
+                $item['status']
+            )
+
+            ===
+
+            'approved';
+        }
+    )
+);
+
+$pendingQuotations =
+count(
+
+    array_filter(
+
+        $quotations,
+
+        function($item){
+
+            return
+
+            strtolower(
+                $item['status']
+            )
+
+            ===
+
+            'pending';
+        }
     )
 );
 
@@ -330,28 +182,6 @@ array_sum(
         href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
     >
 
-    <style>
-
-        .blog-thumbnail{
-
-            width:80px;
-
-            height:60px;
-
-            object-fit:cover;
-
-            border-radius:10px;
-        }
-
-        .empty-state{
-
-            text-align:center;
-
-            padding:80px 20px;
-        }
-
-    </style>
-
 </head>
 
 <body>
@@ -374,7 +204,9 @@ array_sum(
 
         <div class="admin-content">
 
+            <!-- ================================= -->
             <!-- HEADER -->
+            <!-- ================================= -->
 
             <div class="dashboard-header">
 
@@ -382,21 +214,19 @@ array_sum(
 
                     <h1>
 
-                        Blog Management
+                        Quotation Management
 
                     </h1>
 
                     <p>
 
-                        Manage blogs, articles and content publishing.
+                        Manage customer quotations, approvals and invoices.
 
                     </p>
 
                 </div>
 
                 <div class="d-flex gap-2">
-
-                    <!-- CREATE -->
 
                     <a
                         href="create.php"
@@ -405,7 +235,7 @@ array_sum(
 
                         <i class="bi bi-plus-circle"></i>
 
-                        Create Blog
+                        Create Quotation
 
                     </a>
 
@@ -451,7 +281,9 @@ array_sum(
 
             <?php endif; ?>
 
+            <!-- ================================= -->
             <!-- STATS -->
+            <!-- ================================= -->
 
             <div class="row g-4 mb-4">
 
@@ -465,7 +297,7 @@ array_sum(
                             class="dashboard-icon bg-primary"
                         >
 
-                            <i class="bi bi-journal-text"></i>
+                            <i class="bi bi-file-earmark-text-fill"></i>
 
                         </div>
 
@@ -476,7 +308,7 @@ array_sum(
                                 <?php
 
                                 echo number_format(
-                                    $totalBlogs
+                                    $totalQuotations
                                 );
 
                                 ?>
@@ -485,7 +317,7 @@ array_sum(
 
                             <p>
 
-                                Total Blogs
+                                Total Quotations
 
                             </p>
 
@@ -495,7 +327,7 @@ array_sum(
 
                 </div>
 
-                <!-- PUBLISHED -->
+                <!-- APPROVED -->
 
                 <div class="col-lg-3">
 
@@ -516,7 +348,7 @@ array_sum(
                                 <?php
 
                                 echo number_format(
-                                    $publishedBlogs
+                                    $approvedQuotations
                                 );
 
                                 ?>
@@ -525,7 +357,7 @@ array_sum(
 
                             <p>
 
-                                Published
+                                Approved
 
                             </p>
 
@@ -535,7 +367,7 @@ array_sum(
 
                 </div>
 
-                <!-- DRAFT -->
+                <!-- PENDING -->
 
                 <div class="col-lg-3">
 
@@ -545,7 +377,7 @@ array_sum(
                             class="dashboard-icon bg-warning"
                         >
 
-                            <i class="bi bi-pencil-square"></i>
+                            <i class="bi bi-clock-history"></i>
 
                         </div>
 
@@ -556,7 +388,7 @@ array_sum(
                                 <?php
 
                                 echo number_format(
-                                    $draftBlogs
+                                    $pendingQuotations
                                 );
 
                                 ?>
@@ -565,7 +397,7 @@ array_sum(
 
                             <p>
 
-                                Drafts
+                                Pending
 
                             </p>
 
@@ -575,7 +407,7 @@ array_sum(
 
                 </div>
 
-                <!-- VIEWS -->
+                <!-- VALUE -->
 
                 <div class="col-lg-3">
 
@@ -585,7 +417,7 @@ array_sum(
                             class="dashboard-icon bg-danger"
                         >
 
-                            <i class="bi bi-eye-fill"></i>
+                            <i class="bi bi-currency-rupee"></i>
 
                         </div>
 
@@ -593,10 +425,10 @@ array_sum(
 
                             <h3>
 
-                                <?php
+                                ₹<?php
 
                                 echo number_format(
-                                    $totalViews
+                                    $totalValue
                                 );
 
                                 ?>
@@ -605,7 +437,7 @@ array_sum(
 
                             <p>
 
-                                Total Views
+                                Total Value
 
                             </p>
 
@@ -617,7 +449,9 @@ array_sum(
 
             </div>
 
-            <!-- BLOG TABLE -->
+            <!-- ================================= -->
+            <!-- TABLE -->
+            <!-- ================================= -->
 
             <div class="section-card">
 
@@ -625,7 +459,7 @@ array_sum(
 
                     <h4>
 
-                        Blog Articles
+                        Quotations List
 
                     </h4>
 
@@ -640,8 +474,8 @@ array_sum(
                         <input
                             type="text"
                             class="form-control table-search"
-                            data-table="#blogsTable"
-                            placeholder="Search blogs..."
+                            data-table="#quotationTable"
+                            placeholder="Search quotations..."
                         >
 
                     </div>
@@ -654,7 +488,7 @@ array_sum(
 
                     <table
                         class="table admin-table"
-                        id="blogsTable"
+                        id="quotationTable"
                     >
 
                         <thead>
@@ -663,17 +497,15 @@ array_sum(
 
                                 <th>#</th>
 
-                                <th>Thumbnail</th>
+                                <th>Quotation No</th>
 
-                                <th>Title</th>
+                                <th>Client</th>
 
-                                <th>Category</th>
+                                <th>Project</th>
 
-                                <th>Author</th>
+                                <th>Amount</th>
 
                                 <th>Status</th>
-
-                                <th>Views</th>
 
                                 <th>Date</th>
 
@@ -689,9 +521,9 @@ array_sum(
 
                         <tbody>
 
-                            <?php if(!empty($blogs)): ?>
+                            <?php if(!empty($quotations)): ?>
 
-                                <?php foreach($blogs as $blog): ?>
+                                <?php foreach($quotations as $quotation): ?>
 
                                     <tr>
 
@@ -699,57 +531,11 @@ array_sum(
 
                                         <td>
 
-                                            #<?php echo $blog['id']; ?>
+                                            #<?php echo $quotation['id']; ?>
 
                                         </td>
 
-                                        <!-- THUMBNAIL -->
-
-                                        <td>
-
-                                            <?php if(!empty($blog['featured_image'])): ?>
-
-                                                <img
-                                                    src="<?php
-
-                                                    echo base_url(
-
-                                                        '../uploads/blogs/'
-                                                        .
-                                                        $blog['featured_image']
-                                                    );
-
-                                                    ?>"
-                                                    class="blog-thumbnail"
-                                                    alt="Blog"
-                                                >
-
-                                            <?php else: ?>
-
-                                                <div
-                                                    class="
-                                                        blog-thumbnail
-                                                        bg-light
-                                                        d-flex
-                                                        align-items-center
-                                                        justify-content-center
-                                                    "
-                                                >
-
-                                                    <i
-                                                        class="
-                                                            bi
-                                                            bi-image
-                                                        "
-                                                    ></i>
-
-                                                </div>
-
-                                            <?php endif; ?>
-
-                                        </td>
-
-                                        <!-- TITLE -->
+                                        <!-- QUOTATION NUMBER -->
 
                                         <td>
 
@@ -759,64 +545,18 @@ array_sum(
 
                                                 echo escape(
 
-                                                    $blog['title']
+                                                    $quotation['quotation_number']
+                                                    ??
+                                                    'N/A'
                                                 );
 
                                                 ?>
 
                                             </strong>
 
-                                            <br>
-
-                                            <small class="text-muted">
-
-                                                <?php
-
-                                                echo escape(
-
-                                                    substr(
-
-                                                        strip_tags(
-
-                                                            $blog['content']
-                                                            ??
-                                                            ''
-                                                        ),
-
-                                                        0,
-
-                                                        80
-                                                    )
-                                                );
-
-                                                ?>...
-
-                                            </small>
-
                                         </td>
 
-                                        <!-- CATEGORY -->
-
-                                        <td>
-
-                                            <span class="badge bg-dark">
-
-                                                <?php
-
-                                                echo escape(
-
-                                                    $blog['category']
-                                                    ??
-                                                    'General'
-                                                );
-
-                                                ?>
-
-                                            </span>
-
-                                        </td>
-
-                                        <!-- AUTHOR -->
+                                        <!-- CLIENT -->
 
                                         <td>
 
@@ -824,12 +564,50 @@ array_sum(
 
                                             echo escape(
 
-                                                $blog['author_name']
+                                                $quotation['client_name']
                                                 ??
-                                                'Admin'
+                                                'N/A'
                                             );
 
                                             ?>
+
+                                        </td>
+
+                                        <!-- PROJECT -->
+
+                                        <td>
+
+                                            <?php
+
+                                            echo escape(
+
+                                                $quotation['project_name']
+                                                ??
+                                                'N/A'
+                                            );
+
+                                            ?>
+
+                                        </td>
+
+                                        <!-- AMOUNT -->
+
+                                        <td>
+
+                                            <strong>
+
+                                                ₹<?php
+
+                                                echo number_format(
+
+                                                    $quotation['grand_total']
+                                                    ??
+                                                    0
+                                                );
+
+                                                ?>
+
+                                            </strong>
 
                                         </td>
 
@@ -842,9 +620,9 @@ array_sum(
                                             $status =
                                             strtolower(
 
-                                                $blog['status']
+                                                $quotation['status']
                                                 ??
-                                                'draft'
+                                                'pending'
                                             );
 
                                             ?>
@@ -853,13 +631,17 @@ array_sum(
 
                                                 <?php
 
-                                                if($status === 'published'){
+                                                if($status === 'approved'){
 
                                                     echo 'bg-success';
 
-                                                }elseif($status === 'draft'){
+                                                }elseif($status === 'pending'){
 
                                                     echo 'bg-warning';
+
+                                                }elseif($status === 'rejected'){
+
+                                                    echo 'bg-danger';
 
                                                 }else{
 
@@ -879,23 +661,6 @@ array_sum(
 
                                         </td>
 
-                                        <!-- VIEWS -->
-
-                                        <td>
-
-                                            <?php
-
-                                            echo number_format(
-
-                                                $blog['views']
-                                                ??
-                                                0
-                                            );
-
-                                            ?>
-
-                                        </td>
-
                                         <!-- DATE -->
 
                                         <td>
@@ -904,7 +669,7 @@ array_sum(
 
                                             echo !empty(
 
-                                                $blog['created_at']
+                                                $quotation['created_at']
                                             )
 
                                             ?
@@ -915,7 +680,7 @@ array_sum(
 
                                                 strtotime(
 
-                                                    $blog['created_at']
+                                                    $quotation['created_at']
                                                 )
                                             )
 
@@ -936,15 +701,7 @@ array_sum(
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="../../blog.php?slug=<?php
-
-                                                    echo urlencode(
-
-                                                        $blog['slug']
-                                                    );
-
-                                                    ?>"
-                                                    target="_blank"
+                                                    href="view.php?id=<?php echo $quotation['id']; ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -955,7 +712,7 @@ array_sum(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="edit.php?id=<?php echo $blog['id']; ?>"
+                                                    href="edit.php?id=<?php echo $quotation['id']; ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -963,24 +720,23 @@ array_sum(
 
                                                 </a>
 
+                                                <!-- PDF -->
+
+                                                <a
+                                                    href="pdf.php?id=<?php echo $quotation['id']; ?>"
+                                                    target="_blank"
+                                                    class="btn btn-sm btn-warning"
+                                                >
+
+                                                    <i class="bi bi-file-earmark-pdf"></i>
+
+                                                </a>
+
                                                 <!-- DELETE -->
 
                                                 <a
-                                                    href="?delete=<?php
-
-                                                    echo $blog['id'];
-
-                                                    ?>&csrf_token=<?php
-
-                                                    echo csrfToken();
-
-                                                    ?>"
-                                                    class="
-                                                        btn
-                                                        btn-sm
-                                                        btn-danger
-                                                        btn-delete
-                                                    "
+                                                    href="delete.php?id=<?php echo $quotation['id']; ?>"
+                                                    class="btn btn-sm btn-danger btn-delete"
                                                 >
 
                                                     <i class="bi bi-trash"></i>
@@ -999,43 +755,26 @@ array_sum(
 
                                 <tr>
 
-                                    <td colspan="9">
+                                    <td colspan="8">
 
-                                        <div class="empty-state">
+                                        <div class="text-center py-5">
 
                                             <i
                                                 class="
                                                     bi
-                                                    bi-journal-x
+                                                    bi-file-earmark-text
                                                 "
                                                 style="
-                                                    font-size:70px;
+                                                    font-size:60px;
                                                     color:#d1d5db;
                                                 "
                                             ></i>
 
-                                            <h4 class="mt-4">
+                                            <p class="mt-3">
 
-                                                No Blogs Found
-
-                                            </h4>
-
-                                            <p class="text-muted">
-
-                                                Start creating your first blog article.
+                                                No quotations found.
 
                                             </p>
-
-                                            <a
-                                                href="create.php"
-                                                class="btn-admin mt-3"
-                                            >
-
-                                                <i class="bi bi-plus-circle"></i>
-
-                                                Create Blog
-
-                                            </a>
 
                                         </div>
 

@@ -4,10 +4,10 @@
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
-| BLOG COMMENTS MANAGEMENT
+| QUOTATION APPROVALS
 |--------------------------------------------------------------------------
 | File:
-| /public/admin/blogs/comments.php
+| /public/admin/quotations/approvals.php
 |--------------------------------------------------------------------------
 */
 
@@ -30,51 +30,11 @@ require_once '../../../helpers/rateLimiter.php';
 */
 
 $pageTitle =
-'Blog Comments | ' . APP_NAME;
+'Quotation Approvals | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
-| CREATE TABLE IF NOT EXISTS
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    $conn->exec("
-
-        CREATE TABLE IF NOT EXISTS blog_comments (
-
-            id INT PRIMARY KEY AUTO_INCREMENT,
-
-            blog_id INT NOT NULL,
-
-            user_name VARCHAR(255) NOT NULL,
-
-            user_email VARCHAR(255) NOT NULL,
-
-            comment TEXT NOT NULL,
-
-            status ENUM(
-                'pending',
-                'approved',
-                'spam',
-                'rejected'
-            ) DEFAULT 'pending',
-
-            ip_address VARCHAR(100) NULL,
-
-            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-
-            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
-            ON UPDATE CURRENT_TIMESTAMP
-        )
-    ");
-
-} catch(Exception $e){}
-
-/*
-|--------------------------------------------------------------------------
-| HANDLE STATUS UPDATE
+| HANDLE APPROVAL
 |--------------------------------------------------------------------------
 */
 
@@ -84,7 +44,7 @@ if (
 
     &&
 
-    isset($_POST['comment_id'])
+    isset($_POST['quotation_id'])
 ) {
 
     validateCsrf();
@@ -99,7 +59,7 @@ if (
 
         !checkRateLimit(
 
-            'manage_blog_comment',
+            'quotation_approval',
 
             20,
 
@@ -108,9 +68,9 @@ if (
     ) {
 
         $_SESSION['error'] =
-        'Too many requests.';
+        'Too many approval requests.';
 
-        redirect('admin/blogs/comments.php');
+        redirect('admin/quotations/approvals.php');
     }
 
     /*
@@ -119,11 +79,14 @@ if (
     |--------------------------------------------------------------------------
     */
 
-    $commentId =
-    (int) ($_POST['comment_id'] ?? 0);
+    $quotationId =
+    (int) ($_POST['quotation_id'] ?? 0);
 
     $status =
     sanitize($_POST['status'] ?? '');
+
+    $remarks =
+    sanitize($_POST['remarks'] ?? '');
 
     /*
     |--------------------------------------------------------------------------
@@ -134,9 +97,8 @@ if (
     $allowedStatuses = [
 
         'approved',
-        'pending',
-        'spam',
-        'rejected'
+        'rejected',
+        'pending'
     ];
 
     if (
@@ -150,14 +112,14 @@ if (
     ) {
 
         $_SESSION['error'] =
-        'Invalid status selected.';
+        'Invalid approval status.';
 
-        redirect('admin/blogs/comments.php');
+        redirect('admin/quotations/approvals.php');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | UPDATE STATUS
+    | UPDATE QUOTATION
     |--------------------------------------------------------------------------
     */
 
@@ -165,11 +127,14 @@ if (
 
         $query = "
 
-            UPDATE blog_comments
+            UPDATE quotations
 
             SET
 
                 status = :status,
+                approval_remarks = :remarks,
+                approved_by = :approved_by,
+                approved_at = NOW(),
                 updated_at = NOW()
 
             WHERE id = :id
@@ -183,8 +148,14 @@ if (
             ':status' =>
             $status,
 
+            ':remarks' =>
+            $remarks,
+
+            ':approved_by' =>
+            currentUserId(),
+
             ':id' =>
-            $commentId
+            $quotationId
         ]);
 
         /*
@@ -197,92 +168,32 @@ if (
 
             currentUserId(),
 
-            'blog_comment_updated',
+            'quotation_status_updated',
 
             'info',
 
-            'Comment moderation updated'
+            'Quotation approval updated'
         );
 
         $_SESSION['success'] =
-        'Comment status updated successfully.';
+        'Quotation status updated successfully.';
 
-        redirect('admin/blogs/comments.php');
+        redirect('admin/quotations/approvals.php');
 
     } catch(Exception $e){
 
         $_SESSION['error'] =
-        'Failed to update comment.';
+        'Failed to update quotation status.';
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE DELETE
+| FETCH QUOTATIONS
 |--------------------------------------------------------------------------
 */
 
-if (
-
-    isset($_GET['delete'])
-
-    &&
-
-    is_numeric($_GET['delete'])
-) {
-
-    validateCsrf();
-
-    $commentId =
-    (int) $_GET['delete'];
-
-    try {
-
-        $deleteQuery = "
-
-            DELETE FROM blog_comments
-
-            WHERE id = :id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':id' => $commentId
-        ]);
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'blog_comment_deleted',
-
-            'warning',
-
-            'Blog comment deleted'
-        );
-
-        $_SESSION['success'] =
-        'Comment deleted successfully.';
-
-        redirect('admin/blogs/comments.php');
-
-    } catch(Exception $e){
-
-        $_SESSION['error'] =
-        'Failed to delete comment.';
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH COMMENTS
-|--------------------------------------------------------------------------
-*/
-
-$comments = [];
+$quotations = [];
 
 try {
 
@@ -290,18 +201,26 @@ try {
 
         SELECT
 
-            bc.*,
+            q.*,
 
-            b.title AS blog_title,
+            u.full_name AS client_name,
 
-            b.slug AS blog_slug
+            p.project_name,
 
-        FROM blog_comments bc
+            admin.full_name AS approved_admin
 
-        LEFT JOIN blogs b
-        ON bc.blog_id = b.id
+        FROM quotations q
 
-        ORDER BY bc.id DESC
+        LEFT JOIN users u
+        ON q.client_id = u.id
+
+        LEFT JOIN projects p
+        ON q.project_id = p.id
+
+        LEFT JOIN users admin
+        ON q.approved_by = admin.id
+
+        ORDER BY q.id DESC
     ";
 
     $stmt =
@@ -309,13 +228,13 @@ try {
 
     $stmt->execute();
 
-    $comments =
+    $quotations =
     $stmt->fetchAll();
 
 } catch(Exception $e){
 
     $_SESSION['error'] =
-    'Failed to load comments.';
+    'Failed to load quotations.';
 }
 
 /*
@@ -324,15 +243,15 @@ try {
 |--------------------------------------------------------------------------
 */
 
-$totalComments =
-count($comments);
+$totalQuotations =
+count($quotations);
 
-$approvedComments =
+$approvedCount =
 count(
 
     array_filter(
 
-        $comments,
+        $quotations,
 
         function($item){
 
@@ -349,12 +268,12 @@ count(
     )
 );
 
-$pendingComments =
+$pendingCount =
 count(
 
     array_filter(
 
-        $comments,
+        $quotations,
 
         function($item){
 
@@ -371,12 +290,12 @@ count(
     )
 );
 
-$spamComments =
+$rejectedCount =
 count(
 
     array_filter(
 
-        $comments,
+        $quotations,
 
         function($item){
 
@@ -388,7 +307,7 @@ count(
 
             ===
 
-            'spam';
+            'rejected';
         }
     )
 );
@@ -437,7 +356,7 @@ count(
 
     <style>
 
-        .comment-card{
+        .approval-card{
 
             background:#fff;
 
@@ -451,17 +370,24 @@ count(
             margin-bottom:24px;
         }
 
-        .comment-text{
+        .quotation-amount{
 
-            background:#f9fafb;
+            font-size:28px;
 
-            padding:18px;
+            font-weight:700;
 
-            border-radius:14px;
+            color:#f59e0b;
+        }
 
-            border-left:4px solid #f59e0b;
+        .approval-badge{
 
-            margin-top:14px;
+            padding:8px 18px;
+
+            border-radius:40px;
+
+            font-size:12px;
+
+            font-weight:600;
         }
 
     </style>
@@ -496,13 +422,13 @@ count(
 
                     <h1>
 
-                        Blog Comments
+                        Quotation Approvals
 
                     </h1>
 
                     <p>
 
-                        Moderate user comments and manage blog discussions.
+                        Approve, reject and manage customer quotations.
 
                     </p>
 
@@ -562,7 +488,7 @@ count(
                             class="dashboard-icon bg-primary"
                         >
 
-                            <i class="bi bi-chat-dots-fill"></i>
+                            <i class="bi bi-file-earmark-text-fill"></i>
 
                         </div>
 
@@ -573,7 +499,7 @@ count(
                                 <?php
 
                                 echo number_format(
-                                    $totalComments
+                                    $totalQuotations
                                 );
 
                                 ?>
@@ -582,7 +508,7 @@ count(
 
                             <p>
 
-                                Total Comments
+                                Total Quotations
 
                             </p>
 
@@ -613,7 +539,7 @@ count(
                                 <?php
 
                                 echo number_format(
-                                    $approvedComments
+                                    $approvedCount
                                 );
 
                                 ?>
@@ -653,7 +579,7 @@ count(
                                 <?php
 
                                 echo number_format(
-                                    $pendingComments
+                                    $pendingCount
                                 );
 
                                 ?>
@@ -672,7 +598,7 @@ count(
 
                 </div>
 
-                <!-- SPAM -->
+                <!-- REJECTED -->
 
                 <div class="col-lg-3">
 
@@ -682,7 +608,7 @@ count(
                             class="dashboard-icon bg-danger"
                         >
 
-                            <i class="bi bi-shield-fill-exclamation"></i>
+                            <i class="bi bi-x-circle-fill"></i>
 
                         </div>
 
@@ -693,7 +619,7 @@ count(
                                 <?php
 
                                 echo number_format(
-                                    $spamComments
+                                    $rejectedCount
                                 );
 
                                 ?>
@@ -702,7 +628,7 @@ count(
 
                             <p>
 
-                                Spam
+                                Rejected
 
                             </p>
 
@@ -714,53 +640,40 @@ count(
 
             </div>
 
-            <!-- COMMENTS -->
+            <!-- QUOTATION LIST -->
 
-            <?php if(!empty($comments)): ?>
+            <?php if(!empty($quotations)): ?>
 
-                <?php foreach($comments as $comment): ?>
+                <?php foreach($quotations as $quotation): ?>
 
-                    <div class="comment-card">
+                    <div class="approval-card">
 
-                        <div class="row">
+                        <div class="row align-items-center">
 
-                            <!-- COMMENT INFO -->
+                            <!-- INFO -->
 
                             <div class="col-lg-8">
 
-                                <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
 
                                     <div>
 
-                                        <h5>
+                                        <h4>
 
                                             <?php
 
                                             echo escape(
 
-                                                $comment['user_name']
+                                                $quotation['quotation_number']
                                             );
 
                                             ?>
 
-                                        </h5>
+                                        </h4>
 
                                         <p class="text-muted mb-1">
 
-                                            <?php
-
-                                            echo escape(
-
-                                                $comment['user_email']
-                                            );
-
-                                            ?>
-
-                                        </p>
-
-                                        <p class="text-muted mb-0">
-
-                                            On Blog:
+                                            Client:
 
                                             <strong>
 
@@ -768,9 +681,9 @@ count(
 
                                                 echo escape(
 
-                                                    $comment['blog_title']
+                                                    $quotation['client_name']
                                                     ??
-                                                    'Deleted Blog'
+                                                    'N/A'
                                                 );
 
                                                 ?>
@@ -779,120 +692,161 @@ count(
 
                                         </p>
 
+                                        <p class="text-muted mb-1">
+
+                                            Project:
+
+                                            <strong>
+
+                                                <?php
+
+                                                echo escape(
+
+                                                    $quotation['project_name']
+                                                    ??
+                                                    'N/A'
+                                                );
+
+                                                ?>
+
+                                            </strong>
+
+                                        </p>
+
+                                        <p class="text-muted mb-0">
+
+                                            Date:
+
+                                            <?php
+
+                                            echo date(
+
+                                                'd M Y',
+
+                                                strtotime(
+
+                                                    $quotation['quotation_date']
+                                                )
+                                            );
+
+                                            ?>
+
+                                        </p>
+
                                     </div>
 
-                                    <div>
+                                    <div class="quotation-amount">
 
-                                        <?php
+                                        ₹<?php
 
-                                        $status =
-                                        strtolower(
+                                        echo number_format(
 
-                                            $comment['status']
+                                            $quotation['grand_total']
                                             ??
-                                            'pending'
+                                            0
                                         );
 
                                         ?>
 
-                                        <span class="badge
-
-                                            <?php
-
-                                            if($status === 'approved'){
-
-                                                echo 'bg-success';
-
-                                            }elseif($status === 'spam'){
-
-                                                echo 'bg-danger';
-
-                                            }elseif($status === 'rejected'){
-
-                                                echo 'bg-dark';
-
-                                            }else{
-
-                                                echo 'bg-warning';
-                                            }
-
-                                            ?>
-                                        ">
-
-                                            <?php
-
-                                            echo strtoupper($status);
-
-                                            ?>
-
-                                        </span>
-
                                     </div>
 
                                 </div>
 
-                                <!-- COMMENT -->
+                                <!-- STATUS -->
 
-                                <div class="comment-text">
+                                <div class="mb-3">
 
                                     <?php
 
-                                    echo nl2br(
+                                    $status =
+                                    strtolower(
 
-                                        escape(
-
-                                            $comment['comment']
-                                        )
+                                        $quotation['status']
+                                        ??
+                                        'pending'
                                     );
 
                                     ?>
 
-                                </div>
-
-                                <!-- FOOTER -->
-
-                                <div class="mt-3">
-
-                                    <small class="text-muted">
-
-                                        <i class="bi bi-clock"></i>
+                                    <span class="approval-badge
 
                                         <?php
 
-                                        echo date(
+                                        if($status === 'approved'){
 
-                                            'd M Y h:i A',
+                                            echo 'bg-success text-white';
 
-                                            strtotime(
+                                        }elseif($status === 'rejected'){
 
-                                                $comment['created_at']
+                                            echo 'bg-danger text-white';
+
+                                        }else{
+
+                                            echo 'bg-warning text-dark';
+                                        }
+
+                                        ?>
+                                    ">
+
+                                        <?php
+
+                                        echo strtoupper($status);
+
+                                        ?>
+
+                                    </span>
+
+                                </div>
+
+                                <!-- REMARKS -->
+
+                                <?php if(!empty($quotation['approval_remarks'])): ?>
+
+                                    <div class="alert alert-light border">
+
+                                        <strong>
+
+                                            Remarks:
+                                        </strong>
+
+                                        <br>
+
+                                        <?php
+
+                                        echo nl2br(
+
+                                            escape(
+
+                                                $quotation['approval_remarks']
                                             )
+                                        );
+
+                                        ?>
+
+                                    </div>
+
+                                <?php endif; ?>
+
+                                <!-- APPROVED BY -->
+
+                                <?php if(!empty($quotation['approved_admin'])): ?>
+
+                                    <small class="text-muted">
+
+                                        Last updated by:
+
+                                        <?php
+
+                                        echo escape(
+
+                                            $quotation['approved_admin']
                                         );
 
                                         ?>
 
                                     </small>
 
-                                    <?php if(!empty($comment['ip_address'])): ?>
-
-                                        <small class="text-muted ms-3">
-
-                                            <i class="bi bi-globe"></i>
-
-                                            <?php
-
-                                            echo escape(
-
-                                                $comment['ip_address']
-                                            );
-
-                                            ?>
-
-                                        </small>
-
-                                    <?php endif; ?>
-
-                                </div>
+                                <?php endif; ?>
 
                             </div>
 
@@ -906,10 +860,10 @@ count(
 
                                     <input
                                         type="hidden"
-                                        name="comment_id"
+                                        name="quotation_id"
                                         value="<?php
 
-                                        echo $comment['id'];
+                                        echo $quotation['id'];
 
                                         ?>"
                                     >
@@ -920,13 +874,14 @@ count(
 
                                         <label class="form-label">
 
-                                            Moderation Status
+                                            Approval Status
 
                                         </label>
 
                                         <select
                                             name="status"
                                             class="form-select"
+                                            required
                                         >
 
                                             <option
@@ -974,28 +929,6 @@ count(
                                             </option>
 
                                             <option
-                                                value="spam"
-
-                                                <?php
-
-                                                if(
-
-                                                    $status
-                                                    ===
-                                                    'spam'
-                                                ){
-
-                                                    echo 'selected';
-                                                }
-
-                                                ?>
-                                            >
-
-                                                Spam
-
-                                            </option>
-
-                                            <option
                                                 value="rejected"
 
                                                 <?php
@@ -1021,11 +954,36 @@ count(
 
                                     </div>
 
+                                    <!-- REMARKS -->
+
+                                    <div class="mb-3">
+
+                                        <label class="form-label">
+
+                                            Remarks
+
+                                        </label>
+
+                                        <textarea
+                                            name="remarks"
+                                            rows="3"
+                                            class="form-control"
+                                        ><?php
+
+                                        echo escape(
+
+                                            $quotation['approval_remarks']
+                                            ??
+                                            ''
+                                        );
+
+                                        ?></textarea>
+
+                                    </div>
+
                                     <!-- BUTTONS -->
 
-                                    <div class="d-flex gap-2 flex-wrap">
-
-                                        <!-- UPDATE -->
+                                    <div class="d-flex gap-2">
 
                                         <button
                                             type="submit"
@@ -1038,49 +996,30 @@ count(
 
                                         </button>
 
-                                        <!-- VIEW BLOG -->
-
-                                        <?php if(!empty($comment['blog_slug'])): ?>
-
-                                            <a
-                                                href="../../blog.php?slug=<?php
-
-                                                echo urlencode(
-
-                                                    $comment['blog_slug']
-                                                );
-
-                                                ?>"
-                                                target="_blank"
-                                                class="btn btn-dark"
-                                            >
-
-                                                <i class="bi bi-eye"></i>
-
-                                            </a>
-
-                                        <?php endif; ?>
-
-                                        <!-- DELETE -->
-
                                         <a
-                                            href="?delete=<?php
+                                            href="view.php?id=<?php
 
-                                            echo $comment['id'];
-
-                                            ?>&csrf_token=<?php
-
-                                            echo csrfToken();
+                                            echo $quotation['id'];
 
                                             ?>"
-                                            class="
-                                                btn
-                                                btn-danger
-                                                btn-delete
-                                            "
+                                            class="btn btn-dark"
                                         >
 
-                                            <i class="bi bi-trash"></i>
+                                            <i class="bi bi-eye"></i>
+
+                                        </a>
+
+                                        <a
+                                            href="pdf.php?id=<?php
+
+                                            echo $quotation['id'];
+
+                                            ?>"
+                                            target="_blank"
+                                            class="btn btn-warning"
+                                        >
+
+                                            <i class="bi bi-file-earmark-pdf"></i>
 
                                         </a>
 
@@ -1103,7 +1042,7 @@ count(
                     <i
                         class="
                             bi
-                            bi-chat-square-dots
+                            bi-file-earmark-text
                         "
                         style="
                             font-size:70px;
@@ -1113,13 +1052,13 @@ count(
 
                     <h4 class="mt-4">
 
-                        No Comments Found
+                        No quotations available
 
                     </h4>
 
                     <p class="text-muted">
 
-                        Blog comments will appear here for moderation.
+                        No quotations found for approval workflow.
 
                     </p>
 
