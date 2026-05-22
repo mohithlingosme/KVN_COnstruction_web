@@ -1,7 +1,0 @@
-﻿{
-  "name": "kvn/construction-erp",
-  "require": {
-    "dompdf/dompdf": "^3.0",
-    "vlucas/phpdotenv": "^5.6"
-  }
-}
