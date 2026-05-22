@@ -25,7 +25,15 @@ require_once '../../middleware/guest.php';
 
 /*
 |--------------------------------------------------------------------------
-| PAGE TITLE
+| SECURITY HEADERS
+|--------------------------------------------------------------------------
+*/
+
+securityHeaders();
+
+/*
+|--------------------------------------------------------------------------
+| PAGE CONFIG
 |--------------------------------------------------------------------------
 */
 
@@ -74,8 +82,13 @@ unset($_SESSION['success']);
     <!-- ================================= -->
 
     <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
         rel="stylesheet"
-        href="<?php echo base_url('../assets/css/style.css'); ?>"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     >
 
     <link
@@ -83,43 +96,35 @@ unset($_SESSION['success']);
         href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
     >
 
-    <!-- Bootstrap -->
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <!-- Bootstrap Icons -->
-
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    >
-
 </head>
 
-<body class="admin-auth-body">
+<body class="admin-login-body">
 
 <!-- ================================= -->
-<!-- ADMIN LOGIN -->
+<!-- LOGIN WRAPPER -->
 <!-- ================================= -->
 
-<section class="admin-auth-section">
+<div class="admin-login-wrapper">
 
     <div class="container">
 
-        <div class="row justify-content-center">
+        <div class="row justify-content-center align-items-center min-vh-100">
 
-            <div class="col-lg-5 col-md-7">
+            <div class="col-xl-5 col-lg-6 col-md-8">
 
-                <div class="admin-auth-card">
+                <div class="admin-login-card">
 
                     <!-- ============================== -->
-                    <!-- LOGO -->
+                    <!-- BRAND -->
                     <!-- ============================== -->
 
-                    <div class="admin-auth-logo text-center">
+                    <div class="admin-brand text-center">
+
+                        <div class="admin-logo">
+
+                            <i class="bi bi-buildings"></i>
+
+                        </div>
 
                         <h1>
 
@@ -129,7 +134,7 @@ unset($_SESSION['success']);
 
                         <p>
 
-                            Secure Admin Access Portal
+                            Secure Admin Authentication Portal
 
                         </p>
 
@@ -141,9 +146,17 @@ unset($_SESSION['success']);
 
                     <?php if($error): ?>
 
-                        <div class="alert alert-danger">
+                        <div class="alert alert-danger alert-dismissible fade show">
+
+                            <i class="bi bi-exclamation-triangle-fill"></i>
 
                             <?php echo escape($error); ?>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                            ></button>
 
                         </div>
 
@@ -151,21 +164,31 @@ unset($_SESSION['success']);
 
                     <?php if($success): ?>
 
-                        <div class="alert alert-success">
+                        <div class="alert alert-success alert-dismissible fade show">
+
+                            <i class="bi bi-check-circle-fill"></i>
 
                             <?php echo escape($success); ?>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                            ></button>
 
                         </div>
 
                     <?php endif; ?>
 
                     <!-- ============================== -->
-                    <!-- FORM -->
+                    <!-- LOGIN FORM -->
                     <!-- ============================== -->
 
                     <form
                         action="../auth/admin-login-handler.php"
                         method="POST"
+                        autocomplete="off"
+                        id="adminLoginForm"
                     >
 
                         <?php echo csrfField(); ?>
@@ -180,11 +203,11 @@ unset($_SESSION['success']);
 
                             </label>
 
-                            <div class="input-group">
+                            <div class="input-group auth-input-group">
 
                                 <span class="input-group-text">
 
-                                    <i class="bi bi-envelope"></i>
+                                    <i class="bi bi-envelope-fill"></i>
 
                                 </span>
 
@@ -194,7 +217,7 @@ unset($_SESSION['success']);
                                     class="form-control"
                                     placeholder="Enter admin email"
                                     required
-                                    autocomplete="off"
+                                    maxlength="150"
                                 >
 
                             </div>
@@ -220,6 +243,7 @@ unset($_SESSION['success']);
                                     class="form-control"
                                     placeholder="Enter password"
                                     required
+                                    minlength="8"
                                 >
 
                                 <button
@@ -228,7 +252,10 @@ unset($_SESSION['success']);
                                     onclick="togglePassword()"
                                 >
 
-                                    <i class="bi bi-eye"></i>
+                                    <i
+                                        class="bi bi-eye"
+                                        id="passwordIcon"
+                                    ></i>
 
                                 </button>
 
@@ -245,12 +272,13 @@ unset($_SESSION['success']);
                                 <input
                                     class="form-check-input"
                                     type="checkbox"
-                                    id="remember"
+                                    id="remember_me"
+                                    name="remember_me"
                                 >
 
                                 <label
                                     class="form-check-label"
-                                    for="remember"
+                                    for="remember_me"
                                 >
 
                                     Remember Me
@@ -277,7 +305,7 @@ unset($_SESSION['success']);
                             class="btn-admin-login w-100"
                         >
 
-                            <i class="bi bi-shield-lock"></i>
+                            <i class="bi bi-shield-lock-fill"></i>
 
                             Secure Login
 
@@ -286,24 +314,20 @@ unset($_SESSION['success']);
                     </form>
 
                     <!-- ============================== -->
-                    <!-- SECURITY INFO -->
+                    <!-- SECURITY FEATURES -->
                     <!-- ============================== -->
 
-                    <div class="admin-security-info">
+                    <div class="security-features">
 
                         <div class="security-item">
 
                             <i class="bi bi-shield-check"></i>
 
-                            Encrypted Session Protection
+                            <span>
 
-                        </div>
+                                Brute Force Protection Enabled
 
-                        <div class="security-item">
-
-                            <i class="bi bi-lock"></i>
-
-                            Brute Force Prevention Enabled
+                            </span>
 
                         </div>
 
@@ -311,7 +335,23 @@ unset($_SESSION['success']);
 
                             <i class="bi bi-fingerprint"></i>
 
-                            Session Fingerprinting Active
+                            <span>
+
+                                Session Fingerprinting Active
+
+                            </span>
+
+                        </div>
+
+                        <div class="security-item">
+
+                            <i class="bi bi-lock-fill"></i>
+
+                            <span>
+
+                                CSRF & XSS Protection Enabled
+
+                            </span>
 
                         </div>
 
@@ -321,11 +361,12 @@ unset($_SESSION['success']);
                     <!-- FOOTER -->
                     <!-- ============================== -->
 
-                    <div class="admin-auth-footer text-center">
+                    <div class="admin-login-footer text-center">
 
                         <small>
 
-                            Authorized access only.
+                            Authorized personnel only.
+                            All activities are monitored.
 
                         </small>
 
@@ -339,230 +380,73 @@ unset($_SESSION['success']);
 
     </div>
 
-</section>
-
-<!-- ================================= -->
-<!-- ADMIN AUTH STYLES -->
-<!-- ================================= -->
-
-<style>
-
-.admin-auth-body{
-
-    background:
-    linear-gradient(
-
-        135deg,
-
-        #0f172a,
-
-        #111827,
-
-        #1e293b
-
-    );
-
-    min-height:100vh;
-
-    font-family:Arial,sans-serif;
-}
-
-.admin-auth-section{
-
-    min-height:100vh;
-
-    display:flex;
-
-    align-items:center;
-
-    padding:60px 0;
-}
-
-.admin-auth-card{
-
-    background:#fff;
-
-    border-radius:20px;
-
-    padding:45px;
-
-    box-shadow:
-    0 15px 60px rgba(0,0,0,0.25);
-}
-
-.admin-auth-logo h1{
-
-    font-size:34px;
-
-    font-weight:800;
-
-    color:#111827;
-
-    margin-bottom:10px;
-}
-
-.admin-auth-logo p{
-
-    color:#6b7280;
-
-    margin-bottom:35px;
-}
-
-.form-label{
-
-    font-weight:600;
-
-    margin-bottom:10px;
-}
-
-.form-control{
-
-    height:55px;
-
-    border-radius:12px;
-
-    border:1px solid #d1d5db;
-}
-
-.input-group-text{
-
-    border-radius:12px 0 0 12px;
-
-    background:#f9fafb;
-}
-
-.password-wrapper{
-
-    position:relative;
-}
-
-.toggle-password{
-
-    position:absolute;
-
-    top:50%;
-
-    right:15px;
-
-    transform:translateY(-50%);
-
-    border:none;
-
-    background:none;
-
-    cursor:pointer;
-
-    color:#6b7280;
-}
-
-.btn-admin-login{
-
-    height:55px;
-
-    border:none;
-
-    border-radius:12px;
-
-    background:#f5b400;
-
-    color:#111827;
-
-    font-weight:700;
-
-    transition:0.3s;
-}
-
-.btn-admin-login:hover{
-
-    background:#e0a300;
-}
-
-.forgot-link{
-
-    text-decoration:none;
-
-    font-weight:600;
-
-    color:#111827;
-}
-
-.forgot-link:hover{
-
-    color:#f5b400;
-}
-
-.admin-security-info{
-
-    margin-top:35px;
-
-    padding-top:25px;
-
-    border-top:1px solid #e5e7eb;
-}
-
-.security-item{
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-    margin-bottom:12px;
-
-    font-size:14px;
-
-    color:#4b5563;
-}
-
-.security-item i{
-
-    color:#16a34a;
-}
-
-.admin-auth-footer{
-
-    margin-top:25px;
-
-    color:#9ca3af;
-}
-
-@media(max-width:768px){
-
-    .admin-auth-card{
-
-        padding:30px 20px;
-    }
-
-    .admin-auth-logo h1{
-
-        font-size:28px;
-    }
-}
-
-</style>
+</div>
 
 <!-- ================================= -->
 <!-- JS -->
 <!-- ================================= -->
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
+
+/*
+|--------------------------------------------------------------------------
+| TOGGLE PASSWORD
+|--------------------------------------------------------------------------
+*/
 
 function togglePassword()
 {
     const password =
-
     document.getElementById('password');
+
+    const icon =
+    document.getElementById('passwordIcon');
 
     if(password.type === 'password'){
 
         password.type = 'text';
 
+        icon.classList.remove('bi-eye');
+
+        icon.classList.add('bi-eye-slash');
+
     }else{
 
         password.type = 'password';
+
+        icon.classList.remove('bi-eye-slash');
+
+        icon.classList.add('bi-eye');
     }
 }
+
+/*
+|--------------------------------------------------------------------------
+| DISABLE MULTIPLE SUBMITS
+|--------------------------------------------------------------------------
+*/
+
+document
+.getElementById('adminLoginForm')
+
+.addEventListener('submit', function(){
+
+    const button =
+    this.querySelector('button[type="submit"]');
+
+    button.disabled = true;
+
+    button.innerHTML = `
+
+        <span
+            class="spinner-border spinner-border-sm"
+        ></span>
+
+        Authenticating...
+    `;
+});
 
 </script>
 
