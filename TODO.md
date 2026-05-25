@@ -172,7 +172,7 @@ KVN Construction Platform is a complete construction business ecosystem designed
 - [x] /public/verify-reset-otp.php
 ### [X] add S.Q.L too modify the table 
 
----
+
 
 ## Public Website Improvements //todo with codex 
 
