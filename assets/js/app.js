@@ -20,6 +20,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     initMobileMenu();
 
+    initOtpTimer();
+
+    initResendCountdown();
+
+    initSessionTimeoutWarning();
+
+    initSecureForms();
+
+    initInputSanitization();
+
+    initEscapeModalClose();
+
 });
 
 // ======================================
@@ -227,9 +239,9 @@ function initFaq() {
     const faqQuestions =
     document.querySelectorAll('.faq-question');
 
-    faqQuestions.forEach(function(question){
+    faqQuestions.forEach(function (question) {
 
-        question.addEventListener('click', function(){
+        question.addEventListener('click', function () {
 
             const faqItem =
             this.parentElement;
@@ -246,7 +258,9 @@ function initFaq() {
 
 function initSmoothScroll() {
 
-    document.querySelectorAll('a[href^="#"]')
+    document
+
+    .querySelectorAll('a[href^="#"]')
 
     .forEach(anchor => {
 
@@ -258,7 +272,7 @@ function initSmoothScroll() {
                 this.getAttribute('href')
             );
 
-            if(target){
+            if (target) {
 
                 e.preventDefault();
 
@@ -280,21 +294,21 @@ function initLoginPopup() {
     const popup =
     document.getElementById('loginPopup');
 
-    if(!popup) return;
+    if (!popup) return;
 
-    window.openLogin = function(){
+    window.openLogin = function () {
 
         popup.classList.add('active');
     }
 
-    window.closeLogin = function(){
+    window.closeLogin = function () {
 
         popup.classList.remove('active');
     }
 
-    popup.addEventListener('click', function(e){
+    popup.addEventListener('click', function (e) {
 
-        if(e.target === popup){
+        if (e.target === popup) {
 
             closeLogin();
         }
@@ -315,7 +329,7 @@ function initEstimator() {
     const widthInput =
     document.getElementById('plotWidth');
 
-    if(lengthInput){
+    if (lengthInput) {
 
         lengthInput.addEventListener(
 
@@ -325,13 +339,41 @@ function initEstimator() {
         );
     }
 
-    if(widthInput){
+    if (widthInput) {
 
         widthInput.addEventListener(
 
             'input',
 
             calculateArea
+        );
+    }
+
+    const estimatorForm =
+    document.getElementById('estimatorForm');
+
+    if (estimatorForm) {
+
+        estimatorForm.addEventListener(
+
+            'submit',
+
+            function () {
+
+                const button =
+                estimatorForm.querySelector(
+
+                    'button[type="submit"]'
+                );
+
+                if (button) {
+
+                    button.disabled = true;
+
+                    button.innerText =
+                    'Generating Estimate...';
+                }
+            }
         );
     }
 }
@@ -361,12 +403,12 @@ function calculateArea() {
     const sqftValue =
     document.getElementById('sqftValue');
 
-    if(sqftInput){
+    if (sqftInput) {
 
         sqftInput.value = area;
     }
 
-    if(sqftValue){
+    if (sqftValue) {
 
         sqftValue.innerText =
         area + ' sqft';
@@ -381,18 +423,18 @@ function calculateCost() {
 
     const sqft =
     parseFloat(
-
-        document.getElementById('sqft').value
+        document.getElementById('sqft')?.value
     ) || 0;
 
     const floors =
     parseInt(
-
-        document.getElementById('floors').value
+        document.getElementById('floors')?.value
     ) || 1;
 
     const packageSelect =
     document.getElementById('quality');
+
+    if (!packageSelect) return;
 
     const selectedOption =
     packageSelect.options[
@@ -401,74 +443,281 @@ function calculateCost() {
 
     const price =
     parseFloat(
-
         selectedOption.dataset.price
     ) || 0;
 
     const timeline =
-    selectedOption.dataset.timeline;
+    selectedOption.dataset.timeline || '-';
 
     const material =
-    selectedOption.dataset.material;
+    selectedOption.dataset.material || '-';
 
     const packageName =
     selectedOption.text;
 
-    // ==================================
-    // BUILTUP AREA
-    // ==================================
-
     const builtupArea =
     sqft * floors;
-
-    // ==================================
-    // TOTAL COST
-    // ==================================
 
     const total =
     builtupArea * price;
 
-    // ==================================
-    // UPDATE UI
-    // ==================================
+    const totalCost =
+    document.getElementById('totalCost');
 
-    document.getElementById(
-        'totalCost'
-    ).innerText =
+    const builtupAreaBox =
+    document.getElementById('builtupArea');
 
-        '₹ ' +
+    const timelineBox =
+    document.getElementById('timeline');
 
-        total.toLocaleString('en-IN');
+    const packageBox =
+    document.getElementById('package');
 
-    document.getElementById(
-        'builtupArea'
-    ).innerText =
+    const materialBox =
+    document.getElementById('materialGrade');
 
-        builtupArea +
+    if (totalCost) {
 
-        ' sqft';
+        totalCost.innerText =
 
-    document.getElementById(
-        'timeline'
-    ).innerText =
+            '₹ ' +
 
+            total.toLocaleString('en-IN');
+    }
+
+    if (builtupAreaBox) {
+
+        builtupAreaBox.innerText =
+
+            builtupArea +
+
+            ' sqft';
+    }
+
+    if (timelineBox) {
+
+        timelineBox.innerText =
         timeline;
+    }
 
-    document.getElementById(
-        'package'
-    ).innerText =
+    if (packageBox) {
 
+        packageBox.innerText =
         packageName;
+    }
 
-    document.getElementById(
-        'materialGrade'
-    ).innerText =
+    if (materialBox) {
 
+        materialBox.innerText =
         material;
+    }
 }
 
 // ======================================
-// AJAX CONTACT FORM
+// OTP TIMER
+// ======================================
+
+function initOtpTimer() {
+
+    const otpTimer =
+    document.getElementById('otpTimer');
+
+    if (!otpTimer) return;
+
+    let timeLeft = 300;
+
+    updateOtpTimer();
+
+    const timer =
+    setInterval(function () {
+
+        timeLeft--;
+
+        updateOtpTimer();
+
+        if (timeLeft <= 0) {
+
+            clearInterval(timer);
+
+            otpTimer.innerText =
+            'OTP Expired';
+        }
+
+    }, 1000);
+
+    function updateOtpTimer() {
+
+        const minutes =
+        Math.floor(timeLeft / 60);
+
+        const seconds =
+        timeLeft % 60;
+
+        otpTimer.innerText =
+
+            minutes +
+
+            ':' +
+
+            String(seconds).padStart(2, '0');
+    }
+}
+
+// ======================================
+// RESEND OTP COUNTDOWN
+// ======================================
+
+function initResendCountdown() {
+
+    const resendButton =
+    document.getElementById('resendOtpBtn');
+
+    if (!resendButton) return;
+
+    let countdown = 30;
+
+    resendButton.disabled = true;
+
+    resendButton.innerText =
+    'Resend OTP in 30s';
+
+    const interval =
+    setInterval(function () {
+
+        countdown--;
+
+        resendButton.innerText =
+
+            'Resend OTP in ' +
+
+            countdown +
+
+            's';
+
+        if (countdown <= 0) {
+
+            clearInterval(interval);
+
+            resendButton.disabled = false;
+
+            resendButton.innerText =
+            'Resend OTP';
+        }
+
+    }, 1000);
+}
+
+// ======================================
+// SESSION TIMEOUT WARNING
+// ======================================
+
+function initSessionTimeoutWarning() {
+
+    const timeoutMinutes = 30;
+
+    const warningBefore = 5;
+
+    const totalMs =
+    timeoutMinutes * 60 * 1000;
+
+    const warningMs =
+    (timeoutMinutes - warningBefore)
+    * 60
+    * 1000;
+
+    setTimeout(function () {
+
+        const stayLoggedIn =
+        confirm(
+
+            'Your session will expire in 5 minutes. Stay logged in?'
+        );
+
+        if (!stayLoggedIn) {
+
+            window.location.href =
+            '/logout.php';
+        }
+
+    }, warningMs);
+
+    setTimeout(function () {
+
+        window.location.href =
+        '/logout.php';
+
+    }, totalMs);
+}
+
+// ======================================
+// SECURE FORMS
+// ======================================
+
+function initSecureForms() {
+
+    const forms =
+    document.querySelectorAll('form');
+
+    forms.forEach(function (form) {
+
+        form.addEventListener(
+
+            'submit',
+
+            function () {
+
+                const submitButton =
+                form.querySelector(
+
+                    'button[type="submit"]'
+                );
+
+                if (submitButton) {
+
+                    submitButton.disabled = true;
+
+                    submitButton.innerText =
+                    'Please wait...';
+                }
+            }
+        );
+    });
+}
+
+// ======================================
+// SECURE FETCH WRAPPER
+// ======================================
+
+async function secureFetch(
+
+    url,
+
+    options = {}
+
+) {
+
+    const csrfToken =
+    document.querySelector(
+
+        'meta[name="csrf-token"]'
+    )?.content;
+
+    options.headers = {
+
+        ...(options.headers || {}),
+
+        'X-CSRF-TOKEN':
+        csrfToken,
+
+        'X-Requested-With':
+        'XMLHttpRequest'
+    };
+
+    return fetch(url, options);
+}
+
+// ======================================
+// SECURE AJAX CONTACT FORM
 // ======================================
 
 async function submitContactForm(form) {
@@ -479,7 +728,7 @@ async function submitContactForm(form) {
         new FormData(form);
 
         const response =
-        await fetch(
+        await secureFetch(
 
             form.action,
 
@@ -494,7 +743,7 @@ async function submitContactForm(form) {
         const data =
         await response.json();
 
-        if(data.success){
+        if (data.success) {
 
             alert(data.message);
 
@@ -505,32 +754,128 @@ async function submitContactForm(form) {
             alert(data.message);
         }
 
-    } catch(error){
+    } catch (error) {
 
         console.error(error);
 
-        alert('Something went wrong');
+        alert('Something went wrong.');
     }
+}
+
+// ======================================
+// OTP ATTEMPT COUNTER
+// ======================================
+
+let otpAttempts = 0;
+
+function increaseOtpAttempt() {
+
+    otpAttempts++;
+
+    const attemptBox =
+    document.getElementById('otpAttempts');
+
+    if (attemptBox) {
+
+        attemptBox.innerText =
+
+            'Attempts: ' +
+
+            otpAttempts +
+
+            '/5';
+    }
+
+    if (otpAttempts >= 5) {
+
+        alert(
+            'Too many OTP attempts.'
+        );
+
+        window.location.href =
+        '/login.php';
+    }
+}
+
+// ======================================
+// ESC KEY MODAL CLOSE
+// ======================================
+
+function initEscapeModalClose() {
+
+    document.addEventListener(
+
+        'keydown',
+
+        function (e) {
+
+            if (e.key === 'Escape') {
+
+                document
+
+                .querySelectorAll('.modal.active')
+
+                .forEach(function (modal) {
+
+                    modal.classList.remove('active');
+                });
+            }
+        }
+    );
+}
+
+// ======================================
+// INPUT SANITIZATION
+// ======================================
+
+function initInputSanitization() {
+
+    document.addEventListener(
+
+        'input',
+
+        function (e) {
+
+            if (
+
+                e.target.matches(
+
+                    'input[type="text"], textarea'
+                )
+
+            ) {
+
+                e.target.value =
+
+                e.target.value
+
+                .replace(/<script/gi, '')
+
+                .replace(/<\/script>/gi, '');
+            }
+        }
+    );
 }
 
 // ======================================
 // AUTO HIDE ALERTS
 // ======================================
 
-setTimeout(function(){
+setTimeout(function () {
 
     document
+
     .querySelectorAll('.alert')
 
-    .forEach(function(alert){
+    .forEach(function (alert) {
 
         alert.style.opacity = '0';
 
-        setTimeout(function(){
+        setTimeout(function () {
 
             alert.remove();
 
-        },400);
+        }, 400);
     });
 
-},5000);
+}, 5000);

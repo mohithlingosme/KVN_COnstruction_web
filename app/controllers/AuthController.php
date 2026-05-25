@@ -1,816 +1,606 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| KVN CONSTRUCTION PLATFORM
-|--------------------------------------------------------------------------
-| AUTHENTICATION CONTROLLER
-|--------------------------------------------------------------------------
-| File:
-| /app/controllers/AuthController.php
-|--------------------------------------------------------------------------
-*/
-
 class AuthController
 {
     private $conn;
+    private $userModel;
 
-    public function __construct($database)
+    public function __construct($conn)
     {
-        $this->conn = $database;
+        $this->conn = $conn;
+
+        require_once ROOT_PATH . '/app/models/User.php';
+
+        $this->userModel = new User($conn);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | CLIENT PHONE LOGIN
-    |--------------------------------------------------------------------------
-    */
+    // ============================================
+    // CLIENT PHONE LOGIN
+    // ============================================
 
-    public function phoneLogin()
+    public function sendLoginOtp($phone)
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $phone = sanitize($phone);
 
-            redirect('login.php');
+        if(empty($phone)){
+
+            return [
+                'status' => false,
+                'message' => 'Phone number required.'
+            ];
         }
 
-        validateCsrf();
+        // RATE LIMIT
 
-        if (!otpRateLimit()) {
-
-            $_SESSION['error'] =
-            'Too many OTP requests. Please try later.';
-
-            redirect('phone-login.php');
-        }
-
-        $phone = sanitizePhone(
-            $_POST['phone'] ?? ''
-        );
-
-        if (!validatePhone($phone)) {
-
-            $_SESSION['error'] =
-            'Invalid phone number.';
-
-            redirect('phone-login.php');
-        }
-
-        try {
-
-            $query = "
-
-                SELECT *
-
-                FROM users
-
-                WHERE phone = :phone
-
-                LIMIT 1
-            ";
-
-            $stmt =
-            $this->conn->prepare($query);
-
-            $stmt->execute([
-
-                ':phone' => $phone
-            ]);
-
-            $user =
-            $stmt->fetch();
-
-            /*
-            |------------------------------------------------------------------
-            | AUTO REGISTER CLIENT
-            |------------------------------------------------------------------
-            */
-
-            if (!$user) {
-
-                $insert = "
-
-                    INSERT INTO users (
-
-                        full_name,
-                        phone,
-                        role,
-                        status,
-                        phone_verified,
-                        created_at
-
-                    ) VALUES (
-
-                        :full_name,
-                        :phone,
-                        'client',
-                        'active',
-                        0,
-                        NOW()
-                    )
-                ";
-
-                $stmt =
-                $this->conn->prepare($insert);
-
-                $stmt->execute([
-
-                    ':full_name' => 'Client User',
-
-                    ':phone' => $phone
-                ]);
-
-                $userId =
-                $this->conn->lastInsertId();
-
-                $query = "
-
-                    SELECT *
-
-                    FROM users
-
-                    WHERE id = :id
-
-                    LIMIT 1
-                ";
-
-                $stmt =
-                $this->conn->prepare($query);
-
-                $stmt->execute([
-
-                    ':id' => $userId
-                ]);
-
-                $user =
-                $stmt->fetch();
-            }
-
-            /*
-            |------------------------------------------------------------------
-            | ACCOUNT STATUS
-            |------------------------------------------------------------------
-            */
-
-            if ($user['status'] !== 'active') {
-
-                $_SESSION['error'] =
-                'Account inactive.';
-
-                redirect('phone-login.php');
-            }
-
-            /*
-            |------------------------------------------------------------------
-            | GENERATE OTP
-            |------------------------------------------------------------------
-            */
-
-            $otpResponse =
-            createPhoneOtp($phone);
-
-            if (!$otpResponse['success']) {
-
-                $_SESSION['error'] =
-                $otpResponse['message'];
-
-                redirect('phone-login.php');
-            }
-
-            $otp =
-            $otpResponse['otp'];
-
-            /*
-            |------------------------------------------------------------------
-            | SEND SMS
-            |------------------------------------------------------------------
-            */
-
-            sendOtpSms($phone, $otp);
-
-            /*
-            |------------------------------------------------------------------
-            | CREATE OTP SESSION
-            |------------------------------------------------------------------
-            */
-
-            createOtpSession($phone);
-
-            $_SESSION['otp_type'] = 'login';
+        if(!checkRateLimit('client_otp', 3, 600)){
 
             logSecurityEvent(
-
-                $user['id'],
-
-                'phone_login_otp_sent',
-
-                'info',
-
-                'OTP sent for phone login'
+                'OTP_RATE_LIMIT',
+                'OTP limit exceeded',
+                [
+                    'phone' => $phone
+                ]
             );
 
-            $_SESSION['success'] =
-            'OTP sent successfully.';
-
-            redirect('verify-phone-otp.php');
-
-        } catch (Exception $e) {
-
-            error_log($e->getMessage());
-
-            $_SESSION['error'] =
-            'Something went wrong.';
-
-            redirect('phone-login.php');
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | VERIFY PHONE OTP
-    |--------------------------------------------------------------------------
-    */
-
-    public function verifyPhoneOtp()
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-
-            redirect('verify-phone-otp.php');
+            return [
+                'status' => false,
+                'message' => 'Too many OTP requests. Try again later.'
+            ];
         }
 
-        validateCsrf();
+        // FIND USER
 
-        if (!isOtpSessionValid()) {
+        $user = $this->userModel->findByPhone($phone);
 
-            $_SESSION['error'] =
-            'OTP session expired.';
+        if(!$user){
 
-            redirect('phone-login.php');
+            return [
+                'status' => false,
+                'message' => 'User not found.'
+            ];
         }
 
-        $phone =
-        $_SESSION['otp_phone'];
+        // ACCOUNT STATUS
 
-        $otp = sanitize(
-            $_POST['otp'] ?? ''
-        );
+        if($user['status'] !== 'active'){
 
-        if (empty($otp)) {
-
-            $_SESSION['error'] =
-            'OTP required.';
-
-            redirect('verify-phone-otp.php');
+            return [
+                'status' => false,
+                'message' => 'Account disabled.'
+            ];
         }
 
-        $verify = verifyPhoneOtp(
+        // GENERATE OTP
 
-            $phone,
+        $otp = generateOtp();
 
+        // SAVE OTP
+
+        $this->userModel->saveOtp(
+            $user['id'],
             $otp,
-
             'login'
         );
 
-        if (!$verify['success']) {
+        // SEND SMS
 
-            $_SESSION['error'] =
-            $verify['message'];
+        sendOtpSms(
+            $phone,
+            $otp
+        );
 
-            redirect('verify-phone-otp.php');
+        // SEND EMAIL
+
+        if(!empty($user['email'])){
+
+            sendOtpEmail(
+                $user['email'],
+                $otp,
+                $user['full_name']
+            );
         }
 
-        try {
+        incrementRateLimit('client_otp');
 
-            $query = "
+        return [
+            'status' => true,
+            'message' => 'OTP sent successfully.'
+        ];
+    }
 
-                SELECT *
+    // ============================================
+    // VERIFY LOGIN OTP
+    // ============================================
 
-                FROM users
+    public function verifyPhoneOtp($phone, $otp)
+    {
+        $phone = sanitize($phone);
+        $otp   = sanitize($otp);
 
-                WHERE phone = :phone
+        $user = $this->userModel->findByPhone($phone);
 
-                LIMIT 1
-            ";
+        if(!$user){
 
-            $stmt =
-            $this->conn->prepare($query);
+            return [
+                'status' => false,
+                'message' => 'User not found.'
+            ];
+        }
 
-            $stmt->execute([
+        // FETCH OTP
 
-                ':phone' => $phone
-            ]);
+        $query = "
+            SELECT *
+            FROM user_otps
+            WHERE user_id = :user_id
+            AND purpose = 'login'
+            AND is_used = 0
+            AND expires_at > NOW()
+            ORDER BY id DESC
+            LIMIT 1
+        ";
 
-            $user =
-            $stmt->fetch();
+        $stmt = $this->conn->prepare($query);
 
-            if (!$user) {
+        $stmt->execute([
+            ':user_id' => $user['id']
+        ]);
 
-                $_SESSION['error'] =
-                'User not found.';
+        $otpRow = $stmt->fetch();
 
-                redirect('phone-login.php');
-            }
+        if(!$otpRow){
 
-            /*
-            |------------------------------------------------------------------
-            | UPDATE PHONE VERIFIED
-            |------------------------------------------------------------------
-            */
+            return [
+                'status' => false,
+                'message' => 'OTP expired.'
+            ];
+        }
 
-            $query = "
+        // OTP ATTEMPTS
 
-                UPDATE users
+        if($otpRow['attempts'] >= 5){
 
-                SET
-                    phone_verified = 1,
-                    last_activity = NOW(),
-                    last_ip = :last_ip
+            return [
+                'status' => false,
+                'message' => 'Too many attempts.'
+            ];
+        }
 
+        // VERIFY HASHED OTP
+
+        if(!password_verify($otp, $otpRow['otp'])){
+
+            $attemptQuery = "
+                UPDATE user_otps
+                SET attempts = attempts + 1
                 WHERE id = :id
             ";
 
-            $stmt =
-            $this->conn->prepare($query);
+            $attemptStmt = $this->conn->prepare($attemptQuery);
 
-            $stmt->execute([
-
-                ':last_ip' =>
-                $_SERVER['REMOTE_ADDR'] ?? null,
-
-                ':id' =>
-                $user['id']
+            $attemptStmt->execute([
+                ':id' => $otpRow['id']
             ]);
 
-            /*
-            |------------------------------------------------------------------
-            | INITIALIZE SESSION
-            |------------------------------------------------------------------
-            */
-
-            initializeSessionSecurity($user);
-
-            /*
-            |------------------------------------------------------------------
-            | LOGIN ACTIVITY
-            |------------------------------------------------------------------
-            */
-
-            $this->recordLoginActivity(
-
-                $user['id'],
-
-                'success'
-            );
-
-            clearOtpSession();
-
             logSecurityEvent(
-
-                $user['id'],
-
-                'client_login_success',
-
-                'info',
-
-                'Client login successful'
+                'INVALID_LOGIN_OTP',
+                'Invalid login OTP',
+                [
+                    'phone' => $phone
+                ]
             );
 
-            $_SESSION['success'] =
-            'Login successful.';
-
-            redirect('client/dashboard.php');
-
-        } catch (Exception $e) {
-
-            error_log($e->getMessage());
-
-            $_SESSION['error'] =
-            'Verification failed.';
-
-            redirect('phone-login.php');
+            return [
+                'status' => false,
+                'message' => 'Invalid OTP.'
+            ];
         }
+
+        // MARK USED
+
+        $usedQuery = "
+            UPDATE user_otps
+            SET is_used = 1
+            WHERE id = :id
+        ";
+
+        $usedStmt = $this->conn->prepare($usedQuery);
+
+        $usedStmt->execute([
+            ':id' => $otpRow['id']
+        ]);
+
+        // CREATE SESSION
+
+        createUserSession($user);
+
+        // UPDATE LAST LOGIN
+
+        $this->userModel->updateLastLogin($user['id']);
+
+        return [
+            'status' => true,
+            'message' => 'Login successful.'
+        ];
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | ADMIN LOGIN
-    |--------------------------------------------------------------------------
-    */
+    // ============================================
+    // ADMIN LOGIN
+    // ============================================
 
-    public function adminLogin()
+    public function adminLogin($email, $password)
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $email = sanitize($email);
 
-            redirect('admin/login.php');
+        if(!checkRateLimit('admin_login', 3, 600)){
+
+            logSecurityEvent(
+                'ADMIN_LOGIN_LIMIT',
+                'Admin login blocked',
+                [
+                    'email' => $email
+                ]
+            );
+
+            return [
+                'status' => false,
+                'message' => 'Too many login attempts.'
+            ];
         }
 
-        validateCsrf();
+        $admin = $this->userModel->findByEmail($email);
 
-        if (!adminLoginRateLimit()) {
+        if(
+            !$admin ||
+            $admin['role'] !== 'admin'
+        ){
 
-            $_SESSION['error'] =
-            'Too many login attempts.';
+            incrementRateLimit('admin_login');
 
-            redirect('admin/login.php');
+            return [
+                'status' => false,
+                'message' => 'Invalid credentials.'
+            ];
         }
 
-        $email = sanitize(
-            $_POST['email'] ?? ''
+        // ACCOUNT STATUS
+
+        if($admin['status'] !== 'active'){
+
+            return [
+                'status' => false,
+                'message' => 'Admin account disabled.'
+            ];
+        }
+
+        // ACCOUNT LOCK
+
+        if(
+            !empty($admin['locked_until']) &&
+            strtotime($admin['locked_until']) > time()
+        ){
+
+            return [
+                'status' => false,
+                'message' => 'Account temporarily locked.'
+            ];
+        }
+
+        // PASSWORD VERIFY
+
+        if(!password_verify($password, $admin['password'])){
+
+            $this->userModel->incrementFailedAttempts($admin['id']);
+
+            incrementRateLimit('admin_login');
+
+            logSecurityEvent(
+                'INVALID_ADMIN_LOGIN',
+                'Invalid admin password',
+                [
+                    'email' => $email
+                ]
+            );
+
+            return [
+                'status' => false,
+                'message' => 'Invalid credentials.'
+            ];
+        }
+
+        // RESET FAILED ATTEMPTS
+
+        $this->userModel->resetAttempts($admin['id']);
+
+        // CREATE ADMIN SESSION
+
+        createAdminSession($admin);
+
+        // EMAIL ALERT
+
+        sendAdminLoginAlert(
+            $admin['email'],
+            $admin['full_name']
         );
 
-        $password =
-        $_POST['password'] ?? '';
-
-        if (
-            empty($email)
-            ||
-            empty($password)
-        ) {
-
-            $_SESSION['error'] =
-            'All fields are required.';
-
-            redirect('admin/login.php');
-        }
-
-        try {
-
-            $query = "
-
-                SELECT *
-
-                FROM users
-
-                WHERE email = :email
-
-                AND role = 'admin'
-
-                LIMIT 1
-            ";
-
-            $stmt =
-            $this->conn->prepare($query);
-
-            $stmt->execute([
-
-                ':email' => $email
-            ]);
-
-            $admin =
-            $stmt->fetch();
-
-            if (!$admin) {
-
-                $_SESSION['error'] =
-                'Invalid credentials.';
-
-                redirect('admin/login.php');
-            }
-
-            /*
-            |------------------------------------------------------------------
-            | LOCKED ACCOUNT
-            |------------------------------------------------------------------
-            */
-
-            if (
-                !empty($admin['locked_until'])
-                &&
-                strtotime($admin['locked_until']) > time()
-            ) {
-
-                $_SESSION['error'] =
-                'Account temporarily locked.';
-
-                redirect('admin/login.php');
-            }
-
-            /*
-            |------------------------------------------------------------------
-            | PASSWORD VERIFY
-            |------------------------------------------------------------------
-            */
-
-            if (
-                !verifyPassword(
-                    $password,
-                    $admin['password']
-                )
-            ) {
-
-                $this->incrementFailedAttempts(
-                    $admin['id']
-                );
-
-                $this->recordLoginActivity(
-
-                    $admin['id'],
-
-                    'failed'
-                );
-
-                logSecurityEvent(
-
-                    $admin['id'],
-
-                    'admin_login_failed',
-
-                    'warning',
-
-                    'Invalid admin password'
-                );
-
-                $_SESSION['error'] =
-                'Invalid credentials.';
-
-                redirect('admin/login.php');
-            }
-
-            /*
-            |------------------------------------------------------------------
-            | ACTIVE CHECK
-            |------------------------------------------------------------------
-            */
-
-            if ($admin['status'] !== 'active') {
-
-                $_SESSION['error'] =
-                'Account inactive.';
-
-                redirect('admin/login.php');
-            }
-
-            /*
-            |------------------------------------------------------------------
-            | RESET ATTEMPTS
-            |------------------------------------------------------------------
-            */
-
-            $this->resetFailedAttempts(
-                $admin['id']
-            );
-
-            /*
-            |------------------------------------------------------------------
-            | INIT SESSION
-            |------------------------------------------------------------------
-            */
-
-            initializeSessionSecurity($admin);
-
-            $_SESSION['is_admin'] = true;
-
-            $_SESSION['admin_ip'] =
-            $_SERVER['REMOTE_ADDR'] ?? null;
-
-            $_SESSION['admin_user_agent'] =
-            $_SERVER['HTTP_USER_AGENT'] ?? null;
-
-            /*
-            |------------------------------------------------------------------
-            | LOGIN ACTIVITY
-            |------------------------------------------------------------------
-            */
-
-            $this->recordLoginActivity(
-
-                $admin['id'],
-
-                'success'
-            );
-
-            /*
-            |------------------------------------------------------------------
-            | EMAIL ALERT
-            |------------------------------------------------------------------
-            */
-
-            sendAdminLoginAlert(
-
-                $admin['email'],
-
-                $admin['full_name']
-            );
-
-            logSecurityEvent(
-
-                $admin['id'],
-
-                'admin_login_success',
-
-                'info',
-
-                'Admin login successful'
-            );
-
-            $_SESSION['success'] =
-            'Welcome back Admin.';
-
-            redirect('admin/dashboard.php');
-
-        } catch (Exception $e) {
-
-            error_log($e->getMessage());
-
-            $_SESSION['error'] =
-            'Login failed.';
-
-            redirect('admin/login.php');
-        }
+        logAdminAction(
+            $admin['id'],
+            'ADMIN_LOGIN',
+            'Admin logged in'
+        );
+
+        clearRateLimit('admin_login');
+
+        return [
+            'status' => true,
+            'message' => 'Admin login successful.'
+        ];
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | LOGOUT
-    |--------------------------------------------------------------------------
-    */
+    // ============================================
+    // FORGOT PASSWORD
+    // ============================================
+
+    public function forgotPassword($email)
+    {
+        $email = sanitize($email);
+
+        $user = $this->userModel->findByEmail($email);
+
+        if(!$user){
+
+            return [
+                'status' => false,
+                'message' => 'User not found.'
+            ];
+        }
+
+        // GENERATE OTP
+
+        $otp = generateOtp();
+
+        // SAVE RESET OTP
+
+        $this->userModel->saveOtp(
+            $user['id'],
+            $otp,
+            'password_reset'
+        );
+
+        // SEND EMAIL
+
+        sendPasswordResetOtp(
+            $user['email'],
+            $otp,
+            $user['full_name']
+        );
+
+        return [
+            'status' => true,
+            'message' => 'Reset OTP sent.'
+        ];
+    }
+
+    // ============================================
+    // VERIFY RESET OTP
+    // ============================================
+
+    public function verifyResetOtp($email, $otp)
+    {
+        $email = sanitize($email);
+        $otp   = sanitize($otp);
+
+        $user = $this->userModel->findByEmail($email);
+
+        if(!$user){
+
+            return [
+                'status' => false,
+                'message' => 'User not found.'
+            ];
+        }
+
+        $query = "
+            SELECT *
+            FROM user_otps
+            WHERE user_id = :user_id
+            AND purpose = 'password_reset'
+            AND is_used = 0
+            AND expires_at > NOW()
+            ORDER BY id DESC
+            LIMIT 1
+        ";
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->execute([
+            ':user_id' => $user['id']
+        ]);
+
+        $otpRow = $stmt->fetch();
+
+        if(!$otpRow){
+
+            return [
+                'status' => false,
+                'message' => 'OTP expired.'
+            ];
+        }
+
+        // ATTEMPT LIMIT
+
+        if($otpRow['attempts'] >= 5){
+
+            return [
+                'status' => false,
+                'message' => 'Too many attempts.'
+            ];
+        }
+
+        // VERIFY HASHED OTP
+
+        if(!password_verify($otp, $otpRow['otp'])){
+
+            $attemptQuery = "
+                UPDATE user_otps
+                SET attempts = attempts + 1
+                WHERE id = :id
+            ";
+
+            $attemptStmt = $this->conn->prepare($attemptQuery);
+
+            $attemptStmt->execute([
+                ':id' => $otpRow['id']
+            ]);
+
+            return [
+                'status' => false,
+                'message' => 'Invalid OTP.'
+            ];
+        }
+
+        // MARK USED
+
+        $usedQuery = "
+            UPDATE user_otps
+            SET is_used = 1
+            WHERE id = :id
+        ";
+
+        $usedStmt = $this->conn->prepare($usedQuery);
+
+        $usedStmt->execute([
+            ':id' => $otpRow['id']
+        ]);
+
+        // SESSION FLAGS
+
+        $_SESSION['password_reset_verified'] = true;
+
+        $_SESSION['password_reset_user_id'] = $user['id'];
+
+        return [
+            'status' => true,
+            'message' => 'OTP verified.'
+        ];
+    }
+
+    // ============================================
+    // RESET PASSWORD
+    // ============================================
+
+    public function resetPassword(
+        $newPassword,
+        $confirmPassword
+    ){
+
+        if(
+            !isset($_SESSION['password_reset_verified']) ||
+            !isset($_SESSION['password_reset_user_id'])
+        ){
+
+            return [
+                'status' => false,
+                'message' => 'Unauthorized request.'
+            ];
+        }
+
+        if($newPassword !== $confirmPassword){
+
+            return [
+                'status' => false,
+                'message' => 'Passwords do not match.'
+            ];
+        }
+
+        if(strlen($newPassword) < 8){
+
+            return [
+                'status' => false,
+                'message' => 'Password too short.'
+            ];
+        }
+
+        $userId = $_SESSION['password_reset_user_id'];
+
+        // HASH PASSWORD
+
+        $hashedPassword = password_hash(
+            $newPassword,
+            PASSWORD_DEFAULT
+        );
+
+        // UPDATE PASSWORD
+
+        $query = "
+            UPDATE users
+            SET password = :password
+            WHERE id = :id
+        ";
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->execute([
+            ':password' => $hashedPassword,
+            ':id'       => $userId
+        ]);
+
+        // DESTROY ALL SESSIONS
+
+        invalidateUserSessions($userId);
+
+        // SUCCESS EMAIL
+
+        $user = $this->userModel->findById($userId);
+
+        sendPasswordResetSuccess(
+            $user['email'],
+            $user['full_name']
+        );
+
+        // REMOVE RESET FLAGS
+
+        unset($_SESSION['password_reset_verified']);
+        unset($_SESSION['password_reset_user_id']);
+
+        // DESTROY SESSION
+
+        destroySession();
+
+        return [
+            'status' => true,
+            'message' => 'Password reset successful.'
+        ];
+    }
+
+    // ============================================
+    // RESEND OTP
+    // ============================================
+
+    public function resendOtp($phone)
+    {
+        return $this->sendLoginOtp($phone);
+    }
+
+    // ============================================
+    // LOGOUT
+    // ============================================
 
     public function logout()
     {
-        if (isLoggedIn()) {
+        if(isset($_SESSION['user_id'])){
 
             logSecurityEvent(
-
-                currentUserId(),
-
-                'logout',
-
-                'info',
-
-                'User logout'
+                'USER_LOGOUT',
+                'User logged out',
+                [
+                    'user_id' => $_SESSION['user_id']
+                ]
             );
         }
 
         destroySession();
 
-        redirect('login.php');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | FAILED ATTEMPTS
-    |--------------------------------------------------------------------------
-    */
-
-    private function incrementFailedAttempts($userId)
-    {
-        $query = "
-
-            UPDATE users
-
-            SET failed_attempts = failed_attempts + 1
-
-            WHERE id = :id
-        ";
-
-        $stmt =
-        $this->conn->prepare($query);
-
-        $stmt->execute([
-
-            ':id' => $userId
-        ]);
-
-        /*
-        |------------------------------------------------------------------
-        | FETCH UPDATED COUNT
-        |------------------------------------------------------------------
-        */
-
-        $query = "
-
-            SELECT failed_attempts
-
-            FROM users
-
-            WHERE id = :id
-        ";
-
-        $stmt =
-        $this->conn->prepare($query);
-
-        $stmt->execute([
-
-            ':id' => $userId
-        ]);
-
-        $user =
-        $stmt->fetch();
-
-        if (
-            $user
-            &&
-            $user['failed_attempts'] >= 5
-        ) {
-
-            $lockQuery = "
-
-                UPDATE users
-
-                SET locked_until = DATE_ADD(NOW(), INTERVAL 15 MINUTE)
-
-                WHERE id = :id
-            ";
-
-            $stmt =
-            $this->conn->prepare($lockQuery);
-
-            $stmt->execute([
-
-                ':id' => $userId
-            ]);
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | RESET FAILED ATTEMPTS
-    |--------------------------------------------------------------------------
-    */
-
-    private function resetFailedAttempts($userId)
-    {
-        $query = "
-
-            UPDATE users
-
-            SET
-                failed_attempts = 0,
-                locked_until = NULL
-
-            WHERE id = :id
-        ";
-
-        $stmt =
-        $this->conn->prepare($query);
-
-        $stmt->execute([
-
-            ':id' => $userId
-        ]);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | LOGIN ACTIVITY
-    |--------------------------------------------------------------------------
-    */
-
-    private function recordLoginActivity(
-
-        $userId,
-
-        $status = 'success'
-    ) {
-
-        try {
-
-            $query = "
-
-                INSERT INTO login_activity (
-
-                    user_id,
-                    ip_address,
-                    user_agent,
-                    login_status,
-                    device_info,
-                    login_time
-
-                ) VALUES (
-
-                    :user_id,
-                    :ip_address,
-                    :user_agent,
-                    :login_status,
-                    :device_info,
-                    NOW()
-                )
-            ";
-
-            $stmt =
-            $this->conn->prepare($query);
-
-            $stmt->execute([
-
-                ':user_id' => $userId,
-
-                ':ip_address' =>
-                $_SERVER['REMOTE_ADDR'] ?? null,
-
-                ':user_agent' =>
-                $_SERVER['HTTP_USER_AGENT'] ?? null,
-
-                ':login_status' =>
-                $status,
-
-                ':device_info' =>
-                $_SERVER['HTTP_USER_AGENT'] ?? null
-            ]);
-
-        } catch (Exception $e) {
-
-            error_log($e->getMessage());
-        }
+        return true;
     }
 }
-?>

@@ -154,6 +154,24 @@ KVN Construction Platform is a complete construction business ecosystem designed
 - [x] /public/verify-phone-otp.php
 - [x] /app/controllers/AuthController.php
 - [x] /middleware/admin.php
+- [x] /helpers/session.php
+- [x] /helpers/otp.php
+- [x] /helpers/mail.php
+- [x] /helpers/sms.php
+- [x] AuthController.php
+- [x] User.php
+- [x] public/contact.php
+
+
+## password reset flow 
+- [x] /app/controllers/AuthController.php
+- [x] /app/models/User.php
+- [x] /helpers/mail.php
+- [x] /public/forgot-password.php
+- [X] /public/reset-password.php
+- [x] /public/verify-reset-otp.php
+### [X] add S.Q.L too modify the table 
+
 ---
 
 ## Public Website Improvements //todo with codex 
@@ -197,18 +215,18 @@ modify the fllowing
 9. [x] - helpers/sms.php
 10. [x] - middleware/auth.php
 11. [x] - middleware/clients.php
-12. [ ] - middleware/guest.php
-14. [ ] - middleware/admin.php
-15. [ ] - app/contorlers/authecontroller.php
-16. [ ] - apps/models/user.php
-17. [ ] - public/login.php
-18. [ ] - public/admin/login.php
-19. [ ] - public/logout.php
-20. [ ] - public/verify-phone-otp.php
-21. [ ] - public/admin/*
-22. [ ] - public/client/*
-23. [ ] - public/estimator.php
-24. [ ] - assets/js/app.js
+12. [x] - middleware/guest.php
+14. [x] - middleware/admin.php
+15. [x] - app/contorlers/authecontroller.php
+16. [x] - apps/models/user.php
+17. [x] - public/login.php
+18. [x] - public/admin/login.php
+19. [x] - public/logout.php
+20. [x] - public/verify-phone-otp.php
+21. [X] - public/admin/*
+22. [X] - public/client/*
+23. [x] - public/estimator.php
+24. [x] - assets/js/app.js
 25. [ ] - 
 
 

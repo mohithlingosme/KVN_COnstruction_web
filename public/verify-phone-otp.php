@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
@@ -9,19 +11,42 @@
 | File:
 | /public/verify-phone-otp.php
 |--------------------------------------------------------------------------
+| SECURITY FEATURES
+|--------------------------------------------------------------------------
+| - OTP Session Validation
+| - CSRF Protection
+| - No Cache Headers
+| - Secure OTP Input
+| - Resend Cooldown
+| - OTP Attempt Tracking
+| - Honeypot Protection
+| - Secure Escaping
+|--------------------------------------------------------------------------
 */
 
 require_once '../config/app.php';
 
-require_once '../helpers/security.php';
+require_once ROOT_PATH . '/helpers/security.php';
 
-require_once '../helpers/session.php';
+require_once ROOT_PATH . '/helpers/session.php';
 
-require_once '../helpers/csrf.php';
+require_once ROOT_PATH . '/helpers/csrf.php';
 
-require_once '../helpers/otp.php';
+require_once ROOT_PATH . '/helpers/otp.php';
 
-require_once '../middleware/guest.php';
+require_once ROOT_PATH . '/middleware/guest.php';
+
+/*
+|--------------------------------------------------------------------------
+| NO CACHE HEADERS
+|--------------------------------------------------------------------------
+*/
+
+header('Cache-Control: no-store, no-cache, must-revalidate');
+
+header('Pragma: no-cache');
+
+header('Expires: 0');
 
 /*
 |--------------------------------------------------------------------------
@@ -32,9 +57,28 @@ require_once '../middleware/guest.php';
 if (!isOtpSessionValid()) {
 
     $_SESSION['error'] =
-    'OTP session expired.';
+    'OTP session expired. Please login again.';
 
-    redirect('phone-login.php');
+    redirect('login.php');
+}
+
+/*
+|--------------------------------------------------------------------------
+| OTP EXPIRY CHECK
+|--------------------------------------------------------------------------
+*/
+
+$otpCreatedAt =
+$_SESSION['otp_created_at'] ?? 0;
+
+if ((time() - $otpCreatedAt) > 300) {
+
+    destroyOtpSession();
+
+    $_SESSION['error'] =
+    'OTP expired. Please request a new OTP.';
+
+    redirect('login.php');
 }
 
 /*
@@ -53,19 +97,43 @@ $pageTitle =
 */
 
 $error =
-$_SESSION['error'] ?? null;
+$_SESSION['error'] ?? '';
 
 $success =
-$_SESSION['success'] ?? null;
+$_SESSION['success'] ?? '';
 
 unset($_SESSION['error']);
 
 unset($_SESSION['success']);
 
+/*
+|--------------------------------------------------------------------------
+| SESSION DATA
+|--------------------------------------------------------------------------
+*/
+
 $phone =
 $_SESSION['otp_phone'] ?? '';
 
-include '../app/views/layouts/header.php';
+$attempts =
+(int) ($_SESSION['otp_attempts'] ?? 0);
+
+$maxAttempts =
+5;
+
+$remainingAttempts =
+max(0, $maxAttempts - $attempts);
+
+/*
+|--------------------------------------------------------------------------
+| RESEND TIMER
+|--------------------------------------------------------------------------
+*/
+
+$resendCooldown =
+30;
+
+include ROOT_PATH . '/app/views/layouts/header.php';
 
 ?>
 
@@ -83,21 +151,19 @@ include '../app/views/layouts/header.php';
 
                 <div class="otp-card">
 
-                    <!-- ============================== -->
                     <!-- HEADER -->
-                    <!-- ============================== -->
 
                     <div class="otp-header text-center">
 
                         <div class="otp-icon">
 
-                            <i class="bi bi-shield-lock"></i>
+                            <i class="bi bi-shield-lock-fill"></i>
 
                         </div>
 
                         <h1>
 
-                            OTP Verification
+                            Verify OTP
 
                         </h1>
 
@@ -107,8 +173,7 @@ include '../app/views/layouts/header.php';
 
                             <strong>
 
-                                +91
-                                <?php echo escape($phone); ?>
+                                +91 <?php echo escape($phone); ?>
 
                             </strong>
 
@@ -116,11 +181,9 @@ include '../app/views/layouts/header.php';
 
                     </div>
 
-                    <!-- ============================== -->
                     <!-- ALERTS -->
-                    <!-- ============================== -->
 
-                    <?php if($error): ?>
+                    <?php if (!empty($error)): ?>
 
                         <div class="alert alert-danger">
 
@@ -130,7 +193,7 @@ include '../app/views/layouts/header.php';
 
                     <?php endif; ?>
 
-                    <?php if($success): ?>
+                    <?php if (!empty($success)): ?>
 
                         <div class="alert alert-success">
 
@@ -140,17 +203,42 @@ include '../app/views/layouts/header.php';
 
                     <?php endif; ?>
 
-                    <!-- ============================== -->
+                    <!-- ATTEMPTS -->
+
+                    <div class="attempt-box text-center">
+
+                        Attempts Remaining:
+
+                        <strong>
+
+                            <?php echo $remainingAttempts; ?>
+
+                        </strong>
+
+                    </div>
+
                     <!-- OTP FORM -->
-                    <!-- ============================== -->
 
                     <form
                         action="auth/verify-phone-otp-handler.php"
                         method="POST"
                         id="otpForm"
+                        autocomplete="off"
                     >
 
                         <?php echo csrfField(); ?>
+
+                        <!-- HONEYPOT -->
+
+                        <input
+                            type="text"
+                            name="website"
+                            class="d-none"
+                            tabindex="-1"
+                            autocomplete="off"
+                        >
+
+                        <!-- OTP -->
 
                         <div class="otp-input-wrapper">
 
@@ -160,7 +248,10 @@ include '../app/views/layouts/header.php';
                                 id="otp"
                                 class="otp-input"
                                 maxlength="6"
+                                minlength="6"
                                 pattern="[0-9]{6}"
+                                inputmode="numeric"
+                                autocomplete="one-time-code"
                                 placeholder="------"
                                 required
                                 autofocus
@@ -168,9 +259,12 @@ include '../app/views/layouts/header.php';
 
                         </div>
 
+                        <!-- BUTTON -->
+
                         <button
                             type="submit"
                             class="btn-main w-100"
+                            id="verifyBtn"
                         >
 
                             Verify OTP
@@ -179,13 +273,11 @@ include '../app/views/layouts/header.php';
 
                     </form>
 
-                    <!-- ============================== -->
                     <!-- RESEND -->
-                    <!-- ============================== -->
 
                     <div class="otp-footer text-center">
 
-                        <p>
+                        <p class="mb-2">
 
                             Didn't receive OTP?
 
@@ -198,9 +290,10 @@ include '../app/views/layouts/header.php';
                         >
 
                             Resend OTP in
+
                             <span id="countdown">
 
-                                30
+                                <?php echo $resendCooldown; ?>
 
                             </span>s
 
@@ -208,9 +301,7 @@ include '../app/views/layouts/header.php';
 
                     </div>
 
-                    <!-- ============================== -->
                     <!-- BACK -->
-                    <!-- ============================== -->
 
                     <div class="text-center mt-4">
 
@@ -238,7 +329,7 @@ include '../app/views/layouts/header.php';
 </section>
 
 <!-- ================================= -->
-<!-- OTP STYLES -->
+<!-- PAGE STYLES -->
 <!-- ================================= -->
 
 <style>
@@ -262,7 +353,7 @@ include '../app/views/layouts/header.php';
 
     padding:45px;
 
-    border-radius:20px;
+    border-radius:24px;
 
     box-shadow:
     0 10px 40px rgba(0,0,0,0.08);
@@ -313,6 +404,15 @@ include '../app/views/layouts/header.php';
 .otp-header p{
 
     color:#6b7280;
+}
+
+.attempt-box{
+
+    margin-bottom:20px;
+
+    color:#6b7280;
+
+    font-size:15px;
 }
 
 .otp-input-wrapper{
@@ -442,67 +542,136 @@ include '../app/views/layouts/header.php';
 
 <script>
 
-let countdown = 30;
+document.addEventListener('DOMContentLoaded', function(){
 
-const resendBtn =
-document.getElementById('resendBtn');
+    /*
+    |--------------------------------------------------------------------------
+    | ELEMENTS
+    |--------------------------------------------------------------------------
+    */
 
-const countdownText =
-document.getElementById('countdown');
+    const otpInput =
+    document.getElementById('otp');
 
-/*
-|--------------------------------------------------------------------------
-| COUNTDOWN
-|--------------------------------------------------------------------------
-*/
+    const otpForm =
+    document.getElementById('otpForm');
 
-const timer = setInterval(() => {
+    const resendBtn =
+    document.getElementById('resendBtn');
 
-    countdown--;
+    const countdownText =
+    document.getElementById('countdown');
 
-    countdownText.innerText =
-    countdown;
+    /*
+    |--------------------------------------------------------------------------
+    | RESEND COUNTDOWN
+    |--------------------------------------------------------------------------
+    */
 
-    if(countdown <= 0){
+    let countdown =
+    <?php echo $resendCooldown; ?>;
 
-        clearInterval(timer);
+    const timer =
+    setInterval(() => {
 
-        resendBtn.disabled = false;
+        countdown--;
 
-        resendBtn.innerHTML =
-        'Resend OTP';
-    }
+        countdownText.innerText =
+        countdown;
 
-}, 1000);
+        if(countdown <= 0){
 
-/*
-|--------------------------------------------------------------------------
-| RESEND OTP
-|--------------------------------------------------------------------------
-*/
+            clearInterval(timer);
 
-resendBtn.addEventListener('click', function(){
+            resendBtn.disabled =
+            false;
 
-    if(this.disabled) return;
+            resendBtn.innerHTML =
+            'Resend OTP';
+        }
 
-    window.location.href =
-    'auth/resend-otp-handler.php';
-});
+    }, 1000);
 
-/*
-|--------------------------------------------------------------------------
-| OTP INPUT VALIDATION
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | OTP INPUT FILTER
+    |--------------------------------------------------------------------------
+    */
 
-document.getElementById('otp')
+    otpInput.addEventListener('input', function(){
 
-.addEventListener('input', function(){
+        this.value =
+        this.value.replace(/[^0-9]/g, '');
 
-    this.value =
-    this.value.replace(/[^0-9]/g, '');
+        /*
+        |--------------------------------------------------------------------------
+        | AUTO SUBMIT
+        |--------------------------------------------------------------------------
+        */
+
+        if(this.value.length === 6){
+
+            otpForm.submit();
+        }
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESEND OTP
+    |--------------------------------------------------------------------------
+    */
+
+    resendBtn.addEventListener('click', function(){
+
+        if(this.disabled){
+
+            return;
+        }
+
+        resendBtn.disabled = true;
+
+        fetch(
+
+            'auth/resend-otp-handler.php',
+
+            {
+
+                method: 'POST',
+
+                headers: {
+
+                    'Content-Type':
+                    'application/x-www-form-urlencoded'
+                },
+
+                body:
+                'csrf_token=<?php echo csrfToken(); ?>'
+            }
+
+        )
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            if(data.success){
+
+                location.reload();
+
+            }else{
+
+                alert(data.message || 'Unable to resend OTP.');
+            }
+        })
+
+        .catch(() => {
+
+            alert('Something went wrong.');
+        });
+    });
+
 });
 
 </script>
 
-<?php include '../app/views/layouts/footer.php'; ?>
+<?php include ROOT_PATH . '/app/views/layouts/footer.php'; ?>

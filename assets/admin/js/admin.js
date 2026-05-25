@@ -1,5 +1,6 @@
 /* =========================================================
-   KVN CONSTRUCTION — ADMIN PANEL JS
+   KVN CONSTRUCTION PLATFORM
+   COMPLETE ADMIN PANEL SCRIPT
 ========================================================= */
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -19,6 +20,16 @@ document.addEventListener('DOMContentLoaded', function(){
     initializeTableSearch();
 
     initializeAutoDismissAlerts();
+
+    initializeCharacterCounter();
+
+    initializeSelectAll();
+
+    initializeFormValidation();
+
+    initializeModalClose();
+
+    initializeMobileSidebarClose();
 });
 
 /* =========================================================
@@ -33,17 +44,59 @@ function initializeSidebar()
     const toggleBtn =
     document.getElementById('sidebarToggle');
 
-    if(toggleBtn){
+    if(!sidebar || !toggleBtn){
 
-        toggleBtn.addEventListener('click', function(){
-
-            sidebar.classList.toggle('active');
-        });
+        return;
     }
+
+    toggleBtn.addEventListener('click', function(){
+
+        sidebar.classList.toggle('active');
+    });
 }
 
 /* =========================================================
-   DROPDOWN HANDLING
+   MOBILE SIDEBAR CLOSE
+========================================================= */
+
+function initializeMobileSidebarClose()
+{
+    document.addEventListener('click', function(e){
+
+        const sidebar =
+        document.querySelector('.admin-sidebar');
+
+        const toggle =
+        document.getElementById('sidebarToggle');
+
+        if(
+
+            window.innerWidth < 992
+
+            &&
+
+            sidebar
+
+            &&
+
+            sidebar.classList.contains('active')
+
+            &&
+
+            !sidebar.contains(e.target)
+
+            &&
+
+            !toggle.contains(e.target)
+        ){
+
+            sidebar.classList.remove('active');
+        }
+    });
+}
+
+/* =========================================================
+   DROPDOWNS
 ========================================================= */
 
 function initializeDropdowns()
@@ -53,13 +106,34 @@ function initializeDropdowns()
 
     dropdowns.forEach(function(dropdown){
 
-        dropdown.addEventListener('click', function(){
+        dropdown.addEventListener('click', function(e){
+
+            e.preventDefault();
+
+            e.stopPropagation();
 
             const parent =
             this.parentElement;
 
+            closeAllDropdowns();
+
             parent.classList.toggle('show');
         });
+    });
+
+    document.addEventListener('click', function(){
+
+        closeAllDropdowns();
+    });
+}
+
+function closeAllDropdowns()
+{
+    document.querySelectorAll('.dropdown')
+
+    .forEach(function(dropdown){
+
+        dropdown.classList.remove('show');
     });
 }
 
@@ -69,25 +143,57 @@ function initializeDropdowns()
 
 function initializeAlerts()
 {
-    const alerts =
-    document.querySelectorAll('.alert-close');
+    document.addEventListener('click', function(e){
 
-    alerts.forEach(function(button){
-
-        button.addEventListener('click', function(){
+        if(e.target.classList.contains('alert-close')){
 
             const alert =
-            this.closest('.alert');
+            e.target.closest('.alert');
 
-            alert.style.opacity = '0';
-
-            setTimeout(function(){
-
-                alert.remove();
-
-            },300);
-        });
+            dismissElement(alert);
+        }
     });
+}
+
+/* =========================================================
+   AUTO DISMISS ALERTS
+========================================================= */
+
+function initializeAutoDismissAlerts()
+{
+    const alerts =
+    document.querySelectorAll('.alert-auto-dismiss');
+
+    alerts.forEach(function(alert){
+
+        setTimeout(function(){
+
+            dismissElement(alert);
+
+        },4000);
+    });
+}
+
+/* =========================================================
+   DISMISS ELEMENT
+========================================================= */
+
+function dismissElement(element)
+{
+    if(!element){
+
+        return;
+    }
+
+    element.style.opacity = '0';
+
+    element.style.transition = '0.3s';
+
+    setTimeout(function(){
+
+        element.remove();
+
+    },300);
 }
 
 /* =========================================================
@@ -96,44 +202,52 @@ function initializeAlerts()
 
 function initializeDeleteConfirm()
 {
-    const deleteButtons =
-    document.querySelectorAll('.btn-delete');
+    document.addEventListener('click', function(e){
 
-    deleteButtons.forEach(function(button){
+        const button =
+        e.target.closest('.btn-delete');
 
-        button.addEventListener('click', function(e){
+        if(button){
+
+            const message =
+            button.dataset.message
+            ||
+            'Are you sure you want to delete this item?';
 
             const confirmed =
-            confirm(
-                'Are you sure you want to delete this item?'
-            );
+            confirm(message);
 
             if(!confirmed){
 
                 e.preventDefault();
             }
-        });
+        }
     });
 }
 
 /* =========================================================
-   BOOTSTRAP TOOLTIPS
+   TOOLTIPS
 ========================================================= */
 
 function initializeTooltips()
 {
+    if(typeof bootstrap === 'undefined'){
+
+        return;
+    }
+
     const tooltipTriggerList =
     [].slice.call(
+
         document.querySelectorAll(
+
             '[data-bs-toggle="tooltip"]'
         )
     );
 
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
+    tooltipTriggerList.map(function(element){
 
-        return new bootstrap.Tooltip(
-            tooltipTriggerEl
-        );
+        return new bootstrap.Tooltip(element);
     });
 }
 
@@ -154,6 +268,18 @@ function initializeImagePreview()
             e.target.files[0];
 
             if(!file){
+
+                return;
+            }
+
+            if(!file.type.startsWith('image/')){
+
+                showToast(
+
+                    'Invalid image file.',
+
+                    'danger'
+                );
 
                 return;
             }
@@ -194,78 +320,108 @@ function initializeTableSearch()
 
     searchInputs.forEach(function(input){
 
-        input.addEventListener('keyup', function(){
+        input.addEventListener(
 
-            const searchValue =
-            this.value.toLowerCase();
+            'keyup',
 
-            const table =
-            document.querySelector(
-                this.dataset.table
-            );
+            debounce(function(){
 
-            if(!table){
+                const value =
+                input.value.toLowerCase();
 
-                return;
-            }
+                const table =
+                document.querySelector(
+                    input.dataset.table
+                );
 
-            const rows =
-            table.querySelectorAll('tbody tr');
+                if(!table){
 
-            rows.forEach(function(row){
+                    return;
+                }
 
-                const text =
-                row.innerText.toLowerCase();
+                const rows =
+                table.querySelectorAll('tbody tr');
 
-                row.style.display =
-                text.includes(searchValue)
-                ? ''
-                : 'none';
-            });
-        });
+                rows.forEach(function(row){
+
+                    const text =
+                    row.innerText.toLowerCase();
+
+                    row.style.display =
+
+                    text.includes(value)
+
+                    ? ''
+
+                    : 'none';
+                });
+
+            },300)
+        );
     });
 }
 
 /* =========================================================
-   AUTO DISMISS ALERTS
+   DEBOUNCE
 ========================================================= */
 
-function initializeAutoDismissAlerts()
+function debounce(callback, delay)
 {
-    const alerts =
-    document.querySelectorAll('.alert-auto-dismiss');
+    let timeout;
 
-    alerts.forEach(function(alert){
+    return function(){
 
-        setTimeout(function(){
+        clearTimeout(timeout);
 
-            alert.style.opacity = '0';
+        timeout = setTimeout(
 
-            setTimeout(function(){
+            callback,
 
-                alert.remove();
-
-            },300);
-
-        },4000);
-    });
+            delay
+        );
+    };
 }
 
 /* =========================================================
    AJAX HELPER
 ========================================================= */
 
-async function ajaxRequest(url, method = 'GET', data = null)
+async function ajaxRequest(
+
+    url,
+
+    method = 'GET',
+
+    data = null
+)
 {
+    showLoader();
+
+    const csrfToken =
+    document.querySelector(
+
+        'meta[name="csrf-token"]'
+    )?.content;
+
     const options = {
 
         method: method,
 
         headers: {
 
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With':
+            'XMLHttpRequest',
+
+            'Accept':
+            'application/json'
         }
     };
+
+    if(csrfToken){
+
+        options.headers['X-CSRF-TOKEN'] =
+        csrfToken;
+    }
 
     if(data){
 
@@ -281,31 +437,35 @@ async function ajaxRequest(url, method = 'GET', data = null)
         const response =
         await fetch(url, options);
 
-        return await response.json();
+        const result =
+        await response.json();
+
+        hideLoader();
+
+        return result;
 
     } catch(error){
 
-        console.error(
-            'AJAX ERROR:',
-            error
-        );
+        hideLoader();
+
+        console.error(error);
 
         return {
 
             success:false,
 
-            message:'Something went wrong.'
+            message:'Request failed.'
         };
     }
 }
 
 /* =========================================================
-   SHOW LOADER
+   LOADER
 ========================================================= */
 
 function showLoader()
 {
-    let loader =
+    const loader =
     document.getElementById('globalLoader');
 
     if(loader){
@@ -314,13 +474,9 @@ function showLoader()
     }
 }
 
-/* =========================================================
-   HIDE LOADER
-========================================================= */
-
 function hideLoader()
 {
-    let loader =
+    const loader =
     document.getElementById('globalLoader');
 
     if(loader){
@@ -330,7 +486,7 @@ function hideLoader()
 }
 
 /* =========================================================
-   TOAST NOTIFICATION
+   TOAST
 ========================================================= */
 
 function showToast(message, type = 'success')
@@ -341,8 +497,11 @@ function showToast(message, type = 'success')
     toast.className =
     `admin-toast ${type}`;
 
-    toast.innerHTML =
-    message;
+    toast.innerHTML = `
+        <div class="toast-content">
+            ${message}
+        </div>
+    `;
 
     document.body.appendChild(toast);
 
@@ -369,10 +528,13 @@ function showToast(message, type = 'success')
    PASSWORD TOGGLE
 ========================================================= */
 
-function togglePassword(inputId, icon)
+function togglePassword(inputId, iconId)
 {
     const input =
     document.getElementById(inputId);
+
+    const icon =
+    document.getElementById(iconId);
 
     if(!input){
 
@@ -383,17 +545,23 @@ function togglePassword(inputId, icon)
 
         input.type = 'text';
 
-        icon.classList.remove('bi-eye');
+        if(icon){
 
-        icon.classList.add('bi-eye-slash');
+            icon.classList.remove('bi-eye');
+
+            icon.classList.add('bi-eye-slash');
+        }
 
     }else{
 
         input.type = 'password';
 
-        icon.classList.remove('bi-eye-slash');
+        if(icon){
 
-        icon.classList.add('bi-eye');
+            icon.classList.remove('bi-eye-slash');
+
+            icon.classList.add('bi-eye');
+        }
     }
 }
 
@@ -403,22 +571,28 @@ function togglePassword(inputId, icon)
 
 function initializeCharacterCounter()
 {
-    const textareas =
+    const inputs =
     document.querySelectorAll('[data-counter]');
 
-    textareas.forEach(function(textarea){
+    inputs.forEach(function(input){
 
         const counter =
         document.querySelector(
-            textarea.dataset.counter
+            input.dataset.counter
         );
 
-        textarea.addEventListener('input', function(){
+        if(counter){
+
+            counter.innerText =
+            input.value.length;
+        }
+
+        input.addEventListener('input', function(){
 
             if(counter){
 
                 counter.innerText =
-                textarea.value.length;
+                input.value.length;
             }
         });
     });
@@ -428,23 +602,30 @@ function initializeCharacterCounter()
    SLUG GENERATOR
 ========================================================= */
 
-function generateSlug(input, target)
+function generateSlug(input, targetId)
 {
     const slug =
     input.value
 
     .toLowerCase()
 
+    .trim()
+
     .replace(/[^\w ]+/g,'')
 
-    .replace(/ +/g,'-');
+    .replace(/\s+/g,'-');
 
-    document.getElementById(target).value =
-    slug;
+    const target =
+    document.getElementById(targetId);
+
+    if(target){
+
+        target.value = slug;
+    }
 }
 
 /* =========================================================
-   SELECT ALL CHECKBOX
+   SELECT ALL
 ========================================================= */
 
 function initializeSelectAll()
@@ -459,13 +640,58 @@ function initializeSelectAll()
 
     selectAll.addEventListener('change', function(){
 
-        const checkboxes =
-        document.querySelectorAll('.row-checkbox');
+        document.querySelectorAll('.row-checkbox')
 
-        checkboxes.forEach(function(checkbox){
+        .forEach(function(checkbox){
 
             checkbox.checked =
             selectAll.checked;
         });
+    });
+}
+
+/* =========================================================
+   FORM VALIDATION
+========================================================= */
+
+function initializeFormValidation()
+{
+    const forms =
+    document.querySelectorAll('.needs-validation');
+
+    forms.forEach(function(form){
+
+        form.addEventListener('submit', function(e){
+
+            if(!form.checkValidity()){
+
+                e.preventDefault();
+
+                e.stopPropagation();
+            }
+
+            form.classList.add('was-validated');
+        });
+    });
+}
+
+/* =========================================================
+   MODAL CLOSE
+========================================================= */
+
+function initializeModalClose()
+{
+    document.addEventListener('click', function(e){
+
+        if(e.target.classList.contains('modal-close')){
+
+            const modal =
+            e.target.closest('.modal');
+
+            if(modal){
+
+                modal.style.display = 'none';
+            }
+        }
     });
 }

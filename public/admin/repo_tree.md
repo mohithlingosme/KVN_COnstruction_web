@@ -1,4 +1,4 @@
-[ ]/public/admin/
+[X]/public/admin/
         │
    [x]  ├── login.php
    [x]  ├── dashboard.php
@@ -11,104 +11,104 @@
         │      [x]  ├── view.php
         │      [x]  └── delete.php
         │
-   [ ]  ├── /clients/
+   [x]  ├── /clients/
         │      [x]  ├── index.php
-        │      [ ]  ├── view.php
-        │      [ ]  ├── projects.php
-        │      [ ]  ├── payments.php
-        │      [ ]  └── feedback.php
+        │      [x]  ├── view.php
+        │      [x]  ├── projects.php
+        │      [x]  ├── payments.php
+        │      [x]  └── feedback.php
         │
-   [ ]  ├── /leads/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── create.php
-        │      [ ]  ├── edit.php
-        │      [ ]  ├── view.php
-        │      [ ]  └── pipeline.php
+   [x]  ├── /leads/
+        │      [x]  ├── index.php
+        │      [x]  ├── create.php
+        │      [x]  ├── edit.php
+        │      [x]  ├── view.php
+        │      [x]  └── pipeline.php
         │
-   [ ]  ├── /projects/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── create.php
-        │      [ ]  ├── edit.php
-        │      [ ]  ├── view.php
-        │      [ ]  ├── gallery.php
-        │      [ ]  └── milestones.php
+   [x]  ├── /projects/
+        │      [x]  ├── index.php
+        │      [x]  ├── create.php
+        │      [x]  ├── edit.php
+        │      [x]  ├── view.php
+        │      [x]  ├── gallery.php
+        │      [x]  └── milestones.php
         │
-   [ ]  ├── /estimators/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── requests.php
-        │      [ ]  ├── pricing.php
-        │      [ ]  ├── packages.php
-        │      [ ]  └── materials.php
+   [x]  ├── /estimators/
+        │      [x]  ├── index.php
+        │      [x]  ├── requests.php
+        │      [x]  ├── pricing.php
+        │      [x]  ├── packages.php
+        │      [x]  └── materials.php
         │
-   [ ]  ├── /quotations/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── create.php
-        │      [ ]  ├── edit.php
-        │      [ ]  ├── pdf.php
-        │      [ ]  └── approvals.php
+   [x]  ├── /quotations/
+        │      [x]  ├── index.php
+        │      [x]  ├── create.php
+        │      [x]  ├── edit.php
+        │      [x]  ├── pdf.php
+        │      [x]  └── approvals.php
         │
-   [ ]  ├── /blogs/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── create.php
-        │      [ ]  ├── edit.php
-        │      [ ]  ├── categories.php
-        │      [ ]  ├── tags.php
-        │      [ ]  └── comments.php
+   [x]  ├── /blogs/
+        │      [x]  ├── index.php
+        │      [x]  ├── create.php
+        │      [x]  ├── edit.php
+        │      [x]  ├── categories.php
+        │      [x]  ├── tags.php
+        │      [x]  └── comments.php
         │
-   [ ]  ├── /services/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── create.php
-        │      [ ]  └──  edit.php
+   [x]  ├── /services/
+        │      [x]  ├── index.php
+        │      [x]  ├── create.php
+        │      [x]  └──  edit.php
         │
-   [ ]  ├── /portfolio/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── create.php
-        │      [ ]  ├── edit.php
-        │      [ ]  └── featured.php
+   [x]  ├── /portfolio/
+        │      [x]  ├── index.php
+        │      [x]  ├── create.php
+        │      [x]  ├── edit.php
+        │      [x]  └── featured.php
         │
-   [ ]  ├── /testimonials/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── approvals.php
-        │      [ ]  ├── featured.php
-        │      [ ]  └── videos.php
+   [x]  ├── /testimonials/
+        │      [x]  ├── index.php
+        │      [x]  ├── approvals.php
+        │      [x]  ├── featured.php
+        │      [x]  └── videos.php
         │
-   [ ]  ├── /videos/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── create.php
-        │      [ ]  └── categories.php
+   [x]  ├── /videos/
+        │      [x]  ├── index.php
+        │      [x]  ├── create.php
+        │      [x]  └── categories.php
         │
-   [ ]  ├── /media/
-        │      [ ]  ├── index.php
-        │      [ ]  ├── uploads.php
-        │      [ ]  ├── images.php
-        │      [ ]  ├── videos.php
-        │      [ ]  └──  documents.php
+   [X]  ├── /media/
+        │      [x]  ├── index.php
+        │      [x]  ├── uploads.php
+        │      [x]  ├── images.php
+        │      [x]  ├── videos.php
+        │      [x]  └──  documents.php
         │
-   [ ]  ├── /cms/
-        │      [ ]  ├── homepage.php
-        │      [ ]  ├── about.php
-        │      [ ]  ├── contact.php
-        │      [ ]  ├── faq.php
-        │      [ ]  └──  seo.php
+   [X]  ├── /cms/
+        │      [x]  ├── homepage.php
+        │      [x]  ├── about.php
+        │      [x]  ├── contact.php
+        │      [x]  ├── faq.php
+        │      [x]  └──  seo.php
         │
-   [ ]  ├── /settings/
-        │      [ ]  ├── general.php
-        │      [ ]  ├── security.php
-        │      [ ]  ├── smtp.php
-        │      [ ]  ├── sms.php
-        │      [ ]  ├── seo.php
-        │      [ ]  └── integrations.php
+   [X]  ├── /settings/
+        │      [x]  ├── general.php
+        │      [x]  ├── security.php
+        │      [x]  ├── smtp.php
+        │      [x]  ├── sms.php
+        │      [x]  ├── seo.php
+        │      [X]  └── integrations.php
         │
-   [ ]  ├── /security/
-        │      [ ]  ├── logs.php
-        │      [ ]  ├── sessions.php
-        │      [ ]  ├── login-attempts.php
-        │      [ ]  ├── blocked-users.php
-        │      [ ]  └── audit-logs.php
+   [X]  ├── /security/
+        │      [x]  ├── logs.php
+        │      [x]  ├── sessions.php
+        │      [x]  ├── login-attempts.php
+        │      [x]  ├── blocked-users.php
+        │      [x]  └── audit-logs.php
         │
-        └── /reports/
-               [ ]  ├── revenue.php
-               [ ]  ├── leads.php
-               [ ]  ├── projects.php
-               [ ]  ├── quotations.php
-               [ ]  └── estimators.php
+   [X]  └── /reports/
+               [x]  ├── revenue.php
+               [x]  ├── leads.php
+               [x]  ├── projects.php
+               [x]  ├── quotations.php
+               [x]  └── estimators.php

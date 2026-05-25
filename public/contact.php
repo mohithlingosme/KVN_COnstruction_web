@@ -3,138 +3,373 @@
 require_once '../config/app.php';
 
 // =====================================
+// SECURITY + HELPERS
+// =====================================
+
+require_once ROOT_PATH . '/helpers/csrf.php';
+require_once ROOT_PATH . '/helpers/security.php';
+require_once ROOT_PATH . '/helpers/rateLimiter.php';
+require_once ROOT_PATH . '/helpers/upload.php';
+
+securityHeaders();
+
+// =====================================
 // SEO
 // =====================================
 
-$pageTitle =
-"Contact Us | " . APP_NAME;
+$pageTitle = "Contact Us | " . APP_NAME;
 
 $metaDescription =
 "Contact KVN Construction for villa construction, turnkey projects, interiors, renovations, and project consultation in Bengaluru.";
 
-
 // =====================================
-// FETCH CONTACT PAGE SETTINGS
-// =====================================
-
-$contactQuery = "
-    SELECT *
-    FROM contact_page
-    LIMIT 1
-";
-
-$contactStmt =
-$conn->prepare($contactQuery);
-
-$contactStmt->execute();
-
-$contact =
-$contactStmt->fetch();
-
-// =====================================
-// FETCH FEATURES
-// =====================================
-
-$featureQuery = "
-    SELECT *
-    FROM contact_page_features
-    WHERE status = 'active'
-    ORDER BY sort_order ASC
-";
-
-$featureStmt =
-$conn->prepare($featureQuery);
-
-$featureStmt->execute();
-
-$features =
-$featureStmt->fetchAll();
-
-// =====================================
-// FORM SUBMISSION
+// INITIALIZE
 // =====================================
 
 $success = false;
 $error = '';
 
-if($_SERVER['REQUEST_METHOD'] === 'POST'){
+$formData = [
+    'full_name'    => '',
+    'phone'        => '',
+    'email'        => '',
+    'location'     => '',
+    'project_type' => '',
+    'budget_range' => '',
+    'message'      => ''
+];
 
-    $full_name =
-    trim($_POST['full_name']);
+// =====================================
+// FETCH CONTACT PAGE SETTINGS
+// =====================================
 
-    $phone =
-    trim($_POST['phone']);
+try {
 
-    $email =
-    trim($_POST['email']);
+    $contactQuery = "
+        SELECT *
+        FROM contact_page
+        LIMIT 1
+    ";
 
-    $location =
-    trim($_POST['location']);
+    $contactStmt = $conn->prepare($contactQuery);
 
-    $project_type =
-    trim($_POST['project_type']);
+    $contactStmt->execute();
 
-    $budget_range =
-    trim($_POST['budget_range']);
+    $contact = $contactStmt->fetch(PDO::FETCH_ASSOC);
 
-    $message =
-    trim($_POST['message']);
+} catch (Exception $e) {
 
-    // VALIDATION
+    logSecurityEvent(
+        'CONTACT_PAGE_FETCH_FAILED',
+        $e->getMessage()
+    );
 
-    if(
-        empty($full_name) ||
-        empty($phone) ||
-        empty($email)
-    ){
+    $contact = [];
+}
+
+// =====================================
+// FETCH FEATURES
+// =====================================
+
+try {
+
+    $featureQuery = "
+        SELECT *
+        FROM contact_page_features
+        WHERE status = :status
+        ORDER BY sort_order ASC
+    ";
+
+    $featureStmt = $conn->prepare($featureQuery);
+
+    $featureStmt->execute([
+        ':status' => 'active'
+    ]);
+
+    $features = $featureStmt->fetchAll(PDO::FETCH_ASSOC);
+
+} catch (Exception $e) {
+
+    logSecurityEvent(
+        'CONTACT_FEATURES_FETCH_FAILED',
+        $e->getMessage()
+    );
+
+    $features = [];
+}
+
+// =====================================
+// FORM SUBMISSION
+// =====================================
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // =====================================
+    // RATE LIMITING
+    // =====================================
+
+    if (!checkRateLimit('contact_form', 5, 3600)) {
+
+        logSecurityEvent(
+            'CONTACT_RATE_LIMIT_EXCEEDED',
+            'Contact form abuse attempt'
+        );
 
         $error =
-        "Please fill all required fields.";
+        "Too many requests. Please try again later.";
 
-    }else{
+    } else {
 
-        // INSERT LEAD
+        incrementRateLimit('contact_form');
 
-        $insertQuery = "
-            INSERT INTO leads (
+        // =====================================
+        // CSRF VALIDATION
+        // =====================================
 
-                full_name,
-                phone,
-                email,
-                project_location,
-                project_type,
-                budget_range,
-                message,
-                lead_source
+        if (!validateCsrf($_POST['csrf_token'] ?? '')) {
 
-            ) VALUES (
+            logSecurityEvent(
+                'INVALID_CONTACT_CSRF',
+                'Invalid CSRF token on contact form'
+            );
 
-                :full_name,
-                :phone,
-                :email,
-                :project_location,
-                :project_type,
-                :budget_range,
-                :message,
-                'website_contact_page'
-            )
-        ";
+            $error =
+            "Invalid request token. Please refresh the page.";
 
-        $insertStmt =
-        $conn->prepare($insertQuery);
+        } else {
 
-        $insertStmt->execute([
+            // =====================================
+            // HONEYPOT SPAM PROTECTION
+            // =====================================
 
-            ':full_name' => $full_name,
-            ':phone' => $phone,
-            ':email' => $email,
-            ':project_location' => $location,
-            ':project_type' => $project_type,
-            ':budget_range' => $budget_range,
-            ':message' => $message
-        ]);
+            if (!empty($_POST['website'])) {
 
-        $success = true;
+                logSecurityEvent(
+                    'CONTACT_SPAM_BLOCKED',
+                    'Honeypot triggered'
+                );
+
+                $error =
+                "Spam detected.";
+
+            } else {
+
+                // =====================================
+                // SANITIZE INPUTS
+                // =====================================
+
+                $formData['full_name'] =
+                sanitize($_POST['full_name'] ?? '');
+
+                $formData['phone'] =
+                sanitize($_POST['phone'] ?? '');
+
+                $formData['email'] =
+                sanitize($_POST['email'] ?? '');
+
+                $formData['location'] =
+                sanitize($_POST['location'] ?? '');
+
+                $formData['project_type'] =
+                sanitize($_POST['project_type'] ?? '');
+
+                $formData['budget_range'] =
+                sanitize($_POST['budget_range'] ?? '');
+
+                $formData['message'] =
+                safeRichText($_POST['message'] ?? '');
+
+                // =====================================
+                // VALIDATION
+                // =====================================
+
+                if (
+                    empty($formData['full_name']) ||
+                    empty($formData['phone']) ||
+                    empty($formData['email'])
+                ) {
+
+                    $error =
+                    "Please fill all required fields.";
+
+                } elseif (
+                    !filter_var(
+                        $formData['email'],
+                        FILTER_VALIDATE_EMAIL
+                    )
+                ) {
+
+                    $error =
+                    "Invalid email address.";
+
+                } elseif (
+                    !preg_match(
+                        '/^[0-9]{10}$/',
+                        preg_replace('/\D/', '', $formData['phone'])
+                    )
+                ) {
+
+                    $error =
+                    "Invalid phone number.";
+
+                } else {
+
+                    // =====================================
+                    // FILE UPLOAD
+                    // =====================================
+
+                    $uploadedFile = null;
+
+                    if (
+                        isset($_FILES['attachment']) &&
+                        $_FILES['attachment']['error'] !== UPLOAD_ERR_NO_FILE
+                    ) {
+
+                        $uploadResult = secureUpload(
+                            $_FILES['attachment'],
+                            ROOT_PATH . '/storage/uploads/contact/',
+                            [
+                                'jpg',
+                                'jpeg',
+                                'png',
+                                'pdf',
+                                'doc',
+                                'docx'
+                            ],
+                            5 * 1024 * 1024
+                        );
+
+                        if (!$uploadResult['success']) {
+
+                            $error =
+                            $uploadResult['message'];
+
+                        } else {
+
+                            $uploadedFile =
+                            $uploadResult['filename'];
+                        }
+                    }
+
+                    // =====================================
+                    // INSERT LEAD
+                    // =====================================
+
+                    if (empty($error)) {
+
+                        try {
+
+                            $insertQuery = "
+                                INSERT INTO leads (
+
+                                    full_name,
+                                    phone,
+                                    email,
+                                    project_location,
+                                    project_type,
+                                    budget_range,
+                                    message,
+                                    attachment,
+                                    lead_source,
+                                    ip_address,
+                                    user_agent,
+                                    created_at
+
+                                ) VALUES (
+
+                                    :full_name,
+                                    :phone,
+                                    :email,
+                                    :project_location,
+                                    :project_type,
+                                    :budget_range,
+                                    :message,
+                                    :attachment,
+                                    :lead_source,
+                                    :ip_address,
+                                    :user_agent,
+                                    NOW()
+                                )
+                            ";
+
+                            $insertStmt =
+                            $conn->prepare($insertQuery);
+
+                            $insertStmt->execute([
+
+                                ':full_name' =>
+                                $formData['full_name'],
+
+                                ':phone' =>
+                                $formData['phone'],
+
+                                ':email' =>
+                                $formData['email'],
+
+                                ':project_location' =>
+                                $formData['location'],
+
+                                ':project_type' =>
+                                $formData['project_type'],
+
+                                ':budget_range' =>
+                                $formData['budget_range'],
+
+                                ':message' =>
+                                $formData['message'],
+
+                                ':attachment' =>
+                                $uploadedFile,
+
+                                ':lead_source' =>
+                                'website_contact_page',
+
+                                ':ip_address' =>
+                                $_SERVER['REMOTE_ADDR'] ?? '',
+
+                                ':user_agent' =>
+                                $_SERVER['HTTP_USER_AGENT'] ?? ''
+                            ]);
+
+                            // =====================================
+                            // SUCCESS
+                            // =====================================
+
+                            $success = true;
+
+                            logSecurityEvent(
+                                'CONTACT_FORM_SUBMITTED',
+                                'New contact inquiry submitted'
+                            );
+
+                            refreshCsrf();
+
+                            // CLEAR FORM
+
+                            $formData = [
+                                'full_name'    => '',
+                                'phone'        => '',
+                                'email'        => '',
+                                'location'     => '',
+                                'project_type' => '',
+                                'budget_range' => '',
+                                'message'      => ''
+                            ];
+
+                        } catch (Exception $e) {
+
+                            logSecurityEvent(
+                                'CONTACT_FORM_DB_ERROR',
+                                $e->getMessage()
+                            );
+
+                            $error =
+                            "Something went wrong. Please try again.";
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -152,26 +387,26 @@ include '../app/views/layouts/header.php';
 
         <div class="row align-items-center gy-5">
 
-            <!-- CONTENT -->
-
             <div class="col-lg-6">
 
                 <h1>
 
-                    <?php echo $contact['hero_title']; ?>
+                    <?php echo escape($contact['hero_title'] ?? 'Contact Us'); ?>
 
                 </h1>
 
                 <p class="lead mt-4">
 
-                    <?php echo nl2br($contact['hero_description']); ?>
+                    <?php echo nl2br(
+                        escape($contact['hero_description'] ?? '')
+                    ); ?>
 
                 </p>
 
                 <div class="hero-buttons mt-4">
 
                     <a
-                        href="tel:<?php echo $contact['phone']; ?>"
+                        href="tel:<?php echo escape($contact['phone'] ?? ''); ?>"
                         class="btn-main"
                     >
 
@@ -194,8 +429,6 @@ include '../app/views/layouts/header.php';
 
             </div>
 
-            <!-- IMAGE -->
-
             <div class="col-lg-6">
 
                 <img
@@ -213,7 +446,7 @@ include '../app/views/layouts/header.php';
 </section>
 
 <!-- ================================= -->
-<!-- CONTACT SECTION -->
+<!-- CONTACT FORM -->
 <!-- ================================= -->
 
 <section class="contact-section">
@@ -221,149 +454,6 @@ include '../app/views/layouts/header.php';
     <div class="container">
 
         <div class="row g-5">
-
-            <!-- CONTACT INFO -->
-
-            <div class="col-lg-5">
-
-                <div class="contact-info-box">
-
-                    <h2 class="mb-4">
-
-                        Get In Touch
-
-                    </h2>
-
-                    <p class="text-muted mb-5">
-
-                        Have questions about your construction project?
-                        Our experts are ready to guide you.
-
-                    </p>
-
-                    <!-- PHONE -->
-
-                    <div class="contact-item">
-
-                        <div class="icon">
-
-                            <i class="bi bi-telephone-fill"></i>
-
-                        </div>
-
-                        <div>
-
-                            <h5>
-                                Phone
-                            </h5>
-
-                            <p>
-
-                                <?php echo $contact['phone']; ?>
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    <!-- EMAIL -->
-
-                    <div class="contact-item">
-
-                        <div class="icon">
-
-                            <i class="bi bi-envelope-fill"></i>
-
-                        </div>
-
-                        <div>
-
-                            <h5>
-                                Email
-                            </h5>
-
-                            <p>
-
-                                <?php echo $contact['email']; ?>
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    <!-- ADDRESS -->
-
-                    <div class="contact-item">
-
-                        <div class="icon">
-
-                            <i class="bi bi-geo-alt-fill"></i>
-
-                        </div>
-
-                        <div>
-
-                            <h5>
-                                Office Address
-                            </h5>
-
-                            <p>
-
-                                <?php echo nl2br($contact['office_address']); ?>
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    <!-- HOURS -->
-
-                    <div class="contact-item">
-
-                        <div class="icon">
-
-                            <i class="bi bi-clock-fill"></i>
-
-                        </div>
-
-                        <div>
-
-                            <h5>
-                                Working Hours
-                            </h5>
-
-                            <p>
-
-                                <?php echo $contact['business_hours']; ?>
-
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    <!-- WHATSAPP -->
-
-                    <a
-                        href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $contact['phone']); ?>"
-                        target="_blank"
-                        class="btn-main w-100 mt-4"
-                    >
-
-                        <i class="bi bi-whatsapp"></i>
-
-                        WhatsApp Consultation
-
-                    </a>
-
-                </div>
-
-            </div>
-
-            <!-- FORM -->
 
             <div class="col-lg-7">
 
@@ -375,232 +465,201 @@ include '../app/views/layouts/header.php';
 
                     </h2>
 
-                    <!-- SUCCESS -->
-
                     <?php if($success): ?>
 
                         <div class="alert alert-success">
 
-                            Thank you!
-                            Our team will contact you shortly.
+                            Thank you! Our team will contact you shortly.
 
                         </div>
 
                     <?php endif; ?>
-
-                    <!-- ERROR -->
 
                     <?php if(!empty($error)): ?>
 
                         <div class="alert alert-danger">
 
-                            <?php echo $error; ?>
+                            <?php echo escape($error); ?>
 
                         </div>
 
                     <?php endif; ?>
 
-                    <!-- FORM -->
-
                     <form
                         method="POST"
                         enctype="multipart/form-data"
+                        autocomplete="off"
                     >
+
+                        <?php echo csrfField(); ?>
+
+                        <!-- HONEYPOT -->
+
+                        <input
+                            type="text"
+                            name="website"
+                            style="display:none"
+                            tabindex="-1"
+                            autocomplete="off"
+                        >
 
                         <div class="row">
 
-                            <!-- NAME -->
+                            <div class="col-md-6 mb-3">
 
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <input
-                                        type="text"
-                                        name="full_name"
-                                        class="form-control"
-                                        placeholder="Full Name"
-                                        required
-                                    >
-
-                                </div>
+                                <input
+                                    type="text"
+                                    name="full_name"
+                                    class="form-control"
+                                    placeholder="Full Name"
+                                    required
+                                    maxlength="100"
+                                    value="<?php echo escape($formData['full_name']); ?>"
+                                >
 
                             </div>
 
-                            <!-- PHONE -->
+                            <div class="col-md-6 mb-3">
 
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        class="form-control"
-                                        placeholder="Phone Number"
-                                        required
-                                    >
-
-                                </div>
+                                <input
+                                    type="text"
+                                    name="phone"
+                                    class="form-control"
+                                    placeholder="Phone Number"
+                                    required
+                                    maxlength="15"
+                                    value="<?php echo escape($formData['phone']); ?>"
+                                >
 
                             </div>
 
-                            <!-- EMAIL -->
+                            <div class="col-md-6 mb-3">
 
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        class="form-control"
-                                        placeholder="Email Address"
-                                        required
-                                    >
-
-                                </div>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    class="form-control"
+                                    placeholder="Email Address"
+                                    required
+                                    maxlength="150"
+                                    value="<?php echo escape($formData['email']); ?>"
+                                >
 
                             </div>
 
-                            <!-- LOCATION -->
+                            <div class="col-md-6 mb-3">
 
-                            <div class="col-md-6">
-
-                                <div class="form-group">
-
-                                    <input
-                                        type="text"
-                                        name="location"
-                                        class="form-control"
-                                        placeholder="Project Location"
-                                    >
-
-                                </div>
+                                <input
+                                    type="text"
+                                    name="location"
+                                    class="form-control"
+                                    placeholder="Project Location"
+                                    maxlength="150"
+                                    value="<?php echo escape($formData['location']); ?>"
+                                >
 
                             </div>
 
-                            <!-- PROJECT TYPE -->
+                            <div class="col-md-6 mb-3">
 
-                            <div class="col-md-6">
+                                <select
+                                    name="project_type"
+                                    class="form-select"
+                                    required
+                                >
 
-                                <div class="form-group">
+                                    <option value="">
+                                        Select Project Type
+                                    </option>
 
-                                    <select
-                                        name="project_type"
-                                        class="form-select"
-                                        required
-                                    >
+                                    <?php
+                                    $projectTypes = [
+                                        'Residential Construction',
+                                        'Villa Construction',
+                                        'Commercial Construction',
+                                        'Interior Design',
+                                        'Renovation',
+                                        'Turnkey Construction'
+                                    ];
 
-                                        <option value="">
-                                            Select Project Type
+                                    foreach($projectTypes as $type):
+                                    ?>
+
+                                        <option
+                                            value="<?php echo escape($type); ?>"
+                                            <?php echo ($formData['project_type'] === $type) ? 'selected' : ''; ?>
+                                        >
+
+                                            <?php echo escape($type); ?>
+
                                         </option>
 
-                                        <option>
-                                            Residential Construction
-                                        </option>
+                                    <?php endforeach; ?>
 
-                                        <option>
-                                            Villa Construction
-                                        </option>
-
-                                        <option>
-                                            Commercial Construction
-                                        </option>
-
-                                        <option>
-                                            Interior Design
-                                        </option>
-
-                                        <option>
-                                            Renovation
-                                        </option>
-
-                                        <option>
-                                            Turnkey Construction
-                                        </option>
-
-                                    </select>
-
-                                </div>
+                                </select>
 
                             </div>
 
-                            <!-- BUDGET -->
+                            <div class="col-md-6 mb-3">
 
-                            <div class="col-md-6">
+                                <select
+                                    name="budget_range"
+                                    class="form-select"
+                                >
 
-                                <div class="form-group">
+                                    <option value="">
+                                        Select Budget
+                                    </option>
 
-                                    <select
-                                        name="budget_range"
-                                        class="form-select"
-                                    >
+                                    <?php
+                                    $budgets = [
+                                        'Under 25 Lakhs',
+                                        '25L - 50L',
+                                        '50L - 1Cr',
+                                        '1Cr - 3Cr',
+                                        '3Cr+'
+                                    ];
 
-                                        <option value="">
-                                            Select Budget
+                                    foreach($budgets as $budget):
+                                    ?>
+
+                                        <option
+                                            value="<?php echo escape($budget); ?>"
+                                            <?php echo ($formData['budget_range'] === $budget) ? 'selected' : ''; ?>
+                                        >
+
+                                            <?php echo escape($budget); ?>
+
                                         </option>
 
-                                        <option>
-                                            Under 25 Lakhs
-                                        </option>
+                                    <?php endforeach; ?>
 
-                                        <option>
-                                            25L - 50L
-                                        </option>
-
-                                        <option>
-                                            50L - 1Cr
-                                        </option>
-
-                                        <option>
-                                            1Cr - 3Cr
-                                        </option>
-
-                                        <option>
-                                            3Cr+
-                                        </option>
-
-                                    </select>
-
-                                </div>
+                                </select>
 
                             </div>
 
-                            <!-- FILE -->
+                            <div class="col-12 mb-3">
 
-                            <div class="col-12">
-
-                                <div class="form-group">
-
-                                    <input
-                                        type="file"
-                                        name="attachment"
-                                        class="form-control"
-                                    >
-
-                                </div>
+                                <input
+                                    type="file"
+                                    name="attachment"
+                                    class="form-control"
+                                    accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                                >
 
                             </div>
 
-                            <!-- MESSAGE -->
+                            <div class="col-12 mb-4">
 
-                            <div class="col-12">
-
-                                <div class="form-group">
-
-                                    <textarea
-                                        name="message"
-                                        class="form-control"
-                                        rows="6"
-                                        placeholder="Project Requirements"
-                                    ></textarea>
-
-                                </div>
+                                <textarea
+                                    name="message"
+                                    class="form-control"
+                                    rows="6"
+                                    placeholder="Project Requirements"
+                                    maxlength="5000"
+                                ><?php echo escape($formData['message']); ?></textarea>
 
                             </div>
-
-                            <!-- BUTTON -->
 
                             <div class="col-12">
 
@@ -628,346 +687,5 @@ include '../app/views/layouts/header.php';
     </div>
 
 </section>
-
-<!-- ================================= -->
-<!-- WHY CHOOSE US -->
-<!-- ================================= -->
-
-<section class="bg-light">
-
-    <div class="container">
-
-        <div class="section-title">
-
-            <h2>
-
-                Why Choose KVN Construction
-
-            </h2>
-
-            <p>
-
-                Premium construction experience
-                with complete transparency.
-
-            </p>
-
-        </div>
-
-        <div class="row g-4">
-
-            <?php foreach($features as $feature): ?>
-
-                <div class="col-lg-4 col-md-6">
-
-                    <div class="feature-card h-100">
-
-                        <div class="icon mb-4">
-
-                            <i class="<?php echo $feature['icon']; ?>"></i>
-
-                        </div>
-
-                        <h3>
-
-                            <?php echo $feature['title']; ?>
-
-                        </h3>
-
-                        <p>
-
-                            <?php echo $feature['description']; ?>
-
-                        </p>
-
-                    </div>
-
-                </div>
-
-            <?php endforeach; ?>
-
-        </div>
-
-    </div>
-
-</section>
-
-<!-- ================================= -->
-<!-- GOOGLE MAP -->
-<!-- ================================= -->
-
-<section>
-
-    <div class="container">
-
-        <div class="section-title">
-
-            <h2>
-
-                Visit Our Office
-
-            </h2>
-
-        </div>
-
-        <div class="map-box">
-
-            <?php echo $contact['google_map_embed']; ?>
-
-        </div>
-
-    </div>
-
-</section>
-
-<!-- ================================= -->
-<!-- FAQ -->
-<!-- ================================= -->
-
-<section class="bg-light">
-
-    <div class="container">
-
-        <div class="section-title">
-
-            <h2>
-
-                Frequently Asked Questions
-
-            </h2>
-
-        </div>
-
-        <div class="accordion" id="faqAccordion">
-
-            <!-- FAQ 1 -->
-
-            <div class="accordion-item">
-
-                <h2 class="accordion-header">
-
-                    <button
-                        class="accordion-button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#faq1"
-                    >
-
-                        How long does home construction take?
-
-                    </button>
-
-                </h2>
-
-                <div
-                    id="faq1"
-                    class="accordion-collapse collapse show"
-                    data-bs-parent="#faqAccordion"
-                >
-
-                    <div class="accordion-body">
-
-                        Construction timelines depend on
-                        plot size, floors, and design complexity.
-                        Typically 6-14 months.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <!-- FAQ 2 -->
-
-            <div class="accordion-item">
-
-                <h2 class="accordion-header">
-
-                    <button
-                        class="accordion-button collapsed"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#faq2"
-                    >
-
-                        Do you provide BBMP approval assistance?
-
-                    </button>
-
-                </h2>
-
-                <div
-                    id="faq2"
-                    class="accordion-collapse collapse"
-                    data-bs-parent="#faqAccordion"
-                >
-
-                    <div class="accordion-body">
-
-                        Yes, we assist with approvals,
-                        documentation,
-                        and construction compliance.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-<!-- ================================= -->
-<!-- CTA -->
-<!-- ================================= -->
-
-<section>
-
-    <div class="container">
-
-        <div class="cta-section">
-
-            <h2>
-
-                Ready To Build Your Dream Project?
-
-            </h2>
-
-            <p>
-
-                Talk with our construction experts today.
-
-            </p>
-
-            <a
-                href="tel:<?php echo $contact['phone']; ?>"
-                class="btn-main"
-            >
-
-                Call Now
-
-            </a>
-
-        </div>
-
-    </div>
-
-</section>
-
-<!-- ================================= -->
-<!-- PAGE STYLES -->
-<!-- ================================= -->
-
-<style>
-
-    .contact-info-box,
-    .contact-form-box,
-    .feature-card{
-
-        background:#fff;
-
-        padding:40px;
-
-        border-radius:24px;
-
-        box-shadow:0 10px 30px rgba(0,0,0,0.05);
-    }
-
-    .contact-item{
-
-        display:flex;
-
-        gap:20px;
-
-        margin-bottom:30px;
-    }
-
-    .contact-item .icon{
-
-        width:60px;
-        height:60px;
-
-        border-radius:16px;
-
-        background:#fff4cf;
-
-        display:flex;
-
-        align-items:center;
-
-        justify-content:center;
-
-        color:#f5b400;
-
-        font-size:24px;
-    }
-
-    .feature-card{
-
-        text-align:center;
-    }
-
-    .feature-card .icon{
-
-        width:80px;
-        height:80px;
-
-        border-radius:20px;
-
-        background:#fff4cf;
-
-        margin:auto;
-
-        display:flex;
-
-        align-items:center;
-
-        justify-content:center;
-
-        color:#f5b400;
-
-        font-size:34px;
-    }
-
-    .map-box iframe{
-
-        width:100%;
-
-        height:500px;
-
-        border:none;
-
-        border-radius:24px;
-    }
-
-    .accordion-item{
-
-        border:none;
-
-        margin-bottom:20px;
-
-        border-radius:18px !important;
-
-        overflow:hidden;
-
-        box-shadow:0 5px 20px rgba(0,0,0,0.05);
-    }
-
-    .accordion-button{
-
-        padding:22px;
-
-        font-weight:600;
-    }
-
-    .accordion-button:not(.collapsed){
-
-        background:#f5b400;
-
-        color:#fff;
-    }
-
-</style>
 
 <?php include '../app/views/layouts/footer.php'; ?>

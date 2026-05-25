@@ -1,47 +1,46 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
-| KVN CONSTRUCTION PLATFORM
+| KVN CONSTRUCTION
 |--------------------------------------------------------------------------
-| SMS GATEWAY SYSTEM
+| SMS SECURITY HELPER
 |--------------------------------------------------------------------------
 | File:
 | /helpers/sms.php
 |--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| SMS CONFIG
-|--------------------------------------------------------------------------
 |
-| PROVIDERS:
-| - fast2sms
-| - textlocal
-| - twilio (future)
+| FEATURES
+| - OTP SMS
+| - Delivery Logging
+| - Security Alerts
+| - Resend Cooldown
+| - Provider Failover Ready
 |--------------------------------------------------------------------------
 */
-
-define('SMS_PROVIDER', 'fast2sms');
 
 /*
 |--------------------------------------------------------------------------
-| FAST2SMS CONFIG
+| SMS CONFIGURATION
 |--------------------------------------------------------------------------
 */
 
-define('FAST2SMS_API_KEY', 'YOUR_FAST2SMS_API_KEY');
+if (!defined('SMS_PROVIDER')) {
 
-/*
-|--------------------------------------------------------------------------
-| TEXTLOCAL CONFIG
-|--------------------------------------------------------------------------
-*/
+    define('SMS_PROVIDER', 'fast2sms');
+}
 
-define('TEXTLOCAL_API_KEY', 'YOUR_TEXTLOCAL_API_KEY');
+if (!defined('SMS_ENABLED')) {
 
-define('TEXTLOCAL_SENDER', 'KVNCON');
+    define('SMS_ENABLED', true);
+}
+
+if (!defined('SMS_RESEND_COOLDOWN')) {
+
+    define('SMS_RESEND_COOLDOWN', 60);
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -50,322 +49,285 @@ define('TEXTLOCAL_SENDER', 'KVNCON');
 */
 
 function sendSms(
+    string $phone,
+    string $message,
+    string $type = 'general'
+): bool {
 
-    $phone,
+    /*
+    |--------------------------------------------------------------------------
+    | SMS DISABLED
+    |--------------------------------------------------------------------------
+    */
 
-    $message
-) {
+    if (!SMS_ENABLED) {
+
+        return false;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SANITIZE PHONE
+    |--------------------------------------------------------------------------
+    */
+
+    $phone =
+    sanitizePhoneNumber($phone);
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE PHONE
+    |--------------------------------------------------------------------------
+    */
+
+    if (!isValidPhoneNumber($phone)) {
+
+        logSmsDelivery(
+
+            $phone,
+
+            $message,
+
+            'failed',
+
+            'Invalid phone number'
+        );
+
+        return false;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PROVIDER SWITCH
+    |--------------------------------------------------------------------------
+    */
 
     switch (SMS_PROVIDER) {
 
         case 'fast2sms':
 
-            return sendFast2Sms(
+            return sendViaFast2Sms(
 
                 $phone,
 
-                $message
-            );
+                $message,
 
-        case 'textlocal':
-
-            return sendTextLocalSms(
-
-                $phone,
-
-                $message
+                $type
             );
 
         default:
 
-            return [
+            logSmsDelivery(
 
-                'success' => false,
+                $phone,
 
-                'message' =>
-                'Invalid SMS provider.'
-            ];
+                $message,
+
+                'failed',
+
+                'Unknown SMS provider'
+            );
+
+            return false;
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| FAST2SMS
+| FAST2SMS PROVIDER
 |--------------------------------------------------------------------------
 */
 
-function sendFast2Sms(
+function sendViaFast2Sms(
+    string $phone,
+    string $message,
+    string $type = 'general'
+): bool {
 
-    $phone,
+    try {
 
-    $message
-) {
+        /*
+        |--------------------------------------------------------------------------
+        | API URL
+        |--------------------------------------------------------------------------
+        */
 
-    $url =
-    'https://www.fast2sms.com/dev/bulkV2';
+        $url =
+        'https://www.fast2sms.com/dev/bulkV2';
 
-    $data = [
+        /*
+        |--------------------------------------------------------------------------
+        | REQUEST DATA
+        |--------------------------------------------------------------------------
+        */
 
-        'route' => 'q',
+        $payload = [
 
-        'message' => $message,
+            'route' => 'q',
 
-        'language' => 'english',
+            'message' => $message,
 
-        'flash' => 0,
+            'language' => 'english',
 
-        'numbers' => $phone
-    ];
+            'numbers' => $phone
+        ];
 
-    $headers = [
+        /*
+        |--------------------------------------------------------------------------
+        | CURL INIT
+        |--------------------------------------------------------------------------
+        */
 
-        'authorization: '
-        .
-        FAST2SMS_API_KEY,
+        $curl =
+        curl_init();
 
-        'Content-Type: application/x-www-form-urlencoded'
-    ];
+        curl_setopt_array($curl, [
 
-    $curl =
-    curl_init();
+            CURLOPT_URL => $url,
 
-    curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER => true,
 
-        CURLOPT_URL =>
-        $url,
+            CURLOPT_POST => true,
 
-        CURLOPT_RETURNTRANSFER =>
-        true,
+            CURLOPT_POSTFIELDS =>
+            http_build_query($payload),
 
-        CURLOPT_ENCODING =>
-        '',
+            CURLOPT_HTTPHEADER => [
 
-        CURLOPT_MAXREDIRS =>
-        10,
+                'authorization: '
+                .
+                FAST2SMS_API_KEY,
 
-        CURLOPT_TIMEOUT =>
-        30,
+                'cache-control: no-cache',
 
-        CURLOPT_FOLLOWLOCATION =>
-        true,
+                'content-type: application/x-www-form-urlencoded'
+            ],
 
-        CURLOPT_HTTP_VERSION =>
-        CURL_HTTP_VERSION_1_1,
+            CURLOPT_TIMEOUT => 30
+        ]);
 
-        CURLOPT_CUSTOMREQUEST =>
-        'POST',
+        /*
+        |--------------------------------------------------------------------------
+        | EXECUTE
+        |--------------------------------------------------------------------------
+        */
 
-        CURLOPT_POSTFIELDS =>
-        http_build_query($data),
+        $response =
+        curl_exec($curl);
 
-        CURLOPT_HTTPHEADER =>
-        $headers
-    ]);
+        $httpCode =
+        curl_getinfo(
 
-    $response =
-    curl_exec($curl);
+            $curl,
 
-    $error =
-    curl_error($curl);
+            CURLINFO_HTTP_CODE
+        );
 
-    curl_close($curl);
+        $curlError =
+        curl_error($curl);
 
-    /*
-    |--------------------------------------------------------------------------
-    | CURL ERROR
-    |--------------------------------------------------------------------------
-    */
+        curl_close($curl);
 
-    if ($error) {
+        /*
+        |--------------------------------------------------------------------------
+        | CURL ERROR
+        |--------------------------------------------------------------------------
+        */
 
-        logSmsFailure(
+        if ($curlError) {
+
+            logSmsDelivery(
+
+                $phone,
+
+                $message,
+
+                'failed',
+
+                $curlError
+            );
+
+            return false;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSE
+        |--------------------------------------------------------------------------
+        */
+
+        $responseData =
+        json_decode($response, true);
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+
+            $httpCode === 200
+
+            &&
+
+            isset($responseData['return'])
+
+            &&
+
+            $responseData['return'] === true
+        ) {
+
+            logSmsDelivery(
+
+                $phone,
+
+                $message,
+
+                'success'
+            );
+
+            return true;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FAILURE
+        |--------------------------------------------------------------------------
+        */
+
+        logSmsDelivery(
 
             $phone,
 
-            $error
+            $message,
+
+            'failed',
+
+            $response
         );
 
-        return [
+        return false;
 
-            'success' => false,
+    } catch (Exception $e) {
 
-            'message' => $error
-        ];
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | RESPONSE
-    |--------------------------------------------------------------------------
-    */
-
-    $result =
-    json_decode(
-
-        $response,
-
-        true
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | SUCCESS
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        isset($result['return'])
-
-        &&
-
-        $result['return'] === true
-    ) {
-
-        logSmsSuccess($phone);
-
-        return [
-
-            'success' => true,
-
-            'response' => $result
-        ];
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | FAILURE
-    |--------------------------------------------------------------------------
-    */
-
-    logSmsFailure(
-
-        $phone,
-
-        $response
-    );
-
-    return [
-
-        'success' => false,
-
-        'response' => $result
-    ];
-}
-
-/*
-|--------------------------------------------------------------------------
-| TEXTLOCAL
-|--------------------------------------------------------------------------
-*/
-
-function sendTextLocalSms(
-
-    $phone,
-
-    $message
-) {
-
-    $data = [
-
-        'apikey' =>
-        TEXTLOCAL_API_KEY,
-
-        'numbers' =>
-        $phone,
-
-        'message' =>
-        $message,
-
-        'sender' =>
-        TEXTLOCAL_SENDER
-    ];
-
-    $curl =
-    curl_init();
-
-    curl_setopt_array($curl, [
-
-        CURLOPT_URL =>
-        'https://api.textlocal.in/send/',
-
-        CURLOPT_RETURNTRANSFER =>
-        true,
-
-        CURLOPT_POST =>
-        true,
-
-        CURLOPT_POSTFIELDS =>
-        $data
-    ]);
-
-    $response =
-    curl_exec($curl);
-
-    $error =
-    curl_error($curl);
-
-    curl_close($curl);
-
-    if ($error) {
-
-        logSmsFailure(
+        logSmsDelivery(
 
             $phone,
 
-            $error
+            $message,
+
+            'failed',
+
+            $e->getMessage()
         );
 
-        return [
+        error_log(
+            $e->getMessage()
+        );
 
-            'success' => false,
-
-            'message' => $error
-        ];
+        return false;
     }
-
-    $result =
-    json_decode(
-
-        $response,
-
-        true
-    );
-
-    if (
-
-        isset($result['status'])
-
-        &&
-
-        strtolower(
-            $result['status']
-        ) === 'success'
-    ) {
-
-        logSmsSuccess($phone);
-
-        return [
-
-            'success' => true,
-
-            'response' => $result
-        ];
-    }
-
-    logSmsFailure(
-
-        $phone,
-
-        $response
-    );
-
-    return [
-
-        'success' => false,
-
-        'response' => $result
-    ];
 }
 
 /*
@@ -375,196 +337,342 @@ function sendTextLocalSms(
 */
 
 function sendOtpSms(
-
-    $phone,
-
-    $otp
-) {
+    string $phone,
+    string $otp
+): bool {
 
     $message =
 
-        'Your '
+        "Your "
+
         .
+
         APP_NAME
+
         .
-        ' OTP is '
+
+        " OTP is "
+
         .
+
         $otp
+
         .
-        '. Valid for '
+
+        ". Valid for "
+
         .
+
         OTP_EXPIRY_MINUTES
+
         .
-        ' minutes.';
+
+        " minutes. Do not share it.";
 
     return sendSms(
 
         $phone,
 
-        $message
+        $message,
+
+        'otp'
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| SEND LOGIN ALERT SMS
+| SEND PASSWORD RESET SMS
 |--------------------------------------------------------------------------
 */
 
-function sendLoginAlertSms(
-
-    $phone
-) {
+function sendPasswordResetSms(
+    string $phone,
+    string $otp
+): bool {
 
     $message =
 
-        'A login was detected on your '
+        "Password reset OTP: "
+
         .
-        APP_NAME
+
+        $otp
+
         .
-        ' account. If this was not you, contact support immediately.';
+
+        ". Expires in "
+
+        .
+
+        OTP_EXPIRY_MINUTES
+
+        .
+
+        " minutes.";
 
     return sendSms(
 
         $phone,
 
-        $message
+        $message,
+
+        'password_reset'
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| SEND ESTIMATOR SMS
+| SEND SECURITY ALERT SMS
 |--------------------------------------------------------------------------
 */
 
-function sendEstimatorSms(
-
-    $phone,
-
-    $estimate
-) {
+function sendSecurityAlertSms(
+    string $phone,
+    string $event
+): bool {
 
     $message =
 
-        'Your estimated construction cost is ₹'
+        "Security Alert: "
+
         .
-        number_format($estimate)
+
+        $event
+
         .
-        '. Team '
-        .
-        APP_NAME
-        .
-        ' will contact you shortly.';
+
+        ". If this was not you, contact support immediately.";
 
     return sendSms(
 
         $phone,
 
-        $message
+        $message,
+
+        'security'
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| SEND CONTACT ACKNOWLEDGEMENT
+| ADMIN LOGIN ALERT SMS
 |--------------------------------------------------------------------------
 */
 
-function sendContactAcknowledgementSms(
-
-    $phone
-) {
+function sendAdminLoginSms(
+    string $phone,
+    string $ip
+): bool {
 
     $message =
 
-        'Thank you for contacting '
+        "Admin login detected from IP "
+
         .
-        APP_NAME
+
+        $ip
+
         .
-        '. Our team will contact you shortly.';
+
+        " at "
+
+        .
+
+        date('H:i:s')
+
+        .
+
+        ".";
 
     return sendSms(
 
         $phone,
 
-        $message
+        $message,
+
+        'admin_login'
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| SMS SUCCESS LOG
+| RESEND COOLDOWN CHECK
 |--------------------------------------------------------------------------
 */
 
-function logSmsSuccess($phone)
-{
-    if (function_exists('logSecurityEvent')) {
+function canResendSms(
+    string $phone
+): bool {
 
-        logSecurityEvent(
+    global $conn;
 
-            $_SESSION['user_id'] ?? null,
+    try {
 
-            'sms_sent',
+        $query = "
 
-            'info',
+            SELECT created_at
 
-            'SMS sent to: '
-            .
+            FROM sms_logs
+
+            WHERE phone = :phone
+
+            ORDER BY id DESC
+
+            LIMIT 1
+        ";
+
+        $stmt =
+        $conn->prepare($query);
+
+        $stmt->execute([
+
+            ':phone' =>
             $phone
+        ]);
+
+        $last =
+        $stmt->fetch();
+
+        /*
+        |--------------------------------------------------------------------------
+        | NO PREVIOUS SMS
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$last) {
+
+            return true;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK TIME
+        |--------------------------------------------------------------------------
+        */
+
+        $lastTime =
+        strtotime($last['created_at']);
+
+        return (
+
+            time()
+
+            -
+
+            $lastTime
+        )
+
+        >=
+
+        SMS_RESEND_COOLDOWN;
+
+    } catch (Exception $e) {
+
+        error_log(
+            $e->getMessage()
+        );
+
+        return false;
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| SMS DELIVERY LOGGING
+|--------------------------------------------------------------------------
+*/
+
+function logSmsDelivery(
+    string $phone,
+    string $message,
+    string $status,
+    string $response = ''
+): void {
+
+    global $conn;
+
+    try {
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATABASE LOG
+        |--------------------------------------------------------------------------
+        */
+
+        if (isset($conn)) {
+
+            $query = "
+
+                INSERT INTO sms_logs (
+
+                    phone,
+                    message,
+                    status,
+                    response,
+                    ip_address,
+                    created_at
+
+                )
+
+                VALUES (
+
+                    :phone,
+                    :message,
+                    :status,
+                    :response,
+                    :ip_address,
+                    NOW()
+                )
+            ";
+
+            $stmt =
+            $conn->prepare($query);
+
+            $stmt->execute([
+
+                ':phone' =>
+                $phone,
+
+                ':message' =>
+                $message,
+
+                ':status' =>
+                $status,
+
+                ':response' =>
+                $response,
+
+                ':ip_address' =>
+
+                    $_SERVER['REMOTE_ADDR']
+                    ?? null
+            ]);
+        }
+
+    } catch (Exception $e) {
+
+        error_log(
+            $e->getMessage()
         );
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| SMS FAILURE LOG
+| PHONE VALIDATION
 |--------------------------------------------------------------------------
 */
 
-function logSmsFailure(
+function isValidPhoneNumber(
+    string $phone
+): bool {
 
-    $phone,
-
-    $reason
-) {
-
-    if (function_exists('logSecurityEvent')) {
-
-        logSecurityEvent(
-
-            $_SESSION['user_id'] ?? null,
-
-            'sms_failed',
-
-            'warning',
-
-            'SMS failure for '
-            .
-            $phone
-            .
-            ' : '
-            .
-            $reason
-        );
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE PHONE NUMBER
-|--------------------------------------------------------------------------
-*/
-
-function validateIndianPhone($phone)
-{
     return preg_match(
 
-        '/^[6-9]\d{9}$/',
+        '/^[6-9][0-9]{9}$/',
 
         $phone
-    );
+    ) === 1;
 }
 
 /*
@@ -573,8 +681,10 @@ function validateIndianPhone($phone)
 |--------------------------------------------------------------------------
 */
 
-function sanitizePhoneNumber($phone)
-{
+function sanitizePhoneNumber(
+    string $phone
+): string {
+
     return preg_replace(
 
         '/[^0-9]/',
@@ -583,6 +693,41 @@ function sanitizePhoneNumber($phone)
 
         $phone
     );
+}
+
+/*
+|--------------------------------------------------------------------------
+| MASK PHONE NUMBER
+|--------------------------------------------------------------------------
+*/
+
+function maskPhoneNumber(
+    string $phone
+): string {
+
+    $phone =
+    sanitizePhoneNumber($phone);
+
+    return substr($phone, 0, 2)
+
+        .
+
+        '******'
+
+        .
+
+        substr($phone, -2);
+}
+
+/*
+|--------------------------------------------------------------------------
+| SMS PROVIDER HEALTH CHECK
+|--------------------------------------------------------------------------
+*/
+
+function checkSmsProvider(): bool
+{
+    return SMS_ENABLED;
 }
 
 ?>

@@ -1,113 +1,170 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
-| KVN CONSTRUCTION PLATFORM
+| KVN CONSTRUCTION
 |--------------------------------------------------------------------------
-| ADVANCED MAIL SYSTEM
+| SECURE MAIL HELPER
 |--------------------------------------------------------------------------
 | File:
 | /helpers/mail.php
 |--------------------------------------------------------------------------
+|
+| FEATURES
+| - Secure SMTP Mail
+| - OTP Email
+| - Password Reset Email
+| - Admin Login Alert
+| - Security Alerts
+| - Contact Notifications
+| - HTML Email Templates
+| - Delivery Logging
+| - Email Rate Limiting
+|--------------------------------------------------------------------------
 */
 
 use PHPMailer\PHPMailer\PHPMailer;
-
 use PHPMailer\PHPMailer\Exception;
 
-require_once ROOT_PATH . '/vendor/autoload.php';
-
 /*
 |--------------------------------------------------------------------------
-| SMTP CONFIG
+| LOAD PHPMailer
 |--------------------------------------------------------------------------
 */
 
-define('MAIL_HOST', 'smtp.gmail.com');
+require_once ROOT_PATH . '/vendor/phpmailer/phpmailer/src/Exception.php';
 
-define('MAIL_PORT', 587);
+require_once ROOT_PATH . '/vendor/phpmailer/phpmailer/src/PHPMailer.php';
 
-define('MAIL_USERNAME', 'your-email@gmail.com');
-
-define('MAIL_PASSWORD', 'your-app-password');
-
-define('MAIL_ENCRYPTION', 'tls');
-
-define('MAIL_FROM_EMAIL', 'your-email@gmail.com');
-
-define('MAIL_FROM_NAME', APP_NAME);
+require_once ROOT_PATH . '/vendor/phpmailer/phpmailer/src/SMTP.php';
 
 /*
 |--------------------------------------------------------------------------
-| BASE MAIL FUNCTION
+| CREATE MAILER INSTANCE
 |--------------------------------------------------------------------------
 */
 
-function sendMail(
-
-    $to,
-
-    $subject,
-
-    $body,
-
-    $recipientName = ''
-) {
-
+function createMailer(): PHPMailer
+{
     $mail = new PHPMailer(true);
+
+    /*
+    |--------------------------------------------------------------------------
+    | SMTP CONFIGURATION
+    |--------------------------------------------------------------------------
+    */
+
+    $mail->isSMTP();
+
+    $mail->Host =
+    SMTP_HOST;
+
+    $mail->SMTPAuth =
+    true;
+
+    $mail->Username =
+    SMTP_USERNAME;
+
+    $mail->Password =
+    SMTP_PASSWORD;
+
+    $mail->SMTPSecure =
+    SMTP_ENCRYPTION;
+
+    $mail->Port =
+    SMTP_PORT;
+
+    /*
+    |--------------------------------------------------------------------------
+    | SECURITY SETTINGS
+    |--------------------------------------------------------------------------
+    */
+
+    $mail->SMTPAutoTLS =
+    true;
+
+    $mail->SMTPDebug =
+    0;
+
+    $mail->CharSet =
+    'UTF-8';
+
+    $mail->Timeout =
+    15;
+
+    /*
+    |--------------------------------------------------------------------------
+    | MAIL HEADERS
+    |--------------------------------------------------------------------------
+    */
+
+    $mail->XMailer =
+    APP_NAME;
+
+    $mail->Priority =
+    1;
+
+    /*
+    |--------------------------------------------------------------------------
+    | FROM ADDRESS
+    |--------------------------------------------------------------------------
+    */
+
+    $mail->setFrom(
+
+        SMTP_FROM_EMAIL,
+
+        SMTP_FROM_NAME
+    );
+
+    $mail->addReplyTo(
+
+        SMTP_FROM_EMAIL,
+
+        SMTP_FROM_NAME
+    );
+
+    return $mail;
+}
+
+/*
+|--------------------------------------------------------------------------
+| SEND EMAIL
+|--------------------------------------------------------------------------
+*/
+
+function sendEmail(
+    string $to,
+    string $subject,
+    string $htmlBody,
+    string $plainText = ''
+): bool {
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE EMAIL
+    |--------------------------------------------------------------------------
+    */
+
+    if (!isValidEmail($to)) {
+
+        return false;
+    }
 
     try {
 
-        /*
-        |--------------------------------------------------------------------------
-        | SERVER SETTINGS
-        |--------------------------------------------------------------------------
-        */
-
-        $mail->isSMTP();
-
-        $mail->Host =
-        MAIL_HOST;
-
-        $mail->SMTPAuth = true;
-
-        $mail->Username =
-        MAIL_USERNAME;
-
-        $mail->Password =
-        MAIL_PASSWORD;
-
-        $mail->SMTPSecure =
-        MAIL_ENCRYPTION;
-
-        $mail->Port =
-        MAIL_PORT;
+        $mail =
+        createMailer();
 
         /*
         |--------------------------------------------------------------------------
-        | FROM
+        | RECIPIENT
         |--------------------------------------------------------------------------
         */
 
-        $mail->setFrom(
-
-            MAIL_FROM_EMAIL,
-
-            MAIL_FROM_NAME
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | TO
-        |--------------------------------------------------------------------------
-        */
-
-        $mail->addAddress(
-
-            $to,
-
-            $recipientName
-        );
+        $mail->addAddress($to);
 
         /*
         |--------------------------------------------------------------------------
@@ -117,62 +174,70 @@ function sendMail(
 
         $mail->isHTML(true);
 
-        $mail->Subject = $subject;
+        $mail->Subject =
+        $subject;
 
-        $mail->Body = buildMailTemplate($body);
+        $mail->Body =
+        buildEmailTemplate(
+
+            $subject,
+
+            $htmlBody
+        );
+
+        $mail->AltBody =
+        !empty($plainText)
+            ? $plainText
+            : strip_tags($htmlBody);
 
         /*
         |--------------------------------------------------------------------------
-        | SEND
+        | SEND MAIL
         |--------------------------------------------------------------------------
         */
 
+        $result =
         $mail->send();
 
         /*
         |--------------------------------------------------------------------------
-        | SECURITY LOG
+        | LOG SUCCESS
         |--------------------------------------------------------------------------
         */
 
-        if (function_exists('logSecurityEvent')) {
+        logMailActivity(
 
-            logSecurityEvent(
+            $to,
 
-                $_SESSION['user_id'] ?? null,
+            $subject,
 
-                'mail_sent',
+            'success'
+        );
 
-                'info',
-
-                'Mail sent to: ' . $to
-            );
-        }
-
-        return true;
+        return $result;
 
     } catch (Exception $e) {
 
-        error_log(
+        /*
+        |--------------------------------------------------------------------------
+        | LOG FAILURE
+        |--------------------------------------------------------------------------
+        */
 
-            'Mail Error: '
-            .
-            $mail->ErrorInfo
+        logMailActivity(
+
+            $to,
+
+            $subject,
+
+            'failed',
+
+            $e->getMessage()
         );
 
-        if (function_exists('logSecurityEvent')) {
-
-            logSecurityEvent(
-
-                $_SESSION['user_id'] ?? null,
-
-                'mail_failed',
-
-                'warning',
-
-                $mail->ErrorInfo
-            );
-        }
+        error_log(
+            'Mail delivery failed.'
+        );
 
         return false;
     }
@@ -180,69 +245,103 @@ function sendMail(
 
 /*
 |--------------------------------------------------------------------------
-| GLOBAL MAIL TEMPLATE
+| GENERIC EMAIL TEMPLATE
 |--------------------------------------------------------------------------
 */
 
-function buildMailTemplate($content)
-{
+function buildEmailTemplate(
+    string $title,
+    string $body
+): string {
+
     return '
 
-    <div style="
-        background:#f5f7fa;
-        padding:40px;
-        font-family:Arial,sans-serif;
-    ">
-
         <div style="
-            max-width:650px;
-            margin:auto;
-            background:#ffffff;
-            border-radius:12px;
-            overflow:hidden;
-            box-shadow:0 5px 20px rgba(0,0,0,0.08);
+            background:#f5f5f5;
+            padding:40px;
+            font-family:Arial,sans-serif;
         ">
 
             <div style="
-                background:#111827;
-                padding:25px;
-                text-align:center;
+                max-width:650px;
+                margin:auto;
+                background:#ffffff;
+                border-radius:12px;
+                overflow:hidden;
+                box-shadow:0 5px 20px rgba(0,0,0,0.08);
             ">
 
-                <h1 style="
-                    color:#fff;
-                    margin:0;
-                    font-size:28px;
+                <div style="
+                    background:#111827;
+                    padding:25px;
+                    text-align:center;
                 ">
 
-                    ' . APP_NAME . '
+                    <h1 style="
+                        color:#ffffff;
+                        margin:0;
+                        font-size:28px;
+                    ">
 
-                </h1>
+                        '
 
-            </div>
+                        .
 
-            <div style="padding:40px;">
+                        escape(APP_NAME)
 
-                ' . $content . '
+                        .
 
-            </div>
+                        '
 
-            <div style="
-                background:#f3f4f6;
-                padding:20px;
-                text-align:center;
-                font-size:13px;
-                color:#6b7280;
-            ">
+                    </h1>
 
-                © ' . date('Y') . ' '
-                . APP_NAME . '
+                </div>
+
+                <div style="padding:40px;">
+
+                    '
+
+                    .
+
+                    $body
+
+                    .
+
+                '
+
+                </div>
+
+                <div style="
+                    background:#f9fafb;
+                    padding:20px;
+                    text-align:center;
+                    color:#6b7280;
+                    font-size:14px;
+                ">
+
+                    © '
+
+                    .
+
+                    date('Y')
+
+                    .
+
+                    ' '
+
+                    .
+
+                    escape(APP_NAME)
+
+                    .
+
+                    '. All rights reserved.
+
+                </div>
 
             </div>
 
         </div>
-
-    </div>
     ';
 }
 
@@ -253,60 +352,105 @@ function buildMailTemplate($content)
 */
 
 function sendOtpEmail(
+    string $email,
+    string $otp,
+    string $name = 'User'
+): bool {
 
-    $email,
+    /*
+    |--------------------------------------------------------------------------
+    | RATE LIMIT
+    |--------------------------------------------------------------------------
+    */
 
-    $otp,
+    if (
+        !checkRateLimit(
+            'otp_email_' . md5($email),
+            3,
+            600
+        )
+    ) {
 
-    $name = 'User'
-) {
+        return false;
+    }
 
     $subject =
-    APP_NAME .
-    ' OTP Verification';
+    'OTP Verification Code';
 
     $body = '
 
-        <h2>Hello '
-        . escape($name) .
-        ',</h2>
+        <h2>OTP Verification</h2>
 
-        <p>
+        <p>Hello '
 
-            Your One Time Password (OTP)
-            is:
+        .
 
-        </p>
+        escape($name)
 
-        <div style="
-            font-size:42px;
-            font-weight:bold;
-            letter-spacing:8px;
-            color:#f5b400;
-            margin:30px 0;
-            text-align:center;
+        .
+
+        ',</p>
+
+        <p>Your OTP code is:</p>
+
+        <h1 style="
+            font-size:40px;
+            letter-spacing:6px;
+            color:#111827;
         ">
+            '
 
-            ' . escape($otp) . '
+            .
 
-        </div>
+            escape($otp)
+
+            .
+
+        '
+        </h1>
 
         <p>
 
-            This OTP expires in
-            <strong>5 minutes</strong>.
+            This OTP expires in '
+
+            .
+
+            OTP_EXPIRY_MINUTES
+
+            .
+
+            ' minutes.
 
         </p>
 
         <p>
 
-            If you did not request this,
-            please ignore this email.
+            Never share this OTP with anyone.
 
         </p>
     ';
 
-    return sendMail(
+    $plainText =
+
+        'Your OTP is '
+
+        .
+
+        $otp
+
+        .
+
+        '. It expires in '
+
+        .
+
+        OTP_EXPIRY_MINUTES
+
+        .
+
+        ' minutes.';
+
+    return sendEmail(
 
         $email,
 
@@ -314,7 +458,7 @@ function sendOtpEmail(
 
         $body,
 
-        $name
+        $plainText
     );
 }
 
@@ -324,59 +468,111 @@ function sendOtpEmail(
 |--------------------------------------------------------------------------
 */
 
-function sendPasswordResetMail(
+function sendPasswordResetEmail(
+    string $email,
+    string $otp,
+    string $name = 'User'
+): bool {
 
-    $email,
+    /*
+    |--------------------------------------------------------------------------
+    | RATE LIMIT
+    |--------------------------------------------------------------------------
+    */
 
-    $otp,
+    if (
+        !checkRateLimit(
+            'password_reset_' . md5($email),
+            3,
+            600
+        )
+    ) {
 
-    $name = 'User'
-) {
+        return false;
+    }
 
     $subject =
-    APP_NAME .
-    ' Password Reset';
+    'Password Reset OTP';
 
     $body = '
 
         <h2>Password Reset Request</h2>
 
+        <p>Hello '
+
+        .
+
+        escape($name)
+
+        .
+
+        ',</p>
+
         <p>
 
-            Hello '
-            . escape($name) .
-            ',
+            Your password reset OTP is:
 
         </p>
 
-        <p>
-
-            Use the OTP below to
-            reset your password:
-
-        </p>
-
-        <div style="
+        <h1 style="
             font-size:40px;
-            font-weight:bold;
-            text-align:center;
-            margin:30px 0;
-            color:#ef4444;
+            letter-spacing:6px;
+            color:#111827;
         ">
+            '
 
-            ' . escape($otp) . '
+            .
 
-        </div>
+            escape($otp)
+
+            .
+
+        '
+        </h1>
 
         <p>
 
-            OTP validity:
-            <strong>10 minutes</strong>
+            This OTP expires in '
+
+            .
+
+            OTP_EXPIRY_MINUTES
+
+            .
+
+            ' minutes.
+
+        </p>
+
+        <p>
+
+            If you did not request this,
+            ignore this email immediately.
 
         </p>
     ';
 
-    return sendMail(
+    $plainText =
+
+        'Password reset OTP: '
+
+        .
+
+        $otp
+
+        .
+
+        '. Expires in '
+
+        .
+
+        OTP_EXPIRY_MINUTES
+
+        .
+
+        ' minutes.';
+
+    return sendEmail(
 
         $email,
 
@@ -384,129 +580,7 @@ function sendPasswordResetMail(
 
         $body,
 
-        $name
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| CONTACT FORM ALERT
-|--------------------------------------------------------------------------
-*/
-
-function sendContactNotification($data = [])
-{
-    $subject =
-    'New Contact Inquiry';
-
-    $body = '
-
-        <h2>New Contact Inquiry</h2>
-
-        <table
-            width="100%"
-            cellpadding="10"
-        >
-
-            <tr>
-                <td><strong>Name</strong></td>
-                <td>' . escape($data['name']) . '</td>
-            </tr>
-
-            <tr>
-                <td><strong>Email</strong></td>
-                <td>' . escape($data['email']) . '</td>
-            </tr>
-
-            <tr>
-                <td><strong>Phone</strong></td>
-                <td>' . escape($data['phone']) . '</td>
-            </tr>
-
-            <tr>
-                <td><strong>Message</strong></td>
-                <td>' . nl2br(
-                    escape($data['message'])
-                ) . '</td>
-            </tr>
-
-        </table>
-    ';
-
-    return sendMail(
-
-        MAIL_FROM_EMAIL,
-
-        $subject,
-
-        $body
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| ESTIMATOR LEAD ALERT
-|--------------------------------------------------------------------------
-*/
-
-function sendEstimatorLeadMail($data = [])
-{
-    $subject =
-    'New Construction Estimate Lead';
-
-    $body = '
-
-        <h2>New Estimator Lead</h2>
-
-        <table
-            width="100%"
-            cellpadding="10"
-        >
-
-            <tr>
-                <td><strong>Name</strong></td>
-                <td>' . escape($data['name']) . '</td>
-            </tr>
-
-            <tr>
-                <td><strong>Phone</strong></td>
-                <td>' . escape($data['phone']) . '</td>
-            </tr>
-
-            <tr>
-                <td><strong>Location</strong></td>
-                <td>' . escape($data['location']) . '</td>
-            </tr>
-
-            <tr>
-                <td><strong>Area</strong></td>
-                <td>' . escape($data['area']) . ' sqft</td>
-            </tr>
-
-            <tr>
-                <td><strong>Package</strong></td>
-                <td>' . escape($data['package']) . '</td>
-            </tr>
-
-            <tr>
-                <td><strong>Estimate</strong></td>
-                <td>
-                    ₹' . number_format(
-                        $data['estimate']
-                    ) . '
-                </td>
-            </tr>
-
-        </table>
-    ';
-
-    return sendMail(
-
-        MAIL_FROM_EMAIL,
-
-        $subject,
-
-        $body
+        $plainText
     );
 }
 
@@ -517,11 +591,11 @@ function sendEstimatorLeadMail($data = [])
 */
 
 function sendAdminLoginAlert(
-
-    $adminEmail,
-
-    $adminName
-) {
+    string $email,
+    string $adminName,
+    string $ipAddress,
+    string $device
+): bool {
 
     $subject =
     'Admin Login Alert';
@@ -530,83 +604,436 @@ function sendAdminLoginAlert(
 
         <h2>Admin Login Detected</h2>
 
+        <p>Hello '
+
+        .
+
+        escape($adminName)
+
+        .
+
+        ',</p>
+
         <p>
 
-            Hello '
-            . escape($adminName) .
-            ',
+            A new admin login was detected.
 
         </p>
 
-        <p>
-
-            A new admin login
-            was detected.
-
-        </p>
-
-        <table
-            width="100%"
-            cellpadding="10"
-        >
+        <table cellpadding="10">
 
             <tr>
-                <td><strong>IP Address</strong></td>
+
+                <td><strong>IP Address:</strong></td>
+
                 <td>'
-                . ($_SERVER['REMOTE_ADDR'] ?? 'Unknown')
-                . '</td>
+
+                .
+
+                escape($ipAddress)
+
+                .
+
+                '</td>
+
             </tr>
 
             <tr>
-                <td><strong>Time</strong></td>
+
+                <td><strong>Device:</strong></td>
+
                 <td>'
-                . date('d M Y h:i A')
-                . '</td>
+
+                .
+
+                escape($device)
+
+                .
+
+                '</td>
+
+            </tr>
+
+            <tr>
+
+                <td><strong>Time:</strong></td>
+
+                <td>'
+
+                .
+
+                date('Y-m-d H:i:s')
+
+                .
+
+                '</td>
+
             </tr>
 
         </table>
 
         <p>
 
-            If this wasn't you,
+            If this was not you,
             reset your password immediately.
 
         </p>
     ';
 
-    return sendMail(
+    return sendEmail(
 
-        $adminEmail,
+        $email,
 
         $subject,
 
         $body,
 
-        $adminName
+        'Admin login detected.'
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| SECURITY ALERT MAIL
+| SECURITY ALERT EMAIL
 |--------------------------------------------------------------------------
 */
 
 function sendSecurityAlert(
+    string $email,
+    string $event,
+    string $details = ''
+): bool {
 
-    $subject,
+    /*
+    |--------------------------------------------------------------------------
+    | ALERT THROTTLING
+    |--------------------------------------------------------------------------
+    */
 
-    $message
-) {
+    if (
+        !checkRateLimit(
+            'security_alert_' . md5($email),
+            5,
+            3600
+        )
+    ) {
 
-    return sendMail(
+        return false;
+    }
 
-        MAIL_FROM_EMAIL,
+    $subject =
+    'Security Alert';
 
-        '[SECURITY ALERT] ' . $subject,
+    $body = '
 
-        '<p>' . escape($message) . '</p>'
+        <h2>Security Alert</h2>
+
+        <p>
+
+            Suspicious activity detected.
+
+        </p>
+
+        <table cellpadding="10">
+
+            <tr>
+
+                <td><strong>Event:</strong></td>
+
+                <td>'
+
+                .
+
+                escape($event)
+
+                .
+
+                '</td>
+
+            </tr>
+
+            <tr>
+
+                <td><strong>Details:</strong></td>
+
+                <td>'
+
+                .
+
+                escape($details)
+
+                .
+
+                '</td>
+
+            </tr>
+
+            <tr>
+
+                <td><strong>IP Address:</strong></td>
+
+                <td>'
+
+                .
+
+                escape(
+                    $_SERVER['REMOTE_ADDR']
+                    ?? 'Unknown'
+                )
+
+                .
+
+                '</td>
+
+            </tr>
+
+        </table>
+
+        <p>
+
+            Contact support immediately if this was not you.
+
+        </p>
+    ';
+
+    return sendEmail(
+
+        $email,
+
+        $subject,
+
+        $body,
+
+        'Security alert triggered.'
     );
+}
+
+/*
+|--------------------------------------------------------------------------
+| CONTACT FORM NOTIFICATION
+|--------------------------------------------------------------------------
+*/
+
+function sendContactNotification(
+    string $name,
+    string $email,
+    string $phone,
+    string $message
+): bool {
+
+    $subject =
+    'New Contact Inquiry';
+
+    $body = '
+
+        <h2>New Contact Form Submission</h2>
+
+        <table cellpadding="10">
+
+            <tr>
+
+                <td><strong>Name:</strong></td>
+
+                <td>'
+
+                .
+
+                escape($name)
+
+                .
+
+                '</td>
+
+            </tr>
+
+            <tr>
+
+                <td><strong>Email:</strong></td>
+
+                <td>'
+
+                .
+
+                escape($email)
+
+                .
+
+                '</td>
+
+            </tr>
+
+            <tr>
+
+                <td><strong>Phone:</strong></td>
+
+                <td>'
+
+                .
+
+                escape($phone)
+
+                .
+
+                '</td>
+
+            </tr>
+
+            <tr>
+
+                <td><strong>Message:</strong></td>
+
+                <td>'
+
+                .
+
+                nl2br(
+                    escape($message)
+                )
+
+                .
+
+                '</td>
+
+            </tr>
+
+        </table>
+    ';
+
+    return sendEmail(
+
+        ADMIN_EMAIL,
+
+        $subject,
+
+        $body,
+
+        'New contact inquiry received.'
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| MAIL ACTIVITY LOGGING
+|--------------------------------------------------------------------------
+*/
+
+function logMailActivity(
+    string $recipient,
+    string $subject,
+    string $status,
+    string $error = ''
+): void {
+
+    global $conn;
+
+    try {
+
+        if (!isset($conn)) {
+
+            return;
+        }
+
+        $query = "
+
+            INSERT INTO mail_logs (
+
+                recipient,
+                subject,
+                status,
+                error_message,
+                ip_address,
+                created_at
+
+            )
+
+            VALUES (
+
+                :recipient,
+                :subject,
+                :status,
+                :error_message,
+                :ip_address,
+                NOW()
+            )
+        ";
+
+        $stmt =
+        $conn->prepare($query);
+
+        $stmt->execute([
+
+            ':recipient' =>
+            $recipient,
+
+            ':subject' =>
+            $subject,
+
+            ':status' =>
+            $status,
+
+            ':error_message' =>
+            $error,
+
+            ':ip_address' =>
+
+                $_SERVER['REMOTE_ADDR']
+                ?? 'Unknown'
+        ]);
+
+    } catch (Exception $e) {
+
+        error_log(
+            'Mail log failed.'
+        );
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| EMAIL VALIDATION
+|--------------------------------------------------------------------------
+*/
+
+function isValidEmail(
+    string $email
+): bool {
+
+    return filter_var(
+
+        $email,
+
+        FILTER_VALIDATE_EMAIL
+
+    ) !== false;
+}
+
+/*
+|--------------------------------------------------------------------------
+| TEST SMTP CONNECTION
+|--------------------------------------------------------------------------
+*/
+
+function testSmtpConnection(): bool
+{
+    try {
+
+        $mail =
+        createMailer();
+
+        $mail->smtpConnect();
+
+        $mail->smtpClose();
+
+        return true;
+
+    } catch (Exception $e) {
+
+        error_log(
+            'SMTP test failed.'
+        );
+
+        return false;
+    }
 }
 
 ?>
