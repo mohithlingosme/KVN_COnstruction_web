@@ -131,9 +131,9 @@ class AuthController
 
         $query = "
             SELECT *
-            FROM user_otps
+            FROM otps
             WHERE user_id = :user_id
-            AND purpose = 'login'
+            AND otp_type = 'login'
             AND is_used = 0
             AND expires_at > NOW()
             ORDER BY id DESC
@@ -158,7 +158,7 @@ class AuthController
 
         // OTP ATTEMPTS
 
-        if($otpRow['attempts'] >= 5){
+        if((int) $otpRow['attempts'] >= 5){
 
             return [
                 'status' => false,
@@ -168,10 +168,10 @@ class AuthController
 
         // VERIFY HASHED OTP
 
-        if(!password_verify($otp, $otpRow['otp'])){
+        if(!password_verify($otp, $otpRow['otp_code'])){
 
             $attemptQuery = "
-                UPDATE user_otps
+                UPDATE otps
                 SET attempts = attempts + 1
                 WHERE id = :id
             ";
@@ -199,8 +199,8 @@ class AuthController
         // MARK USED
 
         $usedQuery = "
-            UPDATE user_otps
-            SET is_used = 1
+            UPDATE otps
+            SET is_used = 1, used_at = NOW()
             WHERE id = :id
         ";
 
@@ -402,9 +402,9 @@ class AuthController
 
         $query = "
             SELECT *
-            FROM user_otps
+            FROM otps
             WHERE user_id = :user_id
-            AND purpose = 'password_reset'
+            AND otp_type = 'password_reset'
             AND is_used = 0
             AND expires_at > NOW()
             ORDER BY id DESC
@@ -429,7 +429,7 @@ class AuthController
 
         // ATTEMPT LIMIT
 
-        if($otpRow['attempts'] >= 5){
+        if((int) $otpRow['attempts'] >= 5){
 
             return [
                 'status' => false,
@@ -439,10 +439,10 @@ class AuthController
 
         // VERIFY HASHED OTP
 
-        if(!password_verify($otp, $otpRow['otp'])){
+        if(!password_verify($otp, $otpRow['otp_code'])){
 
             $attemptQuery = "
-                UPDATE user_otps
+                UPDATE otps
                 SET attempts = attempts + 1
                 WHERE id = :id
             ";
@@ -462,8 +462,8 @@ class AuthController
         // MARK USED
 
         $usedQuery = "
-            UPDATE user_otps
-            SET is_used = 1
+            UPDATE otps
+            SET is_used = 1, used_at = NOW()
             WHERE id = :id
         ";
 

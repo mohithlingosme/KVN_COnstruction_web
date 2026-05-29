@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 require_once ROOT_PATH . '/config/app.php';
 
 class LeadController
@@ -77,6 +79,39 @@ class LeadController
             $stmt->bindParam(':message', $message);
 
             $stmt->execute();
+
+            // Schedule follow-up 24 hours later
+            $leadId = (int)$this->conn->lastInsertId();
+            $followupType = 'call';
+            $status = 'pending';
+            $createdBy = $_SESSION['user_id'] ?? null;
+
+            if ($leadId > 0) {
+                $followupQuery = "
+                    INSERT INTO lead_followups (
+                        lead_id,
+                        followup_type,
+                        followup_date,
+                        status,
+                        created_by
+                    ) VALUES (
+                        :lead_id,
+                        :followup_type,
+                        DATE_ADD(NOW(), INTERVAL 24 HOUR),
+                        :status,
+                        :created_by
+                    )
+                ";
+
+                $followupStmt = $this->conn->prepare($followupQuery);
+
+                $followupStmt->execute([
+                    ':lead_id' => $leadId,
+                    ':followup_type' => $followupType,
+                    ':status' => $status,
+                    ':created_by' => $createdBy
+                ]);
+            }
 
             $_SESSION['success'] = "Lead created successfully.";
 

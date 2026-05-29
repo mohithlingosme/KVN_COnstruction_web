@@ -10,6 +10,7 @@ require_once ROOT_PATH . '/helpers/csrf.php';
 require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/rateLimiter.php';
 require_once ROOT_PATH . '/helpers/upload.php';
+require_once ROOT_PATH . '/helpers/mail.php';
 
 securityHeaders();
 
@@ -336,6 +337,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             // =====================================
 
                             $success = true;
+
+                            if (!empty($formData['email'])) {
+                                sendContactAutoResponseEmail(
+                                    $formData['email'],
+                                    $formData['full_name']
+                                );
+                            }
+
+                            // Schedule follow-up 24 hours later
+                            $leadId = (int)$conn->lastInsertId();
+                            if ($leadId > 0) {
+                                $followupQuery = "
+                                    INSERT INTO lead_followups (
+                                        lead_id,
+                                        followup_type,
+                                        followup_date,
+                                        status,
+                                        created_by
+                                    ) VALUES (
+                                        :lead_id,
+                                        :followup_type,
+                                        DATE_ADD(NOW(), INTERVAL 24 HOUR),
+                                        :status,
+                                        :created_by
+                                    )
+                                ";
+
+                                $followupStmt = $conn->prepare($followupQuery);
+
+                                $followupStmt->execute([
+                                    ':lead_id' => $leadId,
+                                    ':followup_type' => 'call',
+                                    ':status' => 'pending',
+                                    ':created_by' => $_SESSION['user_id'] ?? null
+                                ]);
+                            }
 
                             logSecurityEvent(
                                 'CONTACT_FORM_SUBMITTED',

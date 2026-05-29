@@ -3,6 +3,9 @@
 require_once '../config/app.php';
 
 $pageTitle = "KVN Construction | Premium Construction Company";
+$companyPhone = (string) site_setting('company_phone', '+91 9876543210');
+$companyEmail = (string) site_setting('company_email', 'info@kvnconstruction.com');
+$whatsAppPhone = preg_replace('/\D/', '', $companyPhone);
 
 // =============================================
 // FETCH PROJECTS
@@ -43,7 +46,7 @@ $blogs = $blogsStmt->fetchAll();
 $testimonialQuery = "
     SELECT *
     FROM testimonials
-    WHERE status = 'approved'
+    WHERE status = 'active'
     ORDER BY created_at DESC
     LIMIT 6
 ";
@@ -120,7 +123,7 @@ include '../app/views/layouts/header.php';
                     Free Estimate
                 </a>
 
-                <a href="https://wa.me/919876543210"
+                <a href="https://wa.me/<?php echo escape($whatsAppPhone); ?>"
                    target="_blank"
                    class="btn-secondary">
                     WhatsApp Us
@@ -743,7 +746,7 @@ include '../app/views/layouts/header.php';
 
                     <strong>Phone:</strong>
 
-                    +91 9876543210
+                    <?php echo escape($companyPhone); ?>
 
                 </div>
 
@@ -751,7 +754,7 @@ include '../app/views/layouts/header.php';
 
                     <strong>Email:</strong>
 
-                    info@kvnconstruction.com
+                    <?php echo escape($companyEmail); ?>
 
                 </div>
 

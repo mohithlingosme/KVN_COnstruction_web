@@ -1,483 +1,135 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| KVN CONSTRUCTION PLATFORM
-|--------------------------------------------------------------------------
-| CSRF SECURITY SYSTEM
-|--------------------------------------------------------------------------
-| File:
-| /helpers/csrf.php
-|--------------------------------------------------------------------------
-*/
-
-/*
-|--------------------------------------------------------------------------
-| CSRF CONFIG
-|--------------------------------------------------------------------------
-*/
+declare(strict_types=1);
 
 if (!defined('CSRF_TOKEN_EXPIRY')) {
-
     define('CSRF_TOKEN_EXPIRY', 1800);
 }
 
-/*
-|--------------------------------------------------------------------------
-| GENERATE CSRF TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function generateCsrfToken()
+function csrfFingerprint(): string
 {
-    /*
-    |--------------------------------------------------------------------------
-    | TOKEN EXISTS & VALID
-    |--------------------------------------------------------------------------
-    */
+    return secureHash(request_ip() . '|' . request_user_agent());
+}
 
-    if (
+function csrfToken(): string
+{
+    $expired = !isset($_SESSION['csrf_token_time'])
+        || (time() - (int) $_SESSION['csrf_token_time']) > CSRF_TOKEN_EXPIRY;
 
-        isset($_SESSION['csrf_token'])
-
-        &&
-
-        isset($_SESSION['csrf_token_time'])
-
-        &&
-
-        (
-
-            time() - $_SESSION['csrf_token_time']
-
-        ) < CSRF_TOKEN_EXPIRY
-    ) {
-
-        return $_SESSION['csrf_token'];
+    if (!isset($_SESSION['csrf_token']) || $expired) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token_time'] = time();
+        $_SESSION['csrf_fingerprint'] = csrfFingerprint();
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | GENERATE NEW TOKEN
-    |--------------------------------------------------------------------------
-    */
-
-    $_SESSION['csrf_token'] =
-
-        bin2hex(random_bytes(32));
-
-    $_SESSION['csrf_token_time'] =
-    time();
-
-    /*
-    |--------------------------------------------------------------------------
-    | OPTIONAL SESSION BINDING
-    |--------------------------------------------------------------------------
-    */
-
-    $_SESSION['csrf_fingerprint'] =
-
-        hash(
-
-            'sha256',
-
-            ($_SERVER['REMOTE_ADDR'] ?? '')
-
-            .
-
-            ($_SERVER['HTTP_USER_AGENT'] ?? '')
-        );
 
     return $_SESSION['csrf_token'];
 }
 
-/*
-|--------------------------------------------------------------------------
-| GET TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function csrfToken()
+// Alias for backwards compatibility
+function generateCsrfToken(): string
 {
+    return csrfToken();
+}
+
+function regenerateCsrfToken(): string
+{
+    unset($_SESSION['csrf_token'], $_SESSION['csrf_token_time'], $_SESSION['csrf_fingerprint']);
     return generateCsrfToken();
 }
 
-/*
-|--------------------------------------------------------------------------
-| CSRF INPUT FIELD
-|--------------------------------------------------------------------------
-*/
-
-function csrfField()
+function refreshCsrf(): string
 {
-    return '
-
-        <input
-            type="hidden"
-            name="csrf_token"
-            value="'
-
-            .
-
-            escape(csrfToken())
-
-            .
-
-            '">
-    ';
+    return regenerateCsrfToken();
 }
 
-/*
-|--------------------------------------------------------------------------
-| VERIFY TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function verifyCsrfToken($token = null)
+function destroyCsrfToken(): void
 {
-    /*
-    |--------------------------------------------------------------------------
-    | TOKEN EXISTS
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        empty($_SESSION['csrf_token'])
-
-        ||
-
-        empty($_SESSION['csrf_token_time'])
-    ) {
-
-        return false;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOKEN PROVIDED
-    |--------------------------------------------------------------------------
-    */
-
-    if (empty($token)) {
-
-        return false;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOKEN EXPIRY
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        (
-
-            time() - $_SESSION['csrf_token_time']
-
-        ) > CSRF_TOKEN_EXPIRY
-    ) {
-
-        destroyCsrfToken();
-
-        return false;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SESSION FINGERPRINT CHECK
-    |--------------------------------------------------------------------------
-    */
-
-    $currentFingerprint =
-
-        hash(
-
-            'sha256',
-
-            ($_SERVER['REMOTE_ADDR'] ?? '')
-
-            .
-
-            ($_SERVER['HTTP_USER_AGENT'] ?? '')
-        );
-
-    if (
-
-        isset($_SESSION['csrf_fingerprint'])
-
-        &&
-
-        $_SESSION['csrf_fingerprint']
-        !==
-        $currentFingerprint
-    ) {
-
-        if (function_exists('logSecurityEvent')) {
-
-            logSecurityEvent(
-
-                $_SESSION['user_id'] ?? null,
-
-                'csrf_fingerprint_mismatch',
-
-                'critical',
-
-                'Possible session hijack attempt'
-            );
-        }
-
-        destroyCsrfToken();
-
-        return false;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOKEN VERIFY
-    |--------------------------------------------------------------------------
-    */
-
-    return hash_equals(
-
-        $_SESSION['csrf_token'],
-
-        $token
-    );
+    unset($_SESSION['csrf_token'], $_SESSION['csrf_token_time'], $_SESSION['csrf_fingerprint']);
 }
 
-/*
-|--------------------------------------------------------------------------
-| VALIDATE CSRF REQUEST
-|--------------------------------------------------------------------------
-*/
-
-function validateCsrf()
+function verifyCsrfToken(?string $token = null): bool
 {
-    /*
-    |--------------------------------------------------------------------------
-    | ONLY VALIDATE STATE CHANGING METHODS
-    |--------------------------------------------------------------------------
-    */
+    if (empty($token) || empty($_SESSION['csrf_token']) || empty($_SESSION['csrf_token_time'])) {
+        return false;
+    }
 
-    $allowedMethods = [
+    if ((time() - (int) $_SESSION['csrf_token_time']) > CSRF_TOKEN_EXPIRY) {
+        destroyCsrfToken();
+        return false;
+    }
 
-        'POST',
-        'PUT',
-        'PATCH',
-        'DELETE'
-    ];
+    if (($_SESSION['csrf_fingerprint'] ?? '') !== csrfFingerprint()) {
+        destroyCsrfToken();
+        return false;
+    }
 
-    if (
+    return hash_equals((string) $_SESSION['csrf_token'], $token);
+}
 
-        !in_array(
+function validateCsrf(?string $token = null): bool
+{
+    $methods = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
-            $_SERVER['REQUEST_METHOD'],
-
-            $allowedMethods
-        )
-    ) {
-
+    if (!in_array(request_method(), $methods, true)) {
         return true;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | FETCH TOKEN
-    |--------------------------------------------------------------------------
-    */
+    $submittedToken = $token
+        ?? $_POST['csrf_token']
+        ?? $_SERVER['HTTP_X_CSRF_TOKEN']
+        ?? null;
 
-    $token =
+    if (!verifyCsrfToken($submittedToken)) {
+        logSecurityEvent($_SESSION['user_id'] ?? null, 'csrf_validation_failed', 'critical', [
+            'uri' => $_SERVER['REQUEST_URI'] ?? '',
+        ]);
 
-        $_POST['csrf_token']
-
-        ??
-
-        $_SERVER['HTTP_X_CSRF_TOKEN']
-
-        ??
-
-        '';
-
-    /*
-    |--------------------------------------------------------------------------
-    | VERIFY TOKEN
-    |--------------------------------------------------------------------------
-    */
-
-    if (!verifyCsrfToken($token)) {
-
-        if (function_exists('logSecurityEvent')) {
-
-            logSecurityEvent(
-
-                $_SESSION['user_id'] ?? null,
-
-                'csrf_validation_failed',
-
-                'critical',
-
-                'Invalid CSRF token'
-            );
+        if (is_ajax_request()) {
+            csrfJsonError();
         }
 
         http_response_code(403);
-
         exit('Invalid CSRF token.');
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ROTATE TOKEN AFTER SUCCESS
-    |--------------------------------------------------------------------------
-    */
 
     regenerateCsrfToken();
 
     return true;
 }
 
-/*
-|--------------------------------------------------------------------------
-| REGENERATE TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function regenerateCsrfToken()
+function csrfField(): string
 {
-    $_SESSION['csrf_token'] =
-
-        bin2hex(random_bytes(32));
-
-    $_SESSION['csrf_token_time'] =
-    time();
-
-    return $_SESSION['csrf_token'];
+    return '<input type="hidden" name="csrf_token" value="' . escape(csrfToken()) . '">';
 }
 
-/*
-|--------------------------------------------------------------------------
-| DESTROY TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function destroyCsrfToken()
+function csrfMetaTag(): string
 {
-    unset($_SESSION['csrf_token']);
-
-    unset($_SESSION['csrf_token_time']);
-
-    unset($_SESSION['csrf_fingerprint']);
+    return '<meta name="csrf-token" content="' . escape(csrfToken()) . '">';
 }
 
-/*
-|--------------------------------------------------------------------------
-| META TOKEN FOR AJAX
-|--------------------------------------------------------------------------
-*/
-
-function csrfMetaTag()
+function validateAjaxCsrf(): bool
 {
-    return '
-
-        <meta
-            name="csrf-token"
-            content="'
-
-            .
-
-            escape(csrfToken())
-
-            .
-
-            '">
-    ';
+    return verifyCsrfToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? null);
 }
 
-/*
-|--------------------------------------------------------------------------
-| GET AJAX TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function getAjaxCsrfToken()
+function getAjaxCsrfToken(): string
 {
     return csrfToken();
 }
 
-/*
-|--------------------------------------------------------------------------
-| VERIFY AJAX TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function validateAjaxCsrf()
+function csrfJsonError(): void
 {
-    $token =
-
-        $_SERVER['HTTP_X_CSRF_TOKEN']
-
-        ??
-
-        '';
-
-    return verifyCsrfToken($token);
-}
-
-/*
-|--------------------------------------------------------------------------
-| CSRF JSON RESPONSE
-|--------------------------------------------------------------------------
-*/
-
-function csrfJsonError()
-{
-    http_response_code(403);
-
-    header('Content-Type: application/json');
-
-    echo json_encode([
-
+    json_response([
         'success' => false,
-
-        'message' => 'Invalid CSRF token.'
-    ]);
-
-    exit;
+        'message' => 'Invalid CSRF token.',
+    ], 403);
 }
 
-/*
-|--------------------------------------------------------------------------
-| AUTO CLEANUP EXPIRED TOKEN
-|--------------------------------------------------------------------------
-*/
-
-function cleanupExpiredCsrf()
+function cleanupExpiredCsrf(): void
 {
-    if (
-
-        isset($_SESSION['csrf_token_time'])
-
-        &&
-
-        (
-
-            time() - $_SESSION['csrf_token_time']
-
-        ) > CSRF_TOKEN_EXPIRY
-    ) {
-
+    if (isset($_SESSION['csrf_token_time']) && (time() - (int) $_SESSION['csrf_token_time']) > CSRF_TOKEN_EXPIRY) {
         destroyCsrfToken();
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| INITIALIZE CLEANUP
-|--------------------------------------------------------------------------
-*/
-
 cleanupExpiredCsrf();
-
-?>

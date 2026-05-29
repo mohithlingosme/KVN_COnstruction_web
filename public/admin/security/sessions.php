@@ -2,657 +2,164 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+require_once '../../../middleware/admin.php';
 
-/*
-|--------------------------------------------------------------------------
-| AUTH CHECK
-|--------------------------------------------------------------------------
-*/
+if (request_method() === 'POST' && isset($_POST['revoke_session_id'])) {
+    $sessionId = (int) $_POST['revoke_session_id'];
+    $stmt = $conn->prepare('SELECT session_token, user_id FROM user_sessions WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $sessionId]);
+    $session = $stmt->fetch();
 
-if (!isset($_SESSION['admin_id'])) {
+    if ($session) {
+        revokeSessionByToken((string) $session['session_token'], 'admin_revoked');
+        logAdminAction((int) currentUserId(), 'session_revoked', 'Admin revoked a session', 'user_session', $sessionId);
+        $_SESSION['success'] = 'Session revoked successfully.';
+    }
 
-    header('Location: ../login.php');
-    exit();
+    redirect('admin/security/sessions.php');
 }
 
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
+$pageTitle = 'Session Monitor | ' . APP_NAME;
+$search = trim((string) ($_GET['q'] ?? ''));
+$page = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = 20;
+$offset = ($page - 1) * $perPage;
+$whereSql = '';
+$params = [];
 
-require_once '../../includes/db.php';
+if ($search !== '') {
+    $whereSql = 'WHERE u.full_name LIKE :search OR u.email LIKE :search OR us.ip_address LIKE :search';
+    $params[':search'] = '%' . $search . '%';
+}
 
-/*
-|--------------------------------------------------------------------------
-| CREATE SESSIONS TABLE
-|--------------------------------------------------------------------------
-*/
+$countStmt = $conn->prepare("SELECT COUNT(*) FROM user_sessions us INNER JOIN users u ON u.id = us.user_id $whereSql");
+$countStmt->execute($params);
+$total = (int) $countStmt->fetchColumn();
+$totalPages = max(1, (int) ceil($total / $perPage));
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS admin_sessions (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        admin_id INT NOT NULL,
-
-        admin_name VARCHAR(255) NOT NULL,
-
-        session_token VARCHAR(255) NOT NULL,
-
-        ip_address VARCHAR(100) NOT NULL,
-
-        device_name VARCHAR(255) NOT NULL,
-
-        browser VARCHAR(255) NOT NULL,
-
-        operating_system VARCHAR(255) NOT NULL,
-
-        login_time TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP,
-
-        last_activity TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP,
-
-        status ENUM('active','expired')
-        NOT NULL DEFAULT 'active'
-
-    )
-    "
+$stmt = $conn->prepare(
+    "SELECT us.*, u.full_name, u.email, u.role
+     FROM user_sessions us
+     INNER JOIN users u ON u.id = us.user_id
+     $whereSql
+     ORDER BY us.last_activity DESC
+     LIMIT :limit OFFSET :offset"
 );
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO SESSIONS
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM admin_sessions
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO admin_sessions
-            (
-
-                admin_id,
-                admin_name,
-                session_token,
-                ip_address,
-                device_name,
-                browser,
-                operating_system,
-                status
-
-            )
-
-            VALUES
-
-            (?, ?, ?, ?, ?, ?, ?, ?)
-            "
-        );
-
-    if ($stmt) {
-
-        $adminId =
-            1;
-
-        $adminName =
-            'Admin';
-
-        $sessionToken =
-            bin2hex(random_bytes(16));
-
-        $ipAddress =
-            '127.0.0.1';
-
-        $deviceName =
-            'Desktop';
-
-        $browser =
-            'Google Chrome';
-
-        $os =
-            'Windows 11';
-
-        $status =
-            'active';
-
-        $stmt->bind_param(
-            'isssssss',
-            $adminId,
-            $adminName,
-            $sessionToken,
-            $ipAddress,
-            $deviceName,
-            $browser,
-            $os,
-            $status
-        );
-
-        $stmt->execute();
-        $stmt->close();
-    }
+foreach ($params as $key => $value) {
+    $stmt->bindValue($key, $value);
 }
-
-/*
-|--------------------------------------------------------------------------
-| TERMINATE SESSION
-|--------------------------------------------------------------------------
-*/
-
-if (isset($_GET['terminate'])) {
-
-    $sessionId =
-        (int) $_GET['terminate'];
-
-    $stmt =
-        $conn->prepare(
-            "
-            UPDATE admin_sessions
-            SET status = 'expired'
-            WHERE id = ?
-            "
-        );
-
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $sessionId
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-    }
-
-    header(
-        'Location: sessions.php'
-    );
-
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| TERMINATE ALL SESSIONS
-|--------------------------------------------------------------------------
-*/
-
-if (isset($_POST['terminate_all'])) {
-
-    $conn->query(
-        "
-        UPDATE admin_sessions
-        SET status = 'expired'
-        "
-    );
-
-    header(
-        'Location: sessions.php'
-    );
-
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH SESSIONS
-|--------------------------------------------------------------------------
-*/
-
-$sessions =
-    $conn->query(
-        "
-        SELECT *
-        FROM admin_sessions
-        ORDER BY id DESC
-        "
-    );
-
+$stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
+$sessions = $stmt->fetchAll();
 ?>
-
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Admin Sessions
-    </title>
-
-    <style>
-
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
-
-        body{
-
-            font-family:Arial,sans-serif;
-
-            background:#f4f6f9;
-
-            padding:40px;
-        }
-
-        .container{
-
-            max-width:1400px;
-
-            margin:auto;
-
-            background:#fff;
-
-            padding:35px;
-
-            border-radius:20px;
-
-            box-shadow:
-                0 5px 20px rgba(0,0,0,0.08);
-        }
-
-        .top-bar{
-
-            display:flex;
-
-            justify-content:space-between;
-
-            align-items:center;
-
-            margin-bottom:30px;
-
-            flex-wrap:wrap;
-
-            gap:15px;
-        }
-
-        h1{
-
-            color:#222;
-        }
-
-        .terminate-all{
-
-            background:#dc3545;
-
-            color:#fff;
-
-            border:none;
-
-            padding:12px 20px;
-
-            border-radius:10px;
-
-            font-size:14px;
-
-            font-weight:bold;
-
-            cursor:pointer;
-        }
-
-        .terminate-all:hover{
-
-            background:#b02a37;
-        }
-
-        table{
-
-            width:100%;
-
-            border-collapse:collapse;
-        }
-
-        thead{
-
-            background:#f5b400;
-
-            color:#fff;
-        }
-
-        th,
-        td{
-
-            padding:15px;
-
-            border-bottom:1px solid #eee;
-
-            text-align:left;
-
-            vertical-align:top;
-        }
-
-        tr:hover{
-
-            background:#fafafa;
-        }
-
-        .badge{
-
-            padding:8px 14px;
-
-            border-radius:30px;
-
-            font-size:12px;
-
-            font-weight:bold;
-
-            display:inline-block;
-        }
-
-        .active{
-
-            background:#d4edda;
-
-            color:#155724;
-        }
-
-        .expired{
-
-            background:#f8d7da;
-
-            color:#721c24;
-        }
-
-        .terminate-btn{
-
-            display:inline-block;
-
-            background:#dc3545;
-
-            color:#fff;
-
-            padding:8px 12px;
-
-            border-radius:8px;
-
-            text-decoration:none;
-
-            font-size:13px;
-
-            font-weight:bold;
-        }
-
-        .terminate-btn:hover{
-
-            background:#b02a37;
-        }
-
-        .empty{
-
-            text-align:center;
-
-            padding:40px;
-
-            color:#777;
-        }
-
-        .back{
-
-            display:inline-block;
-
-            margin-top:25px;
-
-            text-decoration:none;
-
-            font-weight:bold;
-
-            color:#333;
-        }
-
-        @media(max-width:992px){
-
-            table{
-
-                display:block;
-
-                overflow-x:auto;
-            }
-        }
-
-    </style>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo escape($pageTitle); ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo base_url('../assets/admin/css/admin.css'); ?>">
 </head>
-
 <body>
+<div class="admin-layout">
+    <?php include '../../../app/views/layouts/sidebar.php'; ?>
+    <div class="admin-main">
+        <?php include '../../../app/views/layouts/navbar.php'; ?>
+        <div class="admin-content">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Active Sessions</h1>
+                    <p>Monitor concurrent sessions, devices, and revoke access when needed.</p>
+                </div>
+            </div>
 
-<div class="container">
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success"><?php echo escape($_SESSION['success']); unset($_SESSION['success']); ?></div>
+            <?php endif; ?>
 
-    <div class="top-bar">
+            <div class="section-card mb-4">
+                <form method="GET" class="row g-3 align-items-end">
+                    <div class="col-lg-4">
+                        <label class="form-label">Search</label>
+                        <input type="text" name="q" class="form-control" value="<?php echo escape($search); ?>" placeholder="User, email, or IP">
+                    </div>
+                    <div class="col-lg-2">
+                        <button type="submit" class="btn-admin w-100">Filter</button>
+                    </div>
+                </form>
+            </div>
 
-        <h1>
-            Admin Sessions
-        </h1>
-
-        <form method="POST">
-
-            <button
-                type="submit"
-                name="terminate_all"
-                class="terminate-all"
-                onclick="return confirm('Terminate all sessions?')"
-            >
-                Terminate All Sessions
-            </button>
-
-        </form>
-
-    </div>
-
-    <table>
-
-        <thead>
-
-            <tr>
-
-                <th>ID</th>
-
-                <th>Admin</th>
-
-                <th>IP Address</th>
-
-                <th>Device</th>
-
-                <th>Browser</th>
-
-                <th>OS</th>
-
-                <th>Login Time</th>
-
-                <th>Last Activity</th>
-
-                <th>Status</th>
-
-                <th>Action</th>
-
-            </tr>
-
-        </thead>
-
-        <tbody>
-
-        <?php if ($sessions && $sessions->num_rows > 0): ?>
-
-            <?php while ($row = $sessions->fetch_assoc()): ?>
-
-                <tr>
-
-                    <td>
-
-                        <?php
-                            echo (int)$row['id'];
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <?php
-                            echo htmlspecialchars(
-                                (string)$row['admin_name']
-                            );
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <?php
-                            echo htmlspecialchars(
-                                (string)$row['ip_address']
-                            );
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <?php
-                            echo htmlspecialchars(
-                                (string)$row['device_name']
-                            );
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <?php
-                            echo htmlspecialchars(
-                                (string)$row['browser']
-                            );
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <?php
-                            echo htmlspecialchars(
-                                (string)$row['operating_system']
-                            );
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <?php
-                            echo htmlspecialchars(
-                                (string)$row['login_time']
-                            );
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <?php
-                            echo htmlspecialchars(
-                                (string)$row['last_activity']
-                            );
-                        ?>
-
-                    </td>
-
-                    <td>
-
-                        <span
-                            class="badge <?php echo htmlspecialchars((string)$row['status']); ?>"
-                        >
-
-                            <?php
-                                echo ucfirst(
-                                    htmlspecialchars(
-                                        (string)$row['status']
-                                    )
-                                );
-                            ?>
-
-                        </span>
-
-                    </td>
-
-                    <td>
-
-                        <?php if ($row['status'] === 'active'): ?>
-
-                            <a
-                                href="?terminate=<?php echo (int)$row['id']; ?>"
-                                class="terminate-btn"
-                                onclick="return confirm('Terminate this session?')"
-                            >
-                                Terminate
-                            </a>
-
+            <div class="section-card">
+                <div class="section-header d-flex justify-content-between align-items-center">
+                    <h4>Session Records</h4>
+                    <span class="text-muted"><?php echo number_format($total); ?> total</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>IP</th>
+                                <th>Device</th>
+                                <th>Last Activity</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php if ($sessions): ?>
+                            <?php foreach ($sessions as $session): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo escape((string) $session['full_name']); ?></strong><br>
+                                        <small class="text-muted"><?php echo escape((string) $session['email']); ?></small>
+                                    </td>
+                                    <td><?php echo escape((string) $session['role']); ?></td>
+                                    <td><?php echo escape((string) ($session['ip_address'] ?? '-')); ?></td>
+                                    <td><?php echo escape((string) ($session['device_name'] ?? $session['user_agent'] ?? '-')); ?></td>
+                                    <td><?php echo escape((string) ($session['last_activity'] ?? '-')); ?></td>
+                                    <td>
+                                        <span class="badge <?php echo ((int) $session['is_active'] === 1 && empty($session['revoked_at'])) ? 'bg-success' : 'bg-secondary'; ?>">
+                                            <?php echo ((int) $session['is_active'] === 1 && empty($session['revoked_at'])) ? 'Active' : 'Revoked'; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ((int) $session['is_active'] === 1 && empty($session['revoked_at'])): ?>
+                                            <form method="POST">
+                                                <?php echo csrfField(); ?>
+                                                <input type="hidden" name="revoke_session_id" value="<?php echo (int) $session['id']; ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger">Revoke</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
                         <?php else: ?>
-
-                            Expired
-
+                            <tr><td colspan="7" class="text-center py-4">No sessions found.</td></tr>
                         <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
 
-                    </td>
-
-                </tr>
-
-            <?php endwhile; ?>
-
-        <?php else: ?>
-
-            <tr>
-
-                <td
-                    colspan="10"
-                    class="empty"
-                >
-
-                    No active sessions found.
-
-                </td>
-
-            </tr>
-
-        <?php endif; ?>
-
-        </tbody>
-
-    </table>
-
-    <a
-        href="../dashboard.php"
-        class="back"
-    >
-        ← Back to Dashboard
-    </a>
-
+                <nav class="mt-4">
+                    <ul class="pagination">
+                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                            <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
+                                <a class="page-link" href="?page=<?php echo $i; ?>&q=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
+                            </li>
+                        <?php endfor; ?>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
 </body>
-
 </html>

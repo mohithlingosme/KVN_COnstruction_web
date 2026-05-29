@@ -2,51 +2,10 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../config/app.php';
 
-/*
-|--------------------------------------------------------------------------
-| DESTROY ALL SESSION DATA
-|--------------------------------------------------------------------------
-*/
-
-$_SESSION = [];
-
-/*
-|--------------------------------------------------------------------------
-| DELETE SESSION COOKIE
-|--------------------------------------------------------------------------
-*/
-
-if (ini_get('session.use_cookies')) {
-
-    $params = session_get_cookie_params();
-
-    setcookie(
-        session_name(),
-        '',
-        time() - 42000,
-        $params['path'],
-        $params['domain'],
-        $params['secure'],
-        $params['httponly']
-    );
+if (isLoggedIn()) {
+    logSecurityEvent(currentUserId(), 'client_logout', 'info', 'Client logged out');
 }
 
-/*
-|--------------------------------------------------------------------------
-| DESTROY SESSION
-|--------------------------------------------------------------------------
-*/
-
-session_destroy();
-
-/*
-|--------------------------------------------------------------------------
-| REDIRECT TO CLIENT LOGIN
-|--------------------------------------------------------------------------
-*/
-
-header('Location: login.php');
-
-exit();
+logout();

@@ -4,6 +4,10 @@ if (!defined('APP_NAME')) {
     require_once '../../../config/app.php';
 }
 
+$companyPhone = (string) site_setting('company_phone', '+91 9876543210');
+$companyEmail = (string) site_setting('company_email', 'info@kvnconstruction.com');
+$whatsAppPhone = preg_replace('/\D/', '', $companyPhone);
+
 ?>
 
 <!-- ================================= -->
@@ -192,9 +196,8 @@ if (!defined('APP_NAME')) {
 
                             <i class="bi bi-telephone-fill"></i>
 
-                            <a href="tel:+919876543210">
-
-                                +91 98765 43210
+                            <a href="tel:<?php echo escape($companyPhone); ?>">
+                                <?php echo escape($companyPhone); ?>
 
                             </a>
 
@@ -204,9 +207,8 @@ if (!defined('APP_NAME')) {
 
                             <i class="bi bi-envelope-fill"></i>
 
-                            <a href="mailto:info@kvnconstruction.com">
-
-                                info@kvnconstruction.com
+                            <a href="mailto:<?php echo escape($companyEmail); ?>">
+                                <?php echo escape($companyEmail); ?>
 
                             </a>
 
@@ -273,7 +275,7 @@ if (!defined('APP_NAME')) {
 <!-- ================================= -->
 
 <a
-    href="https://wa.me/919876543210"
+    href="https://wa.me/<?php echo escape($whatsAppPhone); ?>"
     class="whatsapp-float"
     target="_blank"
 >

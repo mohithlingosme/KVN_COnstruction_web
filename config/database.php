@@ -2,21 +2,21 @@
 
 class Database
 {
-    // =====================================
-    // DATABASE CONFIGURATION
-    // =====================================
+    private string $host;
+    private string $db_name;
+    private string $username;
+    private string $password;
+    private string $charset;
+    private ?PDO $conn = null;
 
-    private $host     = 'localhost';
-
-    private $db_name  = 'kvnc_platform';
-
-    private $username = 'root';
-
-    private $password = '';
-
-    private $charset  = 'utf8mb4';
-
-    private $conn;
+    public function __construct()
+    {
+        $this->host = defined('DB_HOST') ? DB_HOST : 'localhost';
+        $this->db_name = defined('DB_NAME') ? DB_NAME : 'kvnc_platform';
+        $this->username = defined('DB_USER') ? DB_USER : 'root';
+        $this->password = defined('DB_PASS') ? DB_PASS : '';
+        $this->charset = defined('DB_CHARSET') ? DB_CHARSET : 'utf8mb4';
+    }
 
     // =====================================
     // CREATE CONNECTION
@@ -89,24 +89,15 @@ class Database
 
             // HIDE SENSITIVE ERRORS IN PRODUCTION
 
-            if($this->isLocalhost()){
-
-                die(
-
-                    "Database Connection Failed: " .
-
-                    $e->getMessage()
-                );
-
-            } else {
-
-                error_log($e->getMessage());
-
-                die(
-
-                    "Database connection error."
-                );
+            if (function_exists('logApplicationError')) {
+                logApplicationError('database_connection_error', ['message' => $e->getMessage()]);
             }
+
+            if($this->isLocalhost() && (!defined('APP_DEBUG') || APP_DEBUG)){
+                die("Database Connection Failed: " . $e->getMessage());
+            }
+
+            die("Database connection error.");
         }
 
         return $this->conn;

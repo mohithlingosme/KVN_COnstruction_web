@@ -261,6 +261,7 @@ include '../app/views/layouts/header.php';
                                         class="form-check-input"
                                         type="checkbox"
                                         id="remember"
+                                        name="remember_me"
                                     >
 
                                     <label

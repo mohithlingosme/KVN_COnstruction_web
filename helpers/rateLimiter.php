@@ -1,726 +1,268 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| KVN CONSTRUCTION PLATFORM
-|--------------------------------------------------------------------------
-| ADVANCED RATE LIMITER
-|--------------------------------------------------------------------------
-| File:
-| /helpers/rateLimiter.php
-|--------------------------------------------------------------------------
-*/
+declare(strict_types=1);
 
-/*
-|--------------------------------------------------------------------------
-| DEFAULT LIMITS
-|--------------------------------------------------------------------------
-*/
-
-define('DEFAULT_RATE_LIMIT', 5);
-
-define('DEFAULT_RATE_WINDOW', 300);
-
-/*
-|--------------------------------------------------------------------------
-| CLIENT IDENTIFIER
-|--------------------------------------------------------------------------
-*/
-
-function limiterIdentifier()
-{
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-
-    $agent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-
-    return hash(
-
-        'sha256',
-
-        $ip . $agent
-    );
+if (!defined('DEFAULT_RATE_LIMIT')) {
+    define('DEFAULT_RATE_LIMIT', 5);
 }
 
-/*
-|--------------------------------------------------------------------------
-| CURRENT ROUTE
-|--------------------------------------------------------------------------
-*/
+if (!defined('DEFAULT_RATE_WINDOW')) {
+    define('DEFAULT_RATE_WINDOW', 300);
+}
 
-function currentRouteName()
+function limiterIdentifier(?string $suffix = null): string
+{
+    $base = request_ip() . '|' . request_user_agent();
+
+    if ($suffix !== null && $suffix !== '') {
+        $base .= '|' . $suffix;
+    }
+
+    return secureHash($base);
+}
+
+function currentRouteName(): string
 {
     return $_SERVER['REQUEST_URI'] ?? 'unknown';
 }
 
-/*
-|--------------------------------------------------------------------------
-| CHECK RATE LIMIT
-|--------------------------------------------------------------------------
-*/
-
-function checkRateLimit(
-
-    $actionType,
-
-    $maxAttempts = DEFAULT_RATE_LIMIT,
-
-    $decaySeconds = DEFAULT_RATE_WINDOW
-) {
-
-    global $conn;
-
-    $identifier =
-    limiterIdentifier();
-
-    $routeName =
-    currentRouteName();
-
-    try {
-
-        /*
-        |--------------------------------------------------------------------------
-        | FETCH RATE LIMIT
-        |--------------------------------------------------------------------------
-        */
-
-        $query = "
-
-            SELECT *
-
-            FROM rate_limits
-
-            WHERE identifier = :identifier
-
-            AND action_type = :action_type
-
-            AND route_name = :route_name
-
-            LIMIT 1
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':identifier' =>
-            $identifier,
-
-            ':action_type' =>
-            $actionType,
-
-            ':route_name' =>
-            $routeName
-        ]);
-
-        $record =
-        $stmt->fetch();
-
-        /*
-        |--------------------------------------------------------------------------
-        | NO RECORD
-        |--------------------------------------------------------------------------
-        */
-
-        if (!$record) {
-
-            createRateLimit(
-
-                $identifier,
-
-                $actionType,
-
-                $routeName
-            );
-
-            return true;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | BLOCKED CHECK
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-
-            !empty($record['blocked_until'])
-
-            &&
-
-            strtotime($record['blocked_until']) > time()
-        ) {
-
-            if (function_exists('logSecurityEvent')) {
-
-                logSecurityEvent(
-
-                    $_SESSION['user_id'] ?? null,
-
-                    'rate_limit_blocked',
-
-                    'warning',
-
-                    'Blocked action: ' . $actionType
-                );
-            }
-
-            return false;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESET WINDOW
-        |--------------------------------------------------------------------------
-        */
-
-        $updatedAt =
-        strtotime($record['updated_at']);
-
-        if (
-
-            (time() - $updatedAt)
-            > $decaySeconds
-        ) {
-
-            resetRateLimit($actionType);
-
-            return true;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | MAX ATTEMPTS REACHED
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-
-            $record['attempts']
-            >=
-            $maxAttempts
-        ) {
-
-            blockRateLimit(
-
-                $identifier,
-
-                $actionType,
-
-                $routeName,
-
-                $decaySeconds
-            );
-
-            return false;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | INCREMENT ATTEMPTS
-        |--------------------------------------------------------------------------
-        */
-
-        incrementRateLimit(
-
-            $identifier,
-
-            $actionType,
-
-            $routeName
-        );
-
-        return true;
-
-    } catch (Exception $e) {
-
-        error_log(
-
-            'Rate Limit Error: '
-
-            .
-
-            $e->getMessage()
-        );
-
-        return true;
+function normalizeRateLimitArgs($identifierOrMaxAttempts = null, ?int $maxAttempts = null, ?int $decaySeconds = null): array
+{
+    $identifier = limiterIdentifier();
+    $limit = DEFAULT_RATE_LIMIT;
+    $window = DEFAULT_RATE_WINDOW;
+
+    if (is_int($identifierOrMaxAttempts)) {
+        $limit = $identifierOrMaxAttempts;
+        $window = $maxAttempts ?? DEFAULT_RATE_WINDOW;
+    } elseif (is_string($identifierOrMaxAttempts) && $maxAttempts !== null && $decaySeconds !== null) {
+        $identifier = limiterIdentifier($identifierOrMaxAttempts);
+        $limit = $maxAttempts;
+        $window = $decaySeconds;
+    } elseif ($maxAttempts !== null && $decaySeconds !== null) {
+        $limit = $maxAttempts;
+        $window = $decaySeconds;
     }
+
+    return [$identifier, $limit, $window];
 }
 
-/*
-|--------------------------------------------------------------------------
-| CREATE RATE LIMIT RECORD
-|--------------------------------------------------------------------------
-*/
-
-function createRateLimit(
-
-    $identifier,
-
-    $actionType,
-
-    $routeName
-) {
-
-    global $conn;
-
-    $query = "
-
-        INSERT INTO rate_limits (
-
-            identifier,
-            action_type,
-            route_name,
-            attempts,
-            created_at,
-            updated_at
-
-        ) VALUES (
-
-            :identifier,
-            :action_type,
-            :route_name,
-            1,
-            NOW(),
-            NOW()
-        )
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':identifier' =>
-        $identifier,
-
-        ':action_type' =>
-        $actionType,
-
-        ':route_name' =>
-        $routeName
-    ]);
-}
-
-/*
-|--------------------------------------------------------------------------
-| INCREMENT RATE LIMIT
-|--------------------------------------------------------------------------
-*/
-
-function incrementRateLimit(
-
-    $identifier,
-
-    $actionType,
-
-    $routeName
-) {
-
-    global $conn;
-
-    $query = "
-
-        UPDATE rate_limits
-
-        SET
-
-            attempts = attempts + 1,
-            updated_at = NOW()
-
-        WHERE identifier = :identifier
-
-        AND action_type = :action_type
-
-        AND route_name = :route_name
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':identifier' =>
-        $identifier,
-
-        ':action_type' =>
-        $actionType,
-
-        ':route_name' =>
-        $routeName
-    ]);
-}
-
-/*
-|--------------------------------------------------------------------------
-| BLOCK RATE LIMIT
-|--------------------------------------------------------------------------
-*/
-
-function blockRateLimit(
-
-    $identifier,
-
-    $actionType,
-
-    $routeName,
-
-    $seconds
-) {
-
-    global $conn;
-
-    $blockedUntil = date(
-
-        'Y-m-d H:i:s',
-
-        strtotime(
-            '+' . $seconds . ' seconds'
-        )
-    );
-
-    $query = "
-
-        UPDATE rate_limits
-
-        SET blocked_until = :blocked_until
-
-        WHERE identifier = :identifier
-
-        AND action_type = :action_type
-
-        AND route_name = :route_name
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':blocked_until' =>
-        $blockedUntil,
-
-        ':identifier' =>
-        $identifier,
-
-        ':action_type' =>
-        $actionType,
-
-        ':route_name' =>
-        $routeName
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECURITY LOG
-    |--------------------------------------------------------------------------
-    */
-
-    if (function_exists('logSecurityEvent')) {
-
-        logSecurityEvent(
-
-            $_SESSION['user_id'] ?? null,
-
-            'rate_limit_exceeded',
-
-            'critical',
-
-            'Action blocked: ' . $actionType
-        );
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| RESET RATE LIMIT
-|--------------------------------------------------------------------------
-*/
-
-function resetRateLimit($actionType)
+function fetchRateLimitRecord(string $actionType, string $identifier): ?array
 {
     global $conn;
 
-    $identifier =
-    limiterIdentifier();
+    if (!isset($conn)) {
+        return null;
+    }
 
-    $routeName =
-    currentRouteName();
-
-    $query = "
-
-        DELETE FROM rate_limits
-
-        WHERE identifier = :identifier
-
-        AND action_type = :action_type
-
-        AND route_name = :route_name
-    ";
-
-    $stmt =
-    $conn->prepare($query);
+    $stmt = $conn->prepare(
+        'SELECT *
+         FROM rate_limits
+         WHERE identifier = :identifier
+           AND action_type = :action_type
+           AND route_name = :route_name
+         LIMIT 1'
+    );
 
     $stmt->execute([
+        ':identifier' => $identifier,
+        ':action_type' => $actionType,
+        ':route_name' => currentRouteName(),
+    ]);
 
-        ':identifier' =>
-        $identifier,
+    $record = $stmt->fetch();
 
-        ':action_type' =>
-        $actionType,
+    return $record ?: null;
+}
 
-        ':route_name' =>
-        $routeName
+function checkRateLimit(string $actionType, $identifierOrMaxAttempts = null, ?int $maxAttempts = null, ?int $decaySeconds = null): bool
+{
+    global $conn;
+
+    if (!isset($conn)) {
+        return true;
+    }
+
+    [$identifier, $limit, $window] = normalizeRateLimitArgs($identifierOrMaxAttempts, $maxAttempts, $decaySeconds);
+    $record = fetchRateLimitRecord($actionType, $identifier);
+
+    if ($record === null) {
+        return true;
+    }
+
+    if (!empty($record['blocked_until']) && strtotime((string) $record['blocked_until']) > time()) {
+        return false;
+    }
+
+    $updatedAt = strtotime((string) ($record['updated_at'] ?? 'now'));
+
+    if ((time() - $updatedAt) > $window) {
+        resetRateLimit($actionType, $identifier);
+        return true;
+    }
+
+    return (int) $record['attempts'] < $limit;
+}
+
+function incrementRateLimit(string $actionType, $identifierOrNull = null, ?int $maybeMaxAttempts = null): void
+{
+    global $conn;
+
+    if (!isset($conn)) {
+        return;
+    }
+
+    $identifier = is_string($identifierOrNull) && $maybeMaxAttempts === null
+        ? limiterIdentifier($identifierOrNull)
+        : limiterIdentifier();
+
+    $record = fetchRateLimitRecord($actionType, $identifier);
+
+    if ($record === null) {
+        $stmt = $conn->prepare(
+            'INSERT INTO rate_limits (
+                identifier,
+                action_type,
+                route_name,
+                attempts,
+                created_at,
+                updated_at
+            ) VALUES (
+                :identifier,
+                :action_type,
+                :route_name,
+                1,
+                NOW(),
+                NOW()
+            )'
+        );
+
+        $stmt->execute([
+            ':identifier' => $identifier,
+            ':action_type' => $actionType,
+            ':route_name' => currentRouteName(),
+        ]);
+
+        return;
+    }
+
+    $stmt = $conn->prepare(
+        'UPDATE rate_limits
+         SET attempts = attempts + 1, updated_at = NOW()
+         WHERE id = :id'
+    );
+    $stmt->execute([':id' => $record['id']]);
+}
+
+function blockRateLimit(string $actionType, int $seconds, ?string $identifierSuffix = null): void
+{
+    global $conn;
+
+    if (!isset($conn)) {
+        return;
+    }
+
+    $identifier = limiterIdentifier($identifierSuffix);
+    $record = fetchRateLimitRecord($actionType, $identifier);
+
+    if ($record === null) {
+        incrementRateLimit($actionType, $identifierSuffix);
+        $record = fetchRateLimitRecord($actionType, $identifier);
+    }
+
+    if ($record === null) {
+        return;
+    }
+
+    $stmt = $conn->prepare('UPDATE rate_limits SET blocked_until = DATE_ADD(NOW(), INTERVAL :seconds SECOND) WHERE id = :id');
+    $stmt->bindValue(':seconds', $seconds);
+    $stmt->bindValue(':id', $record['id']);
+    $stmt->execute();
+}
+
+function resetRateLimit(string $actionType, ?string $identifier = null): void
+{
+    global $conn;
+
+    if (!isset($conn)) {
+        return;
+    }
+
+    $stmt = $conn->prepare(
+        'DELETE FROM rate_limits
+         WHERE identifier = :identifier
+           AND action_type = :action_type
+           AND route_name = :route_name'
+    );
+
+    $stmt->execute([
+        ':identifier' => $identifier ?? limiterIdentifier(),
+        ':action_type' => $actionType,
+        ':route_name' => currentRouteName(),
     ]);
 }
 
-/*
-|--------------------------------------------------------------------------
-| REMAINING ATTEMPTS
-|--------------------------------------------------------------------------
-*/
+function clearRateLimit(string $actionType, ?string $identifierSuffix = null): void
+{
+    resetRateLimit($actionType, limiterIdentifier($identifierSuffix));
+}
 
-function remainingAttempts(
+function remainingAttempts(string $actionType, int $maxAttempts = DEFAULT_RATE_LIMIT): int
+{
+    $record = fetchRateLimitRecord($actionType, limiterIdentifier());
 
-    $actionType,
-
-    $maxAttempts = DEFAULT_RATE_LIMIT
-) {
-
-    global $conn;
-
-    $identifier =
-    limiterIdentifier();
-
-    $routeName =
-    currentRouteName();
-
-    $query = "
-
-        SELECT attempts
-
-        FROM rate_limits
-
-        WHERE identifier = :identifier
-
-        AND action_type = :action_type
-
-        AND route_name = :route_name
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':identifier' =>
-        $identifier,
-
-        ':action_type' =>
-        $actionType,
-
-        ':route_name' =>
-        $routeName
-    ]);
-
-    $record =
-    $stmt->fetch();
-
-    if (!$record) {
-
+    if ($record === null) {
         return $maxAttempts;
     }
 
-    return max(
-
-        0,
-
-        $maxAttempts - $record['attempts']
-    );
+    return max(0, $maxAttempts - (int) $record['attempts']);
 }
 
-/*
-|--------------------------------------------------------------------------
-| RETRY AFTER
-|--------------------------------------------------------------------------
-*/
-
-function retryAfter($actionType)
+function retryAfter(string $actionType): int
 {
-    global $conn;
+    $record = fetchRateLimitRecord($actionType, limiterIdentifier());
 
-    $identifier =
-    limiterIdentifier();
-
-    $routeName =
-    currentRouteName();
-
-    $query = "
-
-        SELECT blocked_until
-
-        FROM rate_limits
-
-        WHERE identifier = :identifier
-
-        AND action_type = :action_type
-
-        AND route_name = :route_name
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':identifier' =>
-        $identifier,
-
-        ':action_type' =>
-        $actionType,
-
-        ':route_name' =>
-        $routeName
-    ]);
-
-    $record =
-    $stmt->fetch();
-
-    if (
-
-        !$record
-
-        ||
-
-        empty($record['blocked_until'])
-    ) {
-
+    if ($record === null || empty($record['blocked_until'])) {
         return 0;
     }
 
-    return max(
-
-        0,
-
-        strtotime($record['blocked_until'])
-        - time()
-    );
+    return max(0, strtotime((string) $record['blocked_until']) - time());
 }
 
-/*
-|--------------------------------------------------------------------------
-| CLEANUP EXPIRED LIMITS
-|--------------------------------------------------------------------------
-*/
-
-function cleanupExpiredRateLimits()
+function cleanupExpiredRateLimits(): void
 {
     global $conn;
 
-    try {
-
-        $query = "
-
-            DELETE FROM rate_limits
-
-            WHERE updated_at
-            <
-
-            DATE_SUB(
-                NOW(),
-                INTERVAL 1 DAY
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute();
-
-    } catch (Exception $e) {
-
-        error_log(
-            $e->getMessage()
-        );
+    if (!isset($conn)) {
+        return;
     }
+
+    $conn->exec('DELETE FROM rate_limits WHERE updated_at < DATE_SUB(NOW(), INTERVAL 1 DAY)');
 }
 
-/*
-|--------------------------------------------------------------------------
-| COMMON LIMIT CONFIGS
-|--------------------------------------------------------------------------
-*/
-
-function loginRateLimit()
+function loginRateLimit(): bool
 {
-    return checkRateLimit(
-
-        'login',
-
-        5,
-
-        300
-    );
+    return checkRateLimit('login', LOGIN_RATE_LIMIT, LOGIN_RATE_WINDOW);
 }
 
-function adminLoginRateLimit()
+function adminLoginRateLimit(): bool
 {
-    return checkRateLimit(
-
-        'admin_login',
-
-        3,
-
-        600
-    );
+    return checkRateLimit('admin_login', 3, 600);
 }
 
-function otpRateLimit()
+function otpRateLimit(): bool
 {
-    return checkRateLimit(
-
-        'otp',
-
-        3,
-
-        600
-    );
+    return checkRateLimit('otp', OTP_RATE_LIMIT, OTP_RATE_WINDOW);
 }
 
-function estimatorRateLimit()
+function estimatorRateLimit(): bool
 {
-    return checkRateLimit(
-
-        'estimator',
-
-        20,
-
-        3600
-    );
+    return checkRateLimit('estimator', 20, 3600);
 }
 
-function contactRateLimit()
+function contactRateLimit(): bool
 {
-    return checkRateLimit(
-
-        'contact',
-
-        5,
-
-        3600
-    );
+    return checkRateLimit('contact_form', 5, 3600);
 }
-
-/*
-|--------------------------------------------------------------------------
-| AUTO CLEANUP
-|--------------------------------------------------------------------------
-*/
 
 cleanupExpiredRateLimits();
-
-?>

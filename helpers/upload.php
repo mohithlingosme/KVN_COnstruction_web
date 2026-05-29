@@ -263,6 +263,80 @@ function ensureUploadDirectory($directory)
     }
 }
 
+function secureUpload(
+    array $file,
+    string $directory,
+    array $allowedExtensions = [],
+    int $maxBytes = MAX_UPLOAD_SIZE
+) {
+    if (empty($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return [
+            'success' => false,
+            'message' => 'Invalid upload.',
+        ];
+    }
+
+    if (($file['size'] ?? 0) > $maxBytes) {
+        return [
+            'success' => false,
+            'message' => 'File exceeds size limit.',
+        ];
+    }
+
+    if (!validateFileExtension($file['name'] ?? '', $allowedExtensions)) {
+        return [
+            'success' => false,
+            'message' => 'Invalid file extension.',
+        ];
+    }
+
+    $allowedMimeTypes = [];
+
+    foreach ($allowedExtensions as $extension) {
+        $extension = strtolower($extension);
+
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $allowedMimeTypes = array_merge($allowedMimeTypes, ALLOWED_IMAGE_TYPES);
+        }
+
+        if (in_array($extension, ['pdf', 'doc', 'docx'], true)) {
+            $allowedMimeTypes = array_merge($allowedMimeTypes, ALLOWED_DOCUMENT_TYPES);
+        }
+    }
+
+    if ($allowedMimeTypes !== [] && !validateMimeType($file, array_unique($allowedMimeTypes))) {
+        return [
+            'success' => false,
+            'message' => 'Invalid file type.',
+        ];
+    }
+
+    if (array_intersect(array_map('strtolower', $allowedExtensions), ['jpg', 'jpeg', 'png', 'webp']) !== [] && !validateImage($file) && in_array(strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'webp'], true)) {
+        return [
+            'success' => false,
+            'message' => 'Corrupted image.',
+        ];
+    }
+
+    ensureUploadDirectory($directory);
+
+    $filename = generateSecureFilename($file['name']);
+    $destination = rtrim($directory, '/\\') . DIRECTORY_SEPARATOR . $filename;
+
+    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        return [
+            'success' => false,
+            'message' => 'Upload failed.',
+        ];
+    }
+
+    return [
+        'success' => true,
+        'filename' => $filename,
+        'path' => str_replace(ROOT_PATH . DIRECTORY_SEPARATOR, '', $destination),
+    ];
+}
+
 /*
 |--------------------------------------------------------------------------
 | UPLOAD IMAGE
@@ -688,14 +762,15 @@ function deleteUploadedFile($path)
     |--------------------------------------------------------------------------
     */
 
+    $resolvedPath = realpath($fullPath);
+    $resolvedUploadPath = realpath(UPLOAD_BASE_PATH);
+
     if (
-
-        strpos(
-
-            realpath($fullPath),
-
-            realpath(UPLOAD_BASE_PATH)
-        ) !== 0
+        $resolvedPath === false
+        ||
+        $resolvedUploadPath === false
+        ||
+        strpos($resolvedPath, $resolvedUploadPath) !== 0
     ) {
 
         suspiciousActivity(

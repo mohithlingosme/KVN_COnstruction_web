@@ -1,1 +1,57 @@
-﻿
+# =============================================================================
+# KVN CONSTRUCTION PLATFORM - PUBLIC DIRECTORY SECURITY
+# =============================================================================
+
+# Disable directory listing
+Options -Indexes
+
+# Enable URL rewriting
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Sitemap and robots rewriting
+    RewriteRule ^sitemap\.xml$ sitemap.php [L,QSA]
+    RewriteRule ^robots\.txt$ robots.php [L,QSA]
+
+    # Block access to sensitive files
+    RewriteRule \.env$ - [F,L]
+    RewriteRule \.git/ - [F,L]
+    RewriteRule \.gitignore$ - [F,L]
+    RewriteRule composer\.(json|lock)$ - [F,L]
+    RewriteRule storage/ - [F,L]
+    RewriteRule vendor/ - [F,L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # XSS Protection (legacy browsers)
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Permissions Policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+</IfModule>
+
+# Block access to backup and temp files
+<FilesMatch "\.(bak|conf|dist|flt|fn|inc|ini|log|old|orig|psd|sh|sql|swp|sys)$">
+    Require all denied
+</FilesMatch>
+
+# Block access to hidden files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# =============================================================================
+# NOTE: HTTPS enforcement should be configured at server level
+# For Apache, add this to your VirtualHost configuration:
+# Redirect permanent / https://yourdomain.com/
+# =============================================================================

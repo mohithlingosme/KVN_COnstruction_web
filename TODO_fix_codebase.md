@@ -173,3 +173,8 @@ BEFORE LIVE DEPLOYMENT
  Configure fail2ban (optional)
  Enable SSL auto-renewal
  Add monitoring/log rotation
+
+
+ implement run the prompt in 
+ "C:\xampp\htdocs\KVN_Construction\planning\prompt.md"
+ 

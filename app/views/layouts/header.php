@@ -15,6 +15,9 @@ $metaDescription = $metaDescription ??
 $metaImage = $metaImage ??
 base_url('assets/images/og-image.jpg');
 
+$companyPhone = (string) site_setting('company_phone', '+91 9876543210');
+$companyEmail = (string) site_setting('company_email', 'info@kvnconstruction.com');
+
 // CURRENT PAGE
 $currentPage =
 basename($_SERVER['PHP_SELF']);
@@ -56,6 +59,8 @@ basename($_SERVER['PHP_SELF']);
         name="author"
         content="KVN Construction"
     >
+
+    <?php echo csrfMetaTag(); ?>
 
     <!-- ================================= -->
     <!-- OPEN GRAPH -->
@@ -359,9 +364,8 @@ basename($_SERVER['PHP_SELF']);
 
                 <i class="bi bi-telephone-fill"></i>
 
-                <a href="tel:+919876543210">
-
-                    +91 98765 43210
+                <a href="tel:<?php echo escape($companyPhone); ?>">
+                    <?php echo escape($companyPhone); ?>
 
                 </a>
 
@@ -369,9 +373,8 @@ basename($_SERVER['PHP_SELF']);
 
                 <i class="bi bi-envelope-fill"></i>
 
-                <a href="mailto:info@kvnconstruction.com">
-
-                    info@kvnconstruction.com
+                <a href="mailto:<?php echo escape($companyEmail); ?>">
+                    <?php echo escape($companyEmail); ?>
 
                 </a>
 

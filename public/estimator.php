@@ -104,8 +104,8 @@ $stmt =
 $conn->prepare(
     "
     SELECT *
-    FROM estimator_packages
-    WHERE status = 'Active'
+    FROM construction_packages
+    WHERE status = 'active'
     ORDER BY id ASC
     "
 );
@@ -251,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->prepare(
             "
             SELECT *
-            FROM estimator_packages
+            FROM construction_packages
             WHERE id = ?
             LIMIT 1
             "
@@ -293,24 +293,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $insert =
             $conn->prepare(
                 "
-                INSERT INTO estimator_leads
+                INSERT INTO estimator_requests
                 (
 
                     full_name,
                     phone,
                     email,
                     location,
-                    plot_size,
+                    plot_area,
                     floors,
                     package_id,
                     estimated_cost,
+                    status,
                     ip_address,
                     created_at
 
                 )
 
                 VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NOW())
                 "
             );
 

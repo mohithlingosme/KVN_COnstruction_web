@@ -1,0 +1,42 @@
+# =============================================================================
+# UPLOAD DIRECTORY SECURITY
+# =============================================================================
+# Prevent direct PHP execution and directory listing
+# =============================================================================
+
+# Disable directory listing
+Options -Indexes
+
+# Block all executable file types from execution
+<FilesMatch "\.(php|phtml|phar|pl|py|jsp|asp|sh|cgi|bat|cmd|exe|msi)$">
+    Require all denied
+</FilesMatch>
+
+# Remove handlers for executable extensions (prevents them from running as PHP)
+RemoveHandler .php .phtml .phar .pl .py .jsp .asp .sh .cgi .bat .cmd .exe .msi
+
+# Set MIME types to text/plain for executable files (displays code instead of executing)
+AddType text/plain .php .phtml .phar .pl .py .jsp .asp .sh .cgi .bat .cmd .exe .msi
+
+# Block access to hidden files (files starting with .)
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block access to config files
+<FilesMatch "\.(env|config|ini|yml|yaml|json)$">
+    Require all denied
+</FilesMatch>
+
+# Prevent script execution via data URIs
+<FilesMatch "\.(svg)$">
+    Require all denied
+</FilesMatch>
+
+# =============================================================================
+# NOTE: For additional security, consider:
+# 1. Moving uploads outside webroot
+# 2. Using a separate subdomain for uploads
+# 3. Implementing virus scanning for uploaded files
+# 4. Storing files with random names (not user-provided names)
+# =============================================================================

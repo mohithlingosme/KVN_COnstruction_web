@@ -34,7 +34,7 @@ if (!defined('SMS_PROVIDER')) {
 
 if (!defined('SMS_ENABLED')) {
 
-    define('SMS_ENABLED', true);
+    define('SMS_ENABLED', filter_var(env_value('SMS_ENABLED', '0'), FILTER_VALIDATE_BOOL));
 }
 
 if (!defined('SMS_RESEND_COOLDOWN')) {
@@ -608,8 +608,7 @@ function logSmsDelivery(
                     phone,
                     message,
                     status,
-                    response,
-                    ip_address,
+                    provider_response,
                     created_at
 
                 )
@@ -620,7 +619,6 @@ function logSmsDelivery(
                     :message,
                     :status,
                     :response,
-                    :ip_address,
                     NOW()
                 )
             ";
@@ -640,12 +638,7 @@ function logSmsDelivery(
                 $status,
 
                 ':response' =>
-                $response,
-
-                ':ip_address' =>
-
-                    $_SERVER['REMOTE_ADDR']
-                    ?? null
+                $response
             ]);
         }
 
@@ -673,6 +666,11 @@ function isValidPhoneNumber(
 
         $phone
     ) === 1;
+}
+
+function validateIndianPhone(string $phone): bool
+{
+    return isValidPhoneNumber(sanitizePhoneNumber($phone));
 }
 
 /*
