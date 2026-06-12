@@ -1,6 +1,6 @@
 <?php
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 class Model
 {
@@ -11,6 +11,29 @@ class Model
     protected $db;
 
     protected $conn;
+
+    protected array $allowedTables = [
+
+        'users',
+
+        'leads',
+
+        'lead_statuses',
+
+        'projects',
+
+        'blog_posts',
+
+        'testimonials',
+
+        'quotations',
+
+        'estimator_requests',
+
+        'portfolio_projects',
+
+        'services'
+    ];
 
     // =====================================
     // CONSTRUCTOR
@@ -83,6 +106,36 @@ class Model
     }
 
     // =====================================
+    // VALIDATE SQL IDENTIFIER INPUTS
+    // =====================================
+
+    protected function validateTable($table)
+    {
+        if (!in_array($table, $this->allowedTables, true)) {
+
+            throw new InvalidArgumentException(
+
+                "Table is not allowed: {$table}"
+            );
+        }
+
+        return $table;
+    }
+
+    protected function validateIdentifier($identifier)
+    {
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $identifier)) {
+
+            throw new InvalidArgumentException(
+
+                "Invalid SQL identifier: {$identifier}"
+            );
+        }
+
+        return $identifier;
+    }
+
+    // =====================================
     // BEGIN TRANSACTION
     // =====================================
 
@@ -118,6 +171,9 @@ class Model
         $id
     )
     {
+        $table =
+        $this->validateTable($table);
+
         $sql = "
             SELECT *
             FROM {$table}
@@ -145,6 +201,9 @@ class Model
         $id
     )
     {
+        $table =
+        $this->validateTable($table);
+
         $sql = "
             DELETE FROM {$table}
             WHERE id = :id
@@ -169,6 +228,9 @@ class Model
         $status
     )
     {
+        $table =
+        $this->validateTable($table);
+
         $sql = "
             UPDATE {$table}
 
@@ -198,6 +260,12 @@ class Model
         $value
     )
     {
+        $table =
+        $this->validateTable($table);
+
+        $column =
+        $this->validateIdentifier($column);
+
         $sql = "
             SELECT id
             FROM {$table}
@@ -227,6 +295,9 @@ class Model
         $conditions = ''
     )
     {
+        $table =
+        $this->validateTable($table);
+
         $sql = "
             SELECT COUNT(*) as total
             FROM {$table}
@@ -256,6 +327,17 @@ class Model
         $orderBy = 'id DESC'
     )
     {
+        $table =
+        $this->validateTable($table);
+
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*(\s+(ASC|DESC))?$/i', $orderBy)) {
+
+            throw new InvalidArgumentException(
+
+                "Invalid order by clause: {$orderBy}"
+            );
+        }
+
         $sql = "
             SELECT *
             FROM {$table}
@@ -314,6 +396,9 @@ class Model
         $id
     )
     {
+        $table =
+        $this->validateTable($table);
+
         $sql = "
             UPDATE {$table}
 
@@ -340,6 +425,9 @@ class Model
         $id
     )
     {
+        $table =
+        $this->validateTable($table);
+
         $sql = "
             UPDATE {$table}
 

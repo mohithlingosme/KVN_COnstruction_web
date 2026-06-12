@@ -118,7 +118,10 @@ if (
 
         (
             $clientId,
-            'Luxury Villa Construction',
+            'Luxury Villa Construction'
+        )
+    );
+
             'Site Preparation',
             'Initial land cleaning and foundation preparation completed.',
             'Completed',

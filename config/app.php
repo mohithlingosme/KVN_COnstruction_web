@@ -307,7 +307,11 @@ function is_admin()
 
         &&
 
-        $_SESSION['role'] === 'admin'
+        in_array(
+            $_SESSION['role'],
+            ['admin', 'super_admin'],
+            true
+        )
     );
 }
 

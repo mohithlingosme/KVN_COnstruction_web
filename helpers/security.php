@@ -1,37 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | SECURITY HELPER SYSTEM
 |--------------------------------------------------------------------------
-| File:
-| /helpers/security.php
+| File: /helpers/security.php
 |--------------------------------------------------------------------------
 */
 
 /*
 |--------------------------------------------------------------------------
-| SANITIZE STRING
+| SANITIZE INPUT
 |--------------------------------------------------------------------------
 */
-
-function sanitize($data)
+function sanitize(mixed $data): mixed
 {
     if (is_array($data)) {
-
         return array_map('sanitize', $data);
     }
 
     return trim(
-
         htmlspecialchars(
-
-            strip_tags($data),
-
+            strip_tags((string) $data),
             ENT_QUOTES,
-
             'UTF-8'
         )
     );
@@ -42,15 +37,11 @@ function sanitize($data)
 | ESCAPE OUTPUT
 |--------------------------------------------------------------------------
 */
-
-function escape($data)
+function escape(?string $data): string
 {
     return htmlspecialchars(
-
         $data ?? '',
-
         ENT_QUOTES,
-
         'UTF-8'
     );
 }
@@ -59,21 +50,12 @@ function escape($data)
 |--------------------------------------------------------------------------
 | SAFE RICH TEXT
 |--------------------------------------------------------------------------
-|
-| Used for:
-| - Blogs
-| - CMS
-| - Testimonials
-|--------------------------------------------------------------------------
 */
-
-function safeRichText($content)
+function safeRichText(string $content): string
 {
     return strip_tags(
-
         $content,
-
-        '<p><br><b><strong><i><em><ul><ol><li><h1><h2><h3><h4><blockquote><a><img>'
+        '<p><br><b><strong><i><em><u><ul><ol><li><h1><h2><h3><h4><blockquote><a><img>'
     );
 }
 
@@ -82,114 +64,107 @@ function safeRichText($content)
 | SECURITY HEADERS
 |--------------------------------------------------------------------------
 */
-
-function securityHeaders()
+function securityHeaders(): void
 {
-    /*
-    |--------------------------------------------------------------------------
-    | CLICKJACKING
-    |--------------------------------------------------------------------------
-    */
+    if (headers_sent()) {
+        return;
+    }
 
     header('X-Frame-Options: SAMEORIGIN');
-
-    /*
-    |--------------------------------------------------------------------------
-    | MIME SNIFFING
-    |--------------------------------------------------------------------------
-    */
-
     header('X-Content-Type-Options: nosniff');
-
-    /*
-    |--------------------------------------------------------------------------
-    | XSS FILTER
-    |--------------------------------------------------------------------------
-    */
-
     header('X-XSS-Protection: 1; mode=block');
-
-    /*
-    |--------------------------------------------------------------------------
-    | REFERRER POLICY
-    |--------------------------------------------------------------------------
-    */
+    header('Referrer-Policy: strict-origin-when-cross-origin');
 
     header(
-
-        'Referrer-Policy: strict-origin-when-cross-origin'
+        "Content-Security-Policy: "
+        . "default-src 'self'; "
+        . "img-src 'self' data: https:; "
+        . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; "
+        . "font-src 'self' https://fonts.gstatic.com; "
+        . "frame-src https://www.youtube.com https://www.youtube-nocookie.com; "
+        . "connect-src 'self'; "
+        . "object-src 'none'; "
+        . "base-uri 'self'; "
+        . "form-action 'self';"
     );
 
-    /*
-    |--------------------------------------------------------------------------
-    | CONTENT SECURITY POLICY
-    |--------------------------------------------------------------------------
-    */
-
     header(
-
-        "Content-Security-Policy:
-
-        default-src 'self';
-
-        img-src 'self' data: https:;
-
-        style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;
-
-        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com;
-
-        font-src 'self' https://fonts.gstatic.com;
-
-        frame-src https://www.youtube.com https://www.youtube-nocookie.com;
-
-        connect-src 'self';
-
-        object-src 'none';"
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | PERMISSIONS POLICY
-    |--------------------------------------------------------------------------
-    */
-
-    header(
-
-        'Permissions-Policy:
-        geolocation=(),
-        microphone=(),
-        camera=()'
+        'Permissions-Policy: geolocation=(), microphone=(), camera=()'
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| GENERATE SECURE TOKEN
+| CSRF TOKEN
 |--------------------------------------------------------------------------
 */
-
-function generateSecureToken($length = 64)
+function csrfToken(): string
 {
-    return bin2hex(
+    if (empty($_SESSION['_csrf_token'])) {
+        $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+    }
 
-        random_bytes($length / 2)
+    return $_SESSION['_csrf_token'];
+}
+
+/*
+|--------------------------------------------------------------------------
+| CSRF FIELD
+|--------------------------------------------------------------------------
+*/
+function csrfField(): string
+{
+    return '<input type="hidden" name="_token" value="' .
+        csrfToken() .
+        '">';
+}
+
+/*
+|--------------------------------------------------------------------------
+| VERIFY CSRF TOKEN
+|--------------------------------------------------------------------------
+*/
+function verifyCsrfToken(?string $token): bool
+{
+    if (
+        empty($_SESSION['_csrf_token']) ||
+        empty($token)
+    ) {
+        return false;
+    }
+
+    return hash_equals(
+        $_SESSION['_csrf_token'],
+        $token
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| HASH VALUE
+| REQUIRE CSRF
 |--------------------------------------------------------------------------
 */
-
-function secureHash($value)
+function requireCsrf(): void
 {
-    return hash(
+    $token = $_POST['_token']
+        ?? $_SERVER['HTTP_X_CSRF_TOKEN']
+        ?? null;
 
-        'sha256',
+    if (!verifyCsrfToken($token)) {
+        http_response_code(403);
+        exit('Invalid CSRF token');
+    }
+}
 
-        $value
-    );
+/*
+|--------------------------------------------------------------------------
+| GENERATE RANDOM TOKEN
+|--------------------------------------------------------------------------
+*/
+function generateSecureToken(int $length = 32): string
+{
+    return bin2hex(random_bytes($length));
 }
 
 /*
@@ -197,524 +172,68 @@ function secureHash($value)
 | PASSWORD HASH
 |--------------------------------------------------------------------------
 */
-
-function hashPassword($password)
+function hashPassword(string $password): string
 {
     return password_hash(
-
         $password,
-
-        PASSWORD_BCRYPT
+        PASSWORD_DEFAULT
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| VERIFY PASSWORD
+| PASSWORD VERIFY
 |--------------------------------------------------------------------------
 */
-
 function verifyPassword(
-
-    $password,
-
-    $hash
-) {
-
+    string $password,
+    string $hash
+): bool {
     return password_verify(
-
         $password,
-
         $hash
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| PASSWORD STRENGTH CHECK
+| RATE LIMIT
 |--------------------------------------------------------------------------
 */
+function rateLimit(
+    string $key,
+    int $maxAttempts = 10,
+    int $window = 300
+): bool {
 
-function validatePasswordStrength($password)
-{
-    return (
-
-        strlen($password) >= 8
-
-        &&
-
-        preg_match('/[A-Z]/', $password)
-
-        &&
-
-        preg_match('/[a-z]/', $password)
-
-        &&
-
-        preg_match('/[0-9]/', $password)
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE EMAIL
-|--------------------------------------------------------------------------
-*/
-
-function validateEmail($email)
-{
-    return filter_var(
-
-        $email,
-
-        FILTER_VALIDATE_EMAIL
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE PHONE
-|--------------------------------------------------------------------------
-*/
-
-function validatePhone($phone)
-{
-    return preg_match(
-
-        '/^[6-9]\d{9}$/',
-
-        $phone
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| SANITIZE PHONE
-|--------------------------------------------------------------------------
-*/
-
-function sanitizePhone($phone)
-{
-    return preg_replace(
-
-        '/[^0-9]/',
-
-        '',
-
-        $phone
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| GENERATE OTP
-|--------------------------------------------------------------------------
-*/
-
-function generateOtp($length = 6)
-{
-    return str_pad(
-
-        random_int(
-
-            0,
-
-            pow(10, $length) - 1
-        ),
-
-        $length,
-
-        '0',
-
-        STR_PAD_LEFT
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE FILE MIME
-|--------------------------------------------------------------------------
-*/
-
-function validateFileMime(
-
-    $file,
-
-    $allowedTypes = []
-) {
-
-    if (
-
-        empty($allowedTypes)
-    ) {
-
-        $allowedTypes = [
-
-            'image/jpeg',
-            'image/png',
-            'image/webp',
-            'application/pdf'
-        ];
+    if (!isset($_SESSION['_rate_limit'])) {
+        $_SESSION['_rate_limit'] = [];
     }
 
-    $finfo =
-    finfo_open(FILEINFO_MIME_TYPE);
+    $now = time();
 
-    $mime =
-    finfo_file(
+    if (
+        !isset($_SESSION['_rate_limit'][$key])
+    ) {
+        $_SESSION['_rate_limit'][$key] = [];
+    }
 
-        $finfo,
-
-        $file['tmp_name']
-    );
-
-    finfo_close($finfo);
-
-    return in_array(
-
-        $mime,
-
-        $allowedTypes
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE FILE EXTENSION
-|--------------------------------------------------------------------------
-*/
-
-function validateFileExtension(
-
-    $filename,
-
-    $allowedExtensions = []
-) {
-
-    $dangerousExtensions = [
-
-        'php',
-        'phtml',
-        'exe',
-        'sh',
-        'js',
-        'bat'
-    ];
-
-    $extension = strtolower(
-
-        pathinfo(
-
-            $filename,
-
-            PATHINFO_EXTENSION
-        )
+    $_SESSION['_rate_limit'][$key] = array_filter(
+        $_SESSION['_rate_limit'][$key],
+        fn ($timestamp) => ($now - $timestamp) < $window
     );
 
     if (
-
-        in_array(
-
-            $extension,
-
-            $dangerousExtensions
-        )
+        count($_SESSION['_rate_limit'][$key])
+        >=
+        $maxAttempts
     ) {
-
         return false;
     }
 
-    if (!empty($allowedExtensions)) {
-
-        return in_array(
-
-            $extension,
-
-            $allowedExtensions
-        );
-    }
+    $_SESSION['_rate_limit'][$key][] = $now;
 
     return true;
-}
-
-/*
-|--------------------------------------------------------------------------
-| SECURE FILE NAME
-|--------------------------------------------------------------------------
-*/
-
-function secureFilename($filename)
-{
-    $extension = pathinfo(
-
-        $filename,
-
-        PATHINFO_EXTENSION
-    );
-
-    return
-
-        uniqid('kvn_', true)
-
-        .
-
-        '.'
-
-        .
-
-        strtolower($extension);
-}
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE IMAGE
-|--------------------------------------------------------------------------
-*/
-
-function validateImage($file)
-{
-    return getimagesize(
-
-        $file['tmp_name']
-    ) !== false;
-}
-
-/*
-|--------------------------------------------------------------------------
-| LOG SECURITY EVENT
-|--------------------------------------------------------------------------
-*/
-
-function logSecurityEvent(
-
-    $userId,
-
-    $eventType,
-
-    $eventLevel = 'info',
-
-    $details = null
-) {
-
-    global $conn;
-
-    try {
-
-        $query = "
-
-            INSERT INTO security_logs (
-
-                user_id,
-                event_type,
-                event_level,
-                ip_address,
-                user_agent,
-                event_details,
-                request_uri,
-                created_at
-
-            ) VALUES (
-
-                :user_id,
-                :event_type,
-                :event_level,
-                :ip_address,
-                :user_agent,
-                :event_details,
-                :request_uri,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':user_id' =>
-            $userId,
-
-            ':event_type' =>
-            $eventType,
-
-            ':event_level' =>
-            $eventLevel,
-
-            ':ip_address' =>
-            $_SERVER['REMOTE_ADDR']
-            ?? null,
-
-            ':user_agent' =>
-            $_SERVER['HTTP_USER_AGENT']
-            ?? null,
-
-            ':event_details' =>
-            $details,
-
-            ':request_uri' =>
-            $_SERVER['REQUEST_URI']
-            ?? null
-        ]);
-
-    } catch (Exception $e) {
-
-        error_log(
-
-            'Security Log Error: '
-
-            .
-
-            $e->getMessage()
-        );
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| LOG ADMIN ACTION
-|--------------------------------------------------------------------------
-*/
-
-function logAdminAction(
-
-    $adminId,
-
-    $action,
-
-    $details = null
-) {
-
-    global $conn;
-
-    try {
-
-        $query = "
-
-            INSERT INTO audit_logs (
-
-                user_id,
-                action,
-                details,
-                ip_address,
-                created_at
-
-            ) VALUES (
-
-                :user_id,
-                :action,
-                :details,
-                :ip_address,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':user_id' =>
-            $adminId,
-
-            ':action' =>
-            $action,
-
-            ':details' =>
-            $details,
-
-            ':ip_address' =>
-            $_SERVER['REMOTE_ADDR']
-            ?? null
-        ]);
-
-    } catch (Exception $e) {
-
-        error_log(
-
-            'Audit Log Error: '
-
-            .
-
-            $e->getMessage()
-        );
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| SUSPICIOUS ACTIVITY
-|--------------------------------------------------------------------------
-*/
-
-function suspiciousActivity(
-
-    $reason,
-
-    $severity = 'critical'
-) {
-
-    logSecurityEvent(
-
-        null,
-
-        'suspicious_activity',
-
-        $severity,
-
-        $reason
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| CSRF SAFE POST
-|--------------------------------------------------------------------------
-*/
-
-function safePost($key)
-{
-    return sanitize(
-
-        $_POST[$key] ?? ''
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| SAFE GET
-|--------------------------------------------------------------------------
-*/
-
-function safeGet($key)
-{
-    return sanitize(
-
-        $_GET[$key] ?? ''
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| JSON RESPONSE
-|--------------------------------------------------------------------------
-*/
-
-function jsonResponse(
-
-    $data = [],
-
-    $status = 200
-) {
-
-    http_response_code($status);
-
-    header(
-        'Content-Type: application/json'
-    );
-
-    echo json_encode($data);
-
-    exit;
 }
 
 /*
@@ -722,11 +241,10 @@ function jsonResponse(
 | CLIENT IP
 |--------------------------------------------------------------------------
 */
-
-function clientIp()
+function getClientIp(): string
 {
     return $_SERVER['REMOTE_ADDR']
-    ?? 'UNKNOWN';
+        ?? 'UNKNOWN';
 }
 
 /*
@@ -734,11 +252,10 @@ function clientIp()
 | USER AGENT
 |--------------------------------------------------------------------------
 */
-
-function clientUserAgent()
+function getUserAgent(): string
 {
     return $_SERVER['HTTP_USER_AGENT']
-    ?? 'UNKNOWN';
+        ?? 'UNKNOWN';
 }
 
 /*
@@ -746,24 +263,12 @@ function clientUserAgent()
 | AJAX REQUEST
 |--------------------------------------------------------------------------
 */
-
-function isAjaxRequest()
+function isAjaxRequest(): bool
 {
-    return (
-
-        !empty(
-
-            $_SERVER['HTTP_X_REQUESTED_WITH']
-        )
-
+    return !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
         &&
-
-        strtolower(
-
-            $_SERVER['HTTP_X_REQUESTED_WITH']
-
-        ) === 'xmlhttprequest'
-    );
+        strtolower($_SERVER['HTTP_X_REQUESTED_WITH'])
+        === 'xmlhttprequest';
 }
 
 /*
@@ -771,61 +276,157 @@ function isAjaxRequest()
 | REQUIRE AJAX
 |--------------------------------------------------------------------------
 */
-
-function requireAjax()
+function requireAjax(): void
 {
     if (!isAjaxRequest()) {
-
         http_response_code(403);
-
         exit('Forbidden');
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| CLEAN EXPIRED SECURITY LOGS
+| SECURITY LOG
 |--------------------------------------------------------------------------
 */
+function logSecurityEvent(
+    ?int $userId,
+    string $event,
+    string $severity = 'info',
+    string $details = ''
+): void {
 
-function cleanupSecurityLogs($days = 90)
-{
-    global $conn;
+    if (!isset($GLOBALS['conn'])) {
+        return;
+    }
 
     try {
 
-        $query = "
-
-            DELETE FROM security_logs
-
-            WHERE created_at
-            <
-
-            DATE_SUB(
-                NOW(),
-                INTERVAL :days DAY
+        $stmt = $GLOBALS['conn']->prepare(
+            "INSERT INTO security_logs
+            (
+                user_id,
+                event_type,
+                severity,
+                details,
+                ip_address,
+                user_agent,
+                created_at
             )
-        ";
+            VALUES
+            (
+                :user_id,
+                :event_type,
+                :severity,
+                :details,
+                :ip_address,
+                :user_agent,
+                NOW()
+            )"
+        );
 
-        $stmt =
-        $conn->prepare($query);
+        $stmt->execute([
+            ':user_id'    => $userId,
+            ':event_type' => $event,
+            ':severity'   => $severity,
+            ':details'    => $details,
+            ':ip_address' => getClientIp(),
+            ':user_agent' => getUserAgent()
+        ]);
+
+    } catch (Throwable $e) {
+        error_log($e->getMessage());
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| CLEANUP SECURITY LOGS
+|--------------------------------------------------------------------------
+*/
+function cleanupSecurityLogs(int $days = 90): void
+{
+    if (!isset($GLOBALS['conn'])) {
+        return;
+    }
+
+    try {
+
+        $stmt = $GLOBALS['conn']->prepare(
+            "DELETE FROM security_logs
+             WHERE created_at <
+             DATE_SUB(NOW(), INTERVAL :days DAY)"
+        );
 
         $stmt->bindValue(
-
             ':days',
-
-            (int)$days,
-
+            $days,
             PDO::PARAM_INT
         );
 
         $stmt->execute();
 
-    } catch (Exception $e) {
-
-        error_log(
-            $e->getMessage()
-        );
+    } catch (Throwable $e) {
+        error_log($e->getMessage());
     }
 }
-?>
+
+/*
+|--------------------------------------------------------------------------
+| ADMIN AUDIT LOG
+|--------------------------------------------------------------------------
+*/
+if (!function_exists('logAdminAction')) {
+    function logAdminAction(
+        ?int $adminId,
+        string $action,
+        string $details = ''
+    ): void {
+
+        if (!isset($GLOBALS['conn'])) {
+            return;
+        }
+
+        try {
+
+            $stmt = $GLOBALS['conn']->prepare(
+                "INSERT INTO audit_logs
+                (
+                    user_id,
+                    action,
+                    details,
+                    ip_address,
+                    user_agent,
+                    created_at
+                )
+                VALUES
+                (
+                    :user_id,
+                    :action,
+                    :details,
+                    :ip_address,
+                    :user_agent,
+                    NOW()
+                )"
+            );
+
+            $stmt->execute([
+                ':user_id' => $adminId,
+                ':action' => $action,
+                ':details' => $details,
+                ':ip_address' => getClientIp(),
+                ':user_agent' => getUserAgent()
+            ]);
+
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+        }
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| AUTO APPLY SECURITY HEADERS
+|--------------------------------------------------------------------------
+*/
+securityHeaders();

@@ -2,6 +2,10 @@
 
 require_once '../config/app.php';
 
+require_once __DIR__ . '/../helpers/functions.php';
+
+$conn = $conn ?? null;
+
 $pageTitle = "KVN Construction | Premium Construction Company";
 
 // =============================================
@@ -248,8 +252,8 @@ include '../app/views/layouts/header.php';
                     <div class="project-image">
 
                         <img
-                            src="<?php echo base_url($project['featured_image']); ?>"
-                            alt="<?php echo escape($project['project_name']); ?>"
+src="<?php echo base_url($project['featured_image'] ?? ''); ?>"
+alt="<?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>"
                         >
 
                     </div>
@@ -257,15 +261,15 @@ include '../app/views/layouts/header.php';
                     <div class="project-content">
 
                         <h3>
-                            <?php echo escape($project['project_name']); ?>
+<?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>
                         </h3>
 
                         <p>
-                            <?php echo limitText($project['short_description'],120); ?>
+<?php echo limitText($project['short_description'] ?? '', 120); ?>
                         </p>
 
                         <a
-                            href="project-details.php?slug=<?php echo $project['slug']; ?>"
+href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
                             class="btn-main"
                         >
                             View Project
@@ -512,7 +516,7 @@ include '../app/views/layouts/header.php';
 
                         <p>
 
-                            “<?php echo limitText($testimonial['review'], 180); ?>”
+<?php echo limitText($testimonial['review'] ?? '', 180); ?>
 
                         </p>
 

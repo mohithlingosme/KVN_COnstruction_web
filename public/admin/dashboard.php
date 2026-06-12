@@ -1,6 +1,3 @@
-# /public/admin/dashboard.php
-
-```php
 <?php
 
 /*
@@ -22,6 +19,8 @@ require_once '../../helpers/formatter.php';
 
 require_once '../../helpers/security.php';
 
+require_once '../../app/models/Lead.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE CONFIG
@@ -37,41 +36,49 @@ $pageTitle =
 |--------------------------------------------------------------------------
 */
 
-function dashboardCount($table)
+class DashboardModel extends Model
 {
-    global $conn;
+    public function total($table)
+    {
+        return $this->count($table);
+    }
 
-    try {
+    public function latest($table, $limit = 5)
+    {
+        return $this->paginate(
 
-        $query = "SELECT COUNT(*) as total FROM {$table}";
+            $table,
 
-        $stmt = $conn->prepare($query);
+            $limit,
 
-        $stmt->execute();
+            0,
 
-        $result = $stmt->fetch();
+            '',
 
-        return $result['total'] ?? 0;
-
-    } catch(Exception $e) {
-
-        return 0;
+            'id DESC'
+        );
     }
 }
 
-$totalUsers = dashboardCount('users');
+$dashboardModel =
+new DashboardModel();
 
-$totalProjects = dashboardCount('projects');
+$leadModel =
+new Lead();
 
-$totalBlogs = dashboardCount('blog_posts');
+$totalUsers = $dashboardModel->total('users');
 
-$totalLeads = dashboardCount('leads');
+$totalProjects = $dashboardModel->total('projects');
 
-$totalTestimonials = dashboardCount('testimonials');
+$totalBlogs = $dashboardModel->total('blog_posts');
 
-$totalQuotations = dashboardCount('quotations');
+$totalLeads = $leadModel->count();
 
-$totalEstimatorRequests = dashboardCount('estimator_requests');
+$totalTestimonials = $dashboardModel->total('testimonials');
+
+$totalQuotations = $dashboardModel->total('quotations');
+
+$totalEstimatorRequests = $dashboardModel->total('estimator_requests');
 
 /*
 |--------------------------------------------------------------------------
@@ -79,28 +86,8 @@ $totalEstimatorRequests = dashboardCount('estimator_requests');
 |--------------------------------------------------------------------------
 */
 
-$recentLeads = [];
-
-try {
-
-    $query = "
-
-        SELECT *
-
-        FROM leads
-
-        ORDER BY id DESC
-
-        LIMIT 5
-    ";
-
-    $stmt = $conn->prepare($query);
-
-    $stmt->execute();
-
-    $recentLeads = $stmt->fetchAll();
-
-} catch(Exception $e) {}
+$recentLeads =
+$leadModel->latest(5);
 
 /*
 |--------------------------------------------------------------------------
@@ -108,28 +95,8 @@ try {
 |--------------------------------------------------------------------------
 */
 
-$recentProjects = [];
-
-try {
-
-    $query = "
-
-        SELECT *
-
-        FROM projects
-
-        ORDER BY id DESC
-
-        LIMIT 5
-    ";
-
-    $stmt = $conn->prepare($query);
-
-    $stmt->execute();
-
-    $recentProjects = $stmt->fetchAll();
-
-} catch(Exception $e) {}
+$recentProjects =
+$dashboardModel->latest('projects', 5);
 
 /*
 |--------------------------------------------------------------------------
@@ -137,28 +104,8 @@ try {
 |--------------------------------------------------------------------------
 */
 
-$recentBlogs = [];
-
-try {
-
-    $query = "
-
-        SELECT *
-
-        FROM blog_posts
-
-        ORDER BY id DESC
-
-        LIMIT 5
-    ";
-
-    $stmt = $conn->prepare($query);
-
-    $stmt->execute();
-
-    $recentBlogs = $stmt->fetchAll();
-
-} catch(Exception $e) {}
+$recentBlogs =
+$dashboardModel->latest('blog_posts', 5);
 
 ?>
 

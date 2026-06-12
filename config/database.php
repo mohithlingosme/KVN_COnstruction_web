@@ -118,6 +118,11 @@ class Database
 
     private function isLocalhost()
     {
+        if (php_sapi_name() === 'cli') {
+
+            return true;
+        }
+
         return in_array(
 
             $_SERVER['REMOTE_ADDR'] ?? '',

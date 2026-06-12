@@ -1,13 +1,21 @@
 <?php
 
-class Lead
-{
-    private $conn;
-    private $table = 'leads';
+require_once __DIR__ . '/../../core/Model.php';
 
-    public function __construct($database)
+class Lead extends Model
+{
+    protected $table = 'leads';
+
+    public function __construct($database = null)
     {
-        $this->conn = $database;
+        if ($database instanceof PDO) {
+
+            $this->conn = $database;
+
+            return;
+        }
+
+        parent::__construct();
     }
 
     // =====================================================
@@ -16,31 +24,63 @@ class Lead
 
     public function all()
     {
-        try {
+        $query = "
+            SELECT
+                leads.*,
+                leads.full_name AS name,
+                lead_statuses.name AS status,
+                lead_statuses.name AS status_name,
+                users.full_name AS assigned_user
+            FROM leads
+            LEFT JOIN lead_statuses
+                ON leads.status_id = lead_statuses.id
+            LEFT JOIN users
+                ON leads.assigned_to = users.id
+            ORDER BY leads.id DESC
+        ";
 
-            $query = "
-                SELECT
-                    leads.*,
-                    lead_statuses.name AS status_name,
-                    users.full_name AS assigned_user
-                FROM leads
-                LEFT JOIN lead_statuses
-                    ON leads.status_id = lead_statuses.id
-                LEFT JOIN users
-                    ON leads.assigned_to = users.id
-                ORDER BY leads.id DESC
-            ";
+        $stmt =
+        $this->query($query);
 
-            $stmt = $this->conn->prepare($query);
+        $this->execute($stmt);
 
-            $stmt->execute();
+        return $this->fetchAll($stmt);
+    }
 
-            return $stmt->fetchAll();
+    // =====================================================
+    // LATEST LEADS
+    // =====================================================
 
-        } catch (PDOException $e) {
+    public function latest($limit = 5)
+    {
+        $query = "
+            SELECT
+                leads.*,
+                leads.full_name AS name,
+                COALESCE(lead_statuses.name, 'new') AS status,
+                lead_statuses.name AS status_name,
+                users.full_name AS assigned_user
+            FROM leads
+            LEFT JOIN lead_statuses
+                ON leads.status_id = lead_statuses.id
+            LEFT JOIN users
+                ON leads.assigned_to = users.id
+            ORDER BY leads.id DESC
+            LIMIT :limit
+        ";
 
-            die($e->getMessage());
-        }
+        $stmt =
+        $this->query($query);
+
+        $stmt->bindValue(
+            ':limit',
+            (int)$limit,
+            PDO::PARAM_INT
+        );
+
+        $stmt->execute();
+
+        return $this->fetchAll($stmt);
     }
 
     // =====================================================
@@ -49,27 +89,7 @@ class Lead
 
     public function find($id)
     {
-        try {
-
-            $query = "
-                SELECT *
-                FROM {$this->table}
-                WHERE id = :id
-                LIMIT 1
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->bindParam(':id', $id);
-
-            $stmt->execute();
-
-            return $stmt->fetch();
-
-        } catch (PDOException $e) {
-
-            die($e->getMessage());
-        }
+        return $this->findById($this->table, $id);
     }
 
     // =====================================================
@@ -78,54 +98,58 @@ class Lead
 
     public function create($data)
     {
-        try {
+        $query = "
+            INSERT INTO {$this->table} (
+                full_name,
+                phone,
+                email,
+                location,
+                plot_size,
+                budget,
+                service_required,
+                source,
+                message,
+                status_id
+            )
+            VALUES (
+                :full_name,
+                :phone,
+                :email,
+                :location,
+                :plot_size,
+                :budget,
+                :service_required,
+                :source,
+                :message,
+                :status_id
+            )
+        ";
 
-            $query = "
-                INSERT INTO {$this->table} (
-                    full_name,
-                    phone,
-                    email,
-                    location,
-                    plot_size,
-                    budget,
-                    service_required,
-                    source,
-                    message,
-                    status_id
-                )
-                VALUES (
-                    :full_name,
-                    :phone,
-                    :email,
-                    :location,
-                    :plot_size,
-                    :budget,
-                    :service_required,
-                    :source,
-                    :message,
-                    :status_id
-                )
-            ";
+        $stmt =
+        $this->query($query);
 
-            $stmt = $this->conn->prepare($query);
+        return $this->execute($stmt, [
 
-            $stmt->bindParam(':full_name', $data['full_name']);
-            $stmt->bindParam(':phone', $data['phone']);
-            $stmt->bindParam(':email', $data['email']);
-            $stmt->bindParam(':location', $data['location']);
-            $stmt->bindParam(':plot_size', $data['plot_size']);
-            $stmt->bindParam(':budget', $data['budget']);
-            $stmt->bindParam(':service_required', $data['service_required']);
-            $stmt->bindParam(':source', $data['source']);
-            $stmt->bindParam(':message', $data['message']);
-            $stmt->bindParam(':status_id', $data['status_id']);
+            ':full_name' => $data['full_name'] ?? '',
 
-            return $stmt->execute();
+            ':phone' => $data['phone'] ?? '',
 
-        } catch (PDOException $e) {
+            ':email' => $data['email'] ?? '',
 
-            die($e->getMessage());
-        }
+            ':location' => $data['location'] ?? '',
+
+            ':plot_size' => $data['plot_size'] ?? '',
+
+            ':budget' => $data['budget'] ?? '',
+
+            ':service_required' => $data['service_required'] ?? '',
+
+            ':source' => $data['source'] ?? '',
+
+            ':message' => $data['message'] ?? '',
+
+            ':status_id' => $data['status_id'] ?? 1
+        ]);
     }
 
     // =====================================================
@@ -134,41 +158,44 @@ class Lead
 
     public function update($id, $data)
     {
-        try {
+        $query = "
+            UPDATE {$this->table}
+            SET
+                full_name = :full_name,
+                phone = :phone,
+                email = :email,
+                location = :location,
+                budget = :budget,
+                service_required = :service_required,
+                status_id = :status_id,
+                assigned_to = :assigned_to,
+                updated_at = NOW()
+            WHERE id = :id
+        ";
 
-            $query = "
-                UPDATE {$this->table}
-                SET
-                    full_name = :full_name,
-                    phone = :phone,
-                    email = :email,
-                    location = :location,
-                    budget = :budget,
-                    service_required = :service_required,
-                    status_id = :status_id,
-                    assigned_to = :assigned_to,
-                    updated_at = NOW()
-                WHERE id = :id
-            ";
+        $stmt =
+        $this->query($query);
 
-            $stmt = $this->conn->prepare($query);
+        return $this->execute($stmt, [
 
-            $stmt->bindParam(':full_name', $data['full_name']);
-            $stmt->bindParam(':phone', $data['phone']);
-            $stmt->bindParam(':email', $data['email']);
-            $stmt->bindParam(':location', $data['location']);
-            $stmt->bindParam(':budget', $data['budget']);
-            $stmt->bindParam(':service_required', $data['service_required']);
-            $stmt->bindParam(':status_id', $data['status_id']);
-            $stmt->bindParam(':assigned_to', $data['assigned_to']);
-            $stmt->bindParam(':id', $id);
+            ':full_name' => $data['full_name'] ?? '',
 
-            return $stmt->execute();
+            ':phone' => $data['phone'] ?? '',
 
-        } catch (PDOException $e) {
+            ':email' => $data['email'] ?? '',
 
-            die($e->getMessage());
-        }
+            ':location' => $data['location'] ?? '',
+
+            ':budget' => $data['budget'] ?? '',
+
+            ':service_required' => $data['service_required'] ?? '',
+
+            ':status_id' => $data['status_id'] ?? 1,
+
+            ':assigned_to' => $data['assigned_to'] ?? null,
+
+            ':id' => $id
+        ]);
     }
 
     // =====================================================
@@ -177,48 +204,16 @@ class Lead
 
     public function delete($id)
     {
-        try {
-
-            $query = "
-                DELETE FROM {$this->table}
-                WHERE id = :id
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->bindParam(':id', $id);
-
-            return $stmt->execute();
-
-        } catch (PDOException $e) {
-
-            die($e->getMessage());
-        }
+        return $this->deleteById($this->table, $id);
     }
 
     // =====================================================
     // COUNT LEADS
     // =====================================================
 
-    public function count()
+    public function count($table = null, $conditions = '')
     {
-        try {
-
-            $query = "
-                SELECT COUNT(*) as total
-                FROM {$this->table}
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->execute();
-
-            return $stmt->fetch()['total'];
-
-        } catch (PDOException $e) {
-
-            die($e->getMessage());
-        }
+        return parent::count($this->table);
     }
 
     // =====================================================
@@ -227,27 +222,22 @@ class Lead
 
     public function getByStatus($statusId)
     {
-        try {
+        $query = "
+            SELECT *
+            FROM {$this->table}
+            WHERE status_id = :status_id
+            ORDER BY id DESC
+        ";
 
-            $query = "
-                SELECT *
-                FROM {$this->table}
-                WHERE status_id = :status_id
-                ORDER BY id DESC
-            ";
+        $stmt =
+        $this->query($query);
 
-            $stmt = $this->conn->prepare($query);
+        $this->execute($stmt, [
 
-            $stmt->bindParam(':status_id', $statusId);
+            ':status_id' => $statusId
+        ]);
 
-            $stmt->execute();
-
-            return $stmt->fetchAll();
-
-        } catch (PDOException $e) {
-
-            die($e->getMessage());
-        }
+        return $this->fetchAll($stmt);
     }
 }
 ?>

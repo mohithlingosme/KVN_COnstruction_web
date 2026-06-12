@@ -425,7 +425,11 @@ if (
 
     &&
 
-    $_SESSION['role'] === 'admin'
+    in_array(
+        $_SESSION['role'],
+        ['admin', 'super_admin'],
+        true
+    )
 ) {
 
     if (function_exists('logAdminAction')) {

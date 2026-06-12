@@ -12,185 +12,19 @@
 */
 
 require_once '../config/app.php';
+require_once ROOT_PATH . '/helpers/security.php';
+require_once ROOT_PATH . '/helpers/session.php';
+require_once ROOT_PATH . '/app/controllers/AuthController.php';
 
-require_once '../helpers/session.php';
+$controller = new AuthController($conn);
+$controller->logout();
 
-require_once '../helpers/security.php';
-
-/*
-|--------------------------------------------------------------------------
-| USER EXISTS
-|--------------------------------------------------------------------------
-*/
-
-if (isLoggedIn()) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECURITY LOG
-    |--------------------------------------------------------------------------
-    */
-
-    logSecurityEvent(
-
-        currentUserId(),
-
-        'user_logout',
-
-        'info',
-
-        'User logged out successfully'
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | REMOVE DATABASE SESSION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        isset($_SESSION['session_token'])
-    ) {
-
-        try {
-
-            $query = "
-
-                DELETE FROM user_sessions
-
-                WHERE session_token = :token
-            ";
-
-            $stmt =
-            $conn->prepare($query);
-
-            $stmt->execute([
-
-                ':token' =>
-                $_SESSION['session_token']
-            ]);
-
-        } catch (Exception $e) {
-
-            error_log(
-                $e->getMessage()
-            );
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ADMIN SESSION CLEANUP
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        isset($_SESSION['is_admin'])
-
-        &&
-
-        $_SESSION['is_admin'] === true
-    ) {
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'admin_logout',
-
-            'info',
-
-            'Admin logged out'
-        );
-    }
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_name(SESSION_NAME);
+    session_start();
 }
 
-/*
-|--------------------------------------------------------------------------
-| DESTROY SESSION
-|--------------------------------------------------------------------------
-*/
+$_SESSION['success'] = 'Logged out successfully.';
 
-destroySession();
-
-/*
-|--------------------------------------------------------------------------
-| CLEAR COOKIES
-|--------------------------------------------------------------------------
-*/
-
-if (
-
-    isset($_COOKIE[session_name()])
-) {
-
-    setcookie(
-
-        session_name(),
-
-        '',
-
-        time() - 3600,
-
-        '/'
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| OPTIONAL REMEMBER ME COOKIE
-|--------------------------------------------------------------------------
-*/
-
-if (
-
-    isset($_COOKIE['remember_token'])
-) {
-
-    setcookie(
-
-        'remember_token',
-
-        '',
-
-        time() - 3600,
-
-        '/'
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| SUCCESS MESSAGE
-|--------------------------------------------------------------------------
-*/
-
-session_start();
-
-$_SESSION['success'] =
-'Logged out successfully.';
-
-/*
-|--------------------------------------------------------------------------
-| REDIRECT LOGIN
-|--------------------------------------------------------------------------
-*/
-
-header(
-
-    'Location: '
-
-    .
-
-    APP_URL
-
-    .
-
-    '/login.php'
-);
-
+header('Location: ' . APP_URL . '/login.php');
 exit;
-
-?>

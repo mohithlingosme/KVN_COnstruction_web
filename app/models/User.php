@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use PDO;
 use PDOException;
+use Exception;
 
 class User
 {
@@ -14,19 +17,24 @@ class User
         $this->db = $database;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | FIND USERS
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       FIND USERS
+    ========================================================= */
 
     public function findById(int $id): ?array
     {
         $query = "
+
             SELECT *
+
             FROM users
+
             WHERE id = :id
+
+            AND deleted_at IS NULL
+
             LIMIT 1
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -43,10 +51,17 @@ class User
     public function findByEmail(string $email): ?array
     {
         $query = "
+
             SELECT *
+
             FROM users
+
             WHERE email = :email
+
+            AND deleted_at IS NULL
+
             LIMIT 1
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -63,10 +78,17 @@ class User
     public function findByPhone(string $phone): ?array
     {
         $query = "
+
             SELECT *
+
             FROM users
+
             WHERE phone = :phone
+
+            AND deleted_at IS NULL
+
             LIMIT 1
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -80,19 +102,24 @@ class User
         return $user ?: null;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | ACCOUNT STATUS
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       ACCOUNT STATUS
+    ========================================================= */
 
     public function isActive(int $userId): bool
     {
         $query = "
+
             SELECT status
+
             FROM users
+
             WHERE id = :id
+
+            AND deleted_at IS NULL
+
             LIMIT 1
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -118,35 +145,87 @@ class User
         return strtotime($user['locked_until']) > time();
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | LOGIN ATTEMPTS
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       LOGIN ATTEMPTS
+    ========================================================= */
 
     public function incrementFailedAttempts(int $userId): bool
     {
-        $query = "
-            UPDATE users
-            SET failed_attempts = failed_attempts + 1
-            WHERE id = :id
-        ";
+        try {
 
-        $stmt = $this->db->prepare($query);
+            $this->db->beginTransaction();
 
-        return $stmt->execute([
-            ':id' => $userId
-        ]);
+            $query = "
+
+                UPDATE users
+
+                SET failed_attempts = failed_attempts + 1
+
+                WHERE id = :id
+
+            ";
+
+            $stmt = $this->db->prepare($query);
+
+            $stmt->execute([
+                ':id' => $userId
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUTO LOCK ACCOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            $lockQuery = "
+
+                UPDATE users
+
+                SET locked_until = DATE_ADD(
+                    NOW(),
+                    INTERVAL 15 MINUTE
+                )
+
+                WHERE id = :id
+
+                AND failed_attempts >= 5
+
+            ";
+
+            $lockStmt = $this->db->prepare($lockQuery);
+
+            $lockStmt->execute([
+                ':id' => $userId
+            ]);
+
+            $this->db->commit();
+
+            return true;
+
+        } catch (PDOException $e) {
+
+            $this->db->rollBack();
+
+            error_log($e->getMessage());
+
+            return false;
+        }
     }
 
     public function resetAttempts(int $userId): bool
     {
         $query = "
+
             UPDATE users
+
             SET
+
                 failed_attempts = 0,
-                locked_until = NULL
+                locked_until = NULL,
+                updated_at = NOW()
+
             WHERE id = :id
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -156,68 +235,118 @@ class User
         ]);
     }
 
-    public function lockAccount(
-        int $userId,
-        int $minutes = 15
-    ): bool {
-
-        $query = "
-            UPDATE users
-            SET locked_until = DATE_ADD(
-                NOW(),
-                INTERVAL :minutes MINUTE
-            )
-            WHERE id = :id
-        ";
-
-        $stmt = $this->db->prepare($query);
-
-        $stmt->bindValue(':minutes', $minutes, PDO::PARAM_INT);
-
-        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
-
-        return $stmt->execute();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | PASSWORD
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       PASSWORD MANAGEMENT
+    ========================================================= */
 
     public function updatePassword(
         int $userId,
         string $password
     ): bool {
 
-        $query = "
-            UPDATE users
-            SET
-                password = :password,
-                failed_attempts = 0,
-                locked_until = NULL,
-                updated_at = NOW()
-            WHERE id = :id
-        ";
+        try {
 
-        $stmt = $this->db->prepare($query);
+            $this->db->beginTransaction();
 
-        return $stmt->execute([
+            /*
+            |--------------------------------------------------------------------------
+            | HASH PASSWORD
+            |--------------------------------------------------------------------------
+            */
 
-            ':password' => password_hash(
+            $hashedPassword = password_hash(
                 $password,
                 PASSWORD_DEFAULT
-            ),
+            );
 
-            ':id' => $userId
-        ]);
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE PASSWORD
+            |--------------------------------------------------------------------------
+            */
+
+            $query = "
+
+                UPDATE users
+
+                SET
+
+                    password = :password,
+                    failed_attempts = 0,
+                    locked_until = NULL,
+                    updated_at = NOW()
+
+                WHERE id = :id
+
+            ";
+
+            $stmt = $this->db->prepare($query);
+
+            $stmt->execute([
+
+                ':password' => $hashedPassword,
+
+                ':id' => $userId
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | PASSWORD HISTORY
+            |--------------------------------------------------------------------------
+            */
+
+            $historyQuery = "
+
+                INSERT INTO password_histories (
+
+                    user_id,
+                    password_hash,
+                    created_at
+
+                ) VALUES (
+
+                    :user_id,
+                    :password_hash,
+                    NOW()
+
+                )
+
+            ";
+
+            $historyStmt =
+            $this->db->prepare($historyQuery);
+
+            $historyStmt->execute([
+
+                ':user_id' => $userId,
+                ':password_hash' => $hashedPassword
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | INVALIDATE SESSIONS
+            |--------------------------------------------------------------------------
+            */
+
+            $this->invalidateUserSessions($userId);
+
+            $this->db->commit();
+
+            return true;
+
+        } catch (PDOException $e) {
+
+            $this->db->rollBack();
+
+            error_log($e->getMessage());
+
+            return false;
+        }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | OTP SYSTEM
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       OTP SYSTEM
+    ========================================================= */
 
     public function saveOtp(
         int $userId,
@@ -226,64 +355,113 @@ class User
         int $expiryMinutes = 5
     ): bool {
 
-        $this->expireOtp($userId, $purpose);
+        try {
 
-        $query = "
-            INSERT INTO user_otps (
+            $this->db->beginTransaction();
 
-                user_id,
-                otp,
-                purpose,
-                attempts,
-                resend_count,
-                is_used,
-                expires_at,
-                created_at
+            /*
+            |--------------------------------------------------------------------------
+            | EXPIRE OLD OTPs
+            |--------------------------------------------------------------------------
+            */
 
-            ) VALUES (
+            $this->expireOtp(
+                $userId,
+                $purpose
+            );
 
-                :user_id,
-                :otp,
-                :purpose,
-                0,
-                0,
-                0,
-                DATE_ADD(
-                    NOW(),
-                    INTERVAL :expiry MINUTE
-                ),
-                NOW()
-            )
-        ";
+            /*
+            |--------------------------------------------------------------------------
+            | INSERT OTP
+            |--------------------------------------------------------------------------
+            */
 
-        $stmt = $this->db->prepare($query);
+            $query = "
 
-        $stmt->bindValue(
-            ':user_id',
-            $userId,
-            PDO::PARAM_INT
-        );
+                INSERT INTO user_otps (
 
-        $stmt->bindValue(
-            ':otp',
-            password_hash(
-                $otp,
-                PASSWORD_DEFAULT
-            )
-        );
+                    user_id,
+                    otp,
+                    purpose,
+                    attempts,
+                    resend_count,
+                    ip_address,
+                    user_agent,
+                    is_used,
+                    expires_at,
+                    created_at
 
-        $stmt->bindValue(
-            ':purpose',
-            $purpose
-        );
+                ) VALUES (
 
-        $stmt->bindValue(
-            ':expiry',
-            $expiryMinutes,
-            PDO::PARAM_INT
-        );
+                    :user_id,
+                    :otp,
+                    :purpose,
+                    0,
+                    0,
+                    :ip_address,
+                    :user_agent,
+                    0,
+                    DATE_ADD(
+                        NOW(),
+                        INTERVAL :expiry MINUTE
+                    ),
+                    NOW()
 
-        return $stmt->execute();
+                )
+
+            ";
+
+            $stmt = $this->db->prepare($query);
+
+            $stmt->bindValue(
+                ':user_id',
+                $userId,
+                PDO::PARAM_INT
+            );
+
+            $stmt->bindValue(
+                ':otp',
+                password_hash(
+                    $otp,
+                    PASSWORD_DEFAULT
+                )
+            );
+
+            $stmt->bindValue(
+                ':purpose',
+                $purpose
+            );
+
+            $stmt->bindValue(
+                ':expiry',
+                $expiryMinutes,
+                PDO::PARAM_INT
+            );
+
+            $stmt->bindValue(
+                ':ip_address',
+                $_SERVER['REMOTE_ADDR'] ?? null
+            );
+
+            $stmt->bindValue(
+                ':user_agent',
+                $_SERVER['HTTP_USER_AGENT'] ?? null
+            );
+
+            $stmt->execute();
+
+            $this->db->commit();
+
+            return true;
+
+        } catch (PDOException $e) {
+
+            $this->db->rollBack();
+
+            error_log($e->getMessage());
+
+            return false;
+        }
     }
 
     public function verifyOtp(
@@ -293,14 +471,25 @@ class User
     ): bool {
 
         $query = "
+
             SELECT *
+
             FROM user_otps
+
             WHERE user_id = :user_id
+
             AND purpose = :purpose
+
             AND is_used = 0
+
             AND expires_at > NOW()
+
+            AND deleted_at IS NULL
+
             ORDER BY id DESC
+
             LIMIT 1
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -317,16 +506,41 @@ class User
             return false;
         }
 
-        if ($row['attempts'] >= 5) {
+        /*
+        |--------------------------------------------------------------------------
+        | ATTEMPT LIMIT
+        |--------------------------------------------------------------------------
+        */
+
+        if ((int)$row['attempts'] >= 5) {
+
+            logSecurityEvent(
+                'OTP_LIMIT_EXCEEDED',
+                'OTP attempts exceeded',
+                [
+                    'user_id' => $userId
+                ]
+            );
+
             return false;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFY OTP
+        |--------------------------------------------------------------------------
+        */
 
         if (!password_verify($otp, $row['otp'])) {
 
             $attemptQuery = "
+
                 UPDATE user_otps
+
                 SET attempts = attempts + 1
+
                 WHERE id = :id
+
             ";
 
             $attemptStmt =
@@ -339,10 +553,22 @@ class User
             return false;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | MARK USED
+        |--------------------------------------------------------------------------
+        */
+
         $usedQuery = "
+
             UPDATE user_otps
-            SET is_used = 1
+
+            SET
+
+                is_used = 1
+
             WHERE id = :id
+
         ";
 
         $usedStmt =
@@ -361,11 +587,20 @@ class User
     ): bool {
 
         $query = "
+
             UPDATE user_otps
-            SET is_used = 1
+
+            SET
+
+                is_used = 1,
+                deleted_at = NOW()
+
             WHERE user_id = :user_id
+
             AND purpose = :purpose
+
             AND is_used = 0
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -377,56 +612,9 @@ class User
         ]);
     }
 
-    public function canResendOtp(
-        int $userId,
-        string $purpose
-    ): bool {
-
-        $query = "
-            SELECT created_at
-            FROM user_otps
-            WHERE user_id = :user_id
-            AND purpose = :purpose
-            ORDER BY id DESC
-            LIMIT 1
-        ";
-
-        $stmt = $this->db->prepare($query);
-
-        $stmt->execute([
-
-            ':user_id' => $userId,
-            ':purpose' => $purpose
-        ]);
-
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) {
-            return true;
-        }
-
-        return (
-            time() - strtotime($row['created_at'])
-        ) >= 60;
-    }
-
-    public function cleanupExpiredOtps(): bool
-    {
-        $query = "
-            DELETE FROM user_otps
-            WHERE expires_at < NOW()
-        ";
-
-        $stmt = $this->db->prepare($query);
-
-        return $stmt->execute();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SESSION MANAGEMENT
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       SESSION MANAGEMENT
+    ========================================================= */
 
     public function updateSession(
         int $userId,
@@ -437,6 +625,7 @@ class User
     ): bool {
 
         $query = "
+
             INSERT INTO user_sessions (
 
                 user_id,
@@ -444,6 +633,9 @@ class User
                 fingerprint_hash,
                 device_hash,
                 ip_address,
+                user_agent,
+                is_active,
+                expires_at,
                 last_activity,
                 created_at
 
@@ -454,9 +646,17 @@ class User
                 :fingerprint_hash,
                 :device_hash,
                 :ip_address,
+                :user_agent,
+                1,
+                DATE_ADD(
+                    NOW(),
+                    INTERVAL 30 DAY
+                ),
                 NOW(),
                 NOW()
+
             )
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -464,10 +664,20 @@ class User
         return $stmt->execute([
 
             ':user_id' => $userId,
-            ':session_token' => $sessionToken,
+
+            ':session_token' => hash(
+                'sha256',
+                $sessionToken
+            ),
+
             ':fingerprint_hash' => $fingerprintHash,
+
             ':device_hash' => $deviceHash,
-            ':ip_address' => $ipAddress
+
+            ':ip_address' => $ipAddress,
+
+            ':user_agent' =>
+            $_SERVER['HTTP_USER_AGENT'] ?? null
         ]);
     }
 
@@ -476,16 +686,29 @@ class User
     ): bool {
 
         $query = "
+
             SELECT id
+
             FROM user_sessions
+
             WHERE session_token = :token
+
+            AND is_active = 1
+
+            AND expires_at > NOW()
+
             LIMIT 1
+
         ";
 
         $stmt = $this->db->prepare($query);
 
         $stmt->execute([
-            ':token' => $token
+
+            ':token' => hash(
+                'sha256',
+                $token
+            )
         ]);
 
         return (bool) $stmt->fetch();
@@ -496,8 +719,16 @@ class User
     ): bool {
 
         $query = "
-            DELETE FROM user_sessions
+
+            UPDATE user_sessions
+
+            SET
+
+                is_active = 0,
+                revoked_at = NOW()
+
             WHERE user_id = :user_id
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -507,55 +738,25 @@ class User
         ]);
     }
 
-    public function destroyOtherSessions(
-        int $userId,
-        string $currentToken
-    ): bool {
-
-        $query = "
-            DELETE FROM user_sessions
-            WHERE user_id = :user_id
-            AND session_token != :token
-        ";
-
-        $stmt = $this->db->prepare($query);
-
-        return $stmt->execute([
-
-            ':user_id' => $userId,
-            ':token' => $currentToken
-        ]);
-    }
-
-    public function cleanupOldSessions(): bool
-    {
-        $query = "
-            DELETE FROM user_sessions
-            WHERE last_activity < DATE_SUB(
-                NOW(),
-                INTERVAL 30 DAY
-            )
-        ";
-
-        $stmt = $this->db->prepare($query);
-
-        return $stmt->execute();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | LAST LOGIN
-    |--------------------------------------------------------------------------
-    */
+    /* =========================================================
+       LAST LOGIN
+    ========================================================= */
 
     public function updateLastLogin(
         int $userId
     ): bool {
 
         $query = "
+
             UPDATE users
-            SET last_login = NOW()
+
+            SET
+
+                last_login = NOW(),
+                updated_at = NOW()
+
             WHERE id = :id
+
         ";
 
         $stmt = $this->db->prepare($query);
@@ -565,3 +766,4 @@ class User
         ]);
     }
 }
+?>
