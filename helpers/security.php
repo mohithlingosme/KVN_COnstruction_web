@@ -32,19 +32,9 @@ function sanitize(mixed $data): mixed
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| ESCAPE OUTPUT
-|--------------------------------------------------------------------------
-*/
-function escape(?string $data): string
-{
-    return htmlspecialchars(
-        $data ?? '',
-        ENT_QUOTES,
-        'UTF-8'
-    );
-}
+
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -81,9 +71,9 @@ function securityHeaders(): void
         . "img-src 'self' data: https:; "
         . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
         . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; "
-        . "font-src 'self' https://fonts.gstatic.com; "
+        . "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; "
         . "frame-src https://www.youtube.com https://www.youtube-nocookie.com; "
-        . "connect-src 'self'; "
+        . "connect-src 'self' https://cdn.jsdelivr.net;"
         . "object-src 'none'; "
         . "base-uri 'self'; "
         . "form-action 'self';"
@@ -125,20 +115,11 @@ function csrfField(): string
 | VERIFY CSRF TOKEN
 |--------------------------------------------------------------------------
 */
-function verifyCsrfToken(?string $token): bool
-{
-    if (
-        empty($_SESSION['_csrf_token']) ||
-        empty($token)
-    ) {
-        return false;
-    }
+// verifyCsrfToken() canonical is defined in helpers/csrf.php.
+// Avoid redeclaration (duplicate-functions remediation).
 
-    return hash_equals(
-        $_SESSION['_csrf_token'],
-        $token
-    );
-}
+
+
 
 /*
 |--------------------------------------------------------------------------

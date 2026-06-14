@@ -12,11 +12,11 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
-require_once '../config/app.php';
-require_once '../helpers/security.php';
-require_once '../helpers/session.php';
-require_once '../helpers/csrf.php';
-require_once '../middleware/guest.php';
+require_once ROOT_PATH . '/config/app.php';
+require_once HELPER_PATH . '/security.php';
+require_once HELPER_PATH . '/session.php';
+require_once HELPER_PATH . '/csrf.php';
+require_once MIDDLEWARE_PATH . '/guest.php';
 
 /*
 |--------------------------------------------------------------------------

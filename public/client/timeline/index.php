@@ -102,7 +102,6 @@ if (
         "
         INSERT INTO project_timelines
         (
-
             client_id,
             project_name,
             milestone_title,
@@ -111,17 +110,11 @@ if (
             progress,
             start_date,
             end_date
-
         )
-
         VALUES
-
         (
             $clientId,
-            'Luxury Villa Construction'
-        )
-    );
-
+            'Luxury Villa Construction',
             'Site Preparation',
             'Initial land cleaning and foundation preparation completed.',
             'Completed',
@@ -129,7 +122,30 @@ if (
             '2026-05-01',
             '2026-05-08'
         ),
-
         (
             $clientId,
-            'Luxury Villa Construction
+            'Luxury Villa Construction',
+            'Foundation & Framing',
+            'Foundation work and framing started.',
+            'In Progress',
+            45,
+            '2026-05-09',
+            NULL
+        ),
+        (
+            $clientId,
+            'Luxury Villa Construction',
+            'Finishing',
+            'Plaster, flooring, painting and finishing works.',
+            'Pending',
+            0,
+            NULL,
+            NULL
+        )
+        "
+    );
+
+}
+
+?>
+

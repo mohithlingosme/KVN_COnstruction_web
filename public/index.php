@@ -1,9 +1,10 @@
 <?php
 
-require_once '../config/app.php';
+require_once __DIR__ . '/../config/app.php';
 
 require_once __DIR__ . '/../helpers/functions.php';
 
+// Ensure DB connection exists to avoid warnings/parse-time failures
 $conn = $conn ?? null;
 
 $pageTitle = "KVN Construction | Premium Construction Company";
@@ -12,64 +13,76 @@ $pageTitle = "KVN Construction | Premium Construction Company";
 // FETCH PROJECTS
 // =============================================
 
-$projectsQuery = "
-    SELECT *
-    FROM portfolio_projects
-    WHERE status = 'active'
-    ORDER BY created_at DESC
-    LIMIT 6
-";
+$projects = [];
+if ($conn) {
+    $projectsQuery = "
+        SELECT *
+        FROM portfolio_projects
+        WHERE status = 'active'
+        ORDER BY created_at DESC
+        LIMIT 6
+    ";
 
-$projectsStmt = $conn->prepare($projectsQuery);
-$projectsStmt->execute();
-$projects = $projectsStmt->fetchAll();
+    $projectsStmt = $conn->prepare($projectsQuery);
+    $projectsStmt->execute();
+    $projects = $projectsStmt->fetchAll();
+}
 
 // =============================================
 // FETCH BLOGS
 // =============================================
 
-$blogsQuery = "
-    SELECT *
-    FROM blog_posts
-    WHERE status = 'published'
-    ORDER BY published_at DESC
-    LIMIT 6
-";
+$blogs = [];
+if ($conn) {
+    $blogsQuery = "
+        SELECT *
+        FROM blog_posts
+        WHERE status = 'published'
+        ORDER BY published_at DESC
+        LIMIT 6
+    ";
 
-$blogsStmt = $conn->prepare($blogsQuery);
-$blogsStmt->execute();
-$blogs = $blogsStmt->fetchAll();
+    $blogsStmt = $conn->prepare($blogsQuery);
+    $blogsStmt->execute();
+    $blogs = $blogsStmt->fetchAll();
+}
 
 // =============================================
 // FETCH TESTIMONIALS
 // =============================================
 
-$testimonialQuery = "
-    SELECT *
-    FROM testimonials
-    WHERE status = 'approved'
-    ORDER BY created_at DESC
-    LIMIT 6
-";
+$testimonials = [];
+if ($conn) {
+    $testimonialQuery = "
+        SELECT *
+        FROM testimonials
+        WHERE status = 'approved'
+        ORDER BY created_at DESC
+        LIMIT 6
+    ";
 
-$testimonialStmt = $conn->prepare($testimonialQuery);
-$testimonialStmt->execute();
-$testimonials = $testimonialStmt->fetchAll();
+    $testimonialStmt = $conn->prepare($testimonialQuery);
+    $testimonialStmt->execute();
+    $testimonials = $testimonialStmt->fetchAll();
+}
 
 // =============================================
 // FETCH ESTIMATOR PACKAGES
 // =============================================
 
-$packageQuery = "
-    SELECT *
-    FROM construction_packages
-    WHERE status = 'active'
-    ORDER BY sort_order ASC
-";
+$packages = [];
+if ($conn) {
+    $packageQuery = "
+        SELECT *
+        FROM construction_packages
+        WHERE status = 'active'
+        ORDER BY sort_order ASC
+    ";
 
-$packageStmt = $conn->prepare($packageQuery);
-$packageStmt->execute();
-$packages = $packageStmt->fetchAll();
+    $packageStmt = $conn->prepare($packageQuery);
+    $packageStmt->execute();
+    $packages = $packageStmt->fetchAll();
+}
 
 include '../app/views/layouts/header.php';
 
@@ -124,9 +137,7 @@ include '../app/views/layouts/header.php';
                     Free Estimate
                 </a>
 
-                <a href="https://wa.me/919876543210"
-                   target="_blank"
-                   class="btn-secondary">
+                <a href="https://wa.me/919876543210" target="_blank" class="btn-secondary">
                     WhatsApp Us
                 </a>
 
@@ -170,51 +181,23 @@ include '../app/views/layouts/header.php';
         <div class="services-grid">
 
             <div class="service-card">
-
-                <h3>
-                    Residential Construction
-                </h3>
-
-                <p>
-                    Villas, duplex houses and luxury homes.
-                </p>
-
+                <h3>Residential Construction</h3>
+                <p>Villas, duplex houses and luxury homes.</p>
             </div>
 
             <div class="service-card">
-
-                <h3>
-                    Commercial Projects
-                </h3>
-
-                <p>
-                    Offices, showrooms and commercial spaces.
-                </p>
-
+                <h3>Commercial Projects</h3>
+                <p>Offices, showrooms and commercial spaces.</p>
             </div>
 
             <div class="service-card">
-
-                <h3>
-                    Interior Design
-                </h3>
-
-                <p>
-                    Premium interiors and modular kitchens.
-                </p>
-
+                <h3>Interior Design</h3>
+                <p>Premium interiors and modular kitchens.</p>
             </div>
 
             <div class="service-card">
-
-                <h3>
-                    Renovation & Remodeling
-                </h3>
-
-                <p>
-                    Upgrade and modernize your property.
-                </p>
-
+                <h3>Renovation & Remodeling</h3>
+                <p>Upgrade and modernize your property.</p>
             </div>
 
         </div>
@@ -252,8 +235,8 @@ include '../app/views/layouts/header.php';
                     <div class="project-image">
 
                         <img
-src="<?php echo base_url($project['featured_image'] ?? ''); ?>"
-alt="<?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>"
+                            src="<?php echo base_url($project['featured_image'] ?? ''); ?>"
+                            alt="<?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>"
                         >
 
                     </div>
@@ -261,17 +244,14 @@ alt="<?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>"
                     <div class="project-content">
 
                         <h3>
-<?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>
+                            <?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>
                         </h3>
 
                         <p>
-<?php echo limitText($project['short_description'] ?? '', 120); ?>
+                            <?php echo limitText($project['short_description'] ?? '', 120); ?>
                         </p>
 
-                        <a
-href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
-                            class="btn-main"
-                        >
+                        <a href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>" class="btn-main">
                             View Project
                         </a>
 
@@ -312,147 +292,74 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
             <div class="plot-grid">
 
                 <div>
-
-                    <label>
-                        Plot Length (ft)
-                    </label>
-
-                    <input
-                        type="number"
-                        id="plotLength"
-                        value="40"
-                    >
-
+                    <label>Plot Length (ft)</label>
+                    <input type="number" id="plotLength" value="40">
                 </div>
 
                 <div>
-
-                    <label>
-                        Plot Width (ft)
-                    </label>
-
-                    <input
-                        type="number"
-                        id="plotWidth"
-                        value="30"
-                    >
-
+                    <label>Plot Width (ft)</label>
+                    <input type="number" id="plotWidth" value="30">
                 </div>
 
             </div>
 
-            <label>
-                Total Plot Size (sqft)
-            </label>
+            <label>Total Plot Size (sqft)</label>
+            <input type="number" id="sqft" readonly>
+            <h3 id="sqftValue">1200 sqft</h3>
 
-            <input
-                type="number"
-                id="sqft"
-                readonly
-            >
-
-            <h3 id="sqftValue">
-                1200 sqft
-            </h3>
-
-            <label>
-                Number of Floors
-            </label>
-
+            <label>Number of Floors</label>
             <select id="floors">
-
                 <option value="1">Ground Floor</option>
                 <option value="2">G + 1</option>
                 <option value="3">G + 2</option>
                 <option value="4">G + 3</option>
-
             </select>
 
-            <label>
-                Construction Package
-            </label>
-
+            <label>Construction Package</label>
             <select id="quality">
 
                 <?php foreach($packages as $package): ?>
-
                     <option
-                        value="<?php echo $package['id']; ?>"
-                        data-price="<?php echo $package['base_price']; ?>"
-                        data-timeline="<?php echo escape($package['estimated_timeline']); ?>"
-                        data-material="<?php echo escape($package['material_grade']); ?>"
+                        value="<?php echo (int)($package['id'] ?? 0); ?>"
+                        data-price="<?php echo (float)($package['base_price'] ?? 0); ?>"
+                        data-timeline="<?php echo escape((string)($package['estimated_timeline'] ?? '-')); ?>"
+                        data-material="<?php echo escape((string)($package['material_grade'] ?? '-')); ?>"
                     >
-
-                        <?php echo escape($package['package_name']); ?>
-                        - ₹<?php echo number_format($package['base_price']); ?>/sqft
-
+                        <?php echo escape((string)($package['package_name'] ?? '')); ?>
+                        - ₹<?php echo number_format((float)($package['base_price'] ?? 0)); ?>/sqft
                     </option>
-
                 <?php endforeach; ?>
 
             </select>
 
-            <button
-                class="btn-main estimate-btn"
-                onclick="calculateCost()"
-            >
+            <button class="btn-main estimate-btn" onclick="calculateCost()">
                 Calculate Estimate
             </button>
 
             <div class="estimate-result">
 
-                <h2 id="totalCost">
-                    ₹0
-                </h2>
+                <h2 id="totalCost">₹0</h2>
 
                 <div class="result-grid">
 
                     <div class="result-card">
-
-                        <h4>
-                            Built-up Area
-                        </h4>
-
-                        <p id="builtupArea">
-                            0 sqft
-                        </p>
-
+                        <h4>Built-up Area</h4>
+                        <p id="builtupArea">0 sqft</p>
                     </div>
 
                     <div class="result-card">
-
-                        <h4>
-                            Timeline
-                        </h4>
-
-                        <p id="timeline">
-                            --
-                        </p>
-
+                        <h4>Timeline</h4>
+                        <p id="timeline">--</p>
                     </div>
 
                     <div class="result-card">
-
-                        <h4>
-                            Package
-                        </h4>
-
-                        <p id="package">
-                            --
-                        </p>
-
+                        <h4>Package</h4>
+                        <p id="package">--</p>
                     </div>
 
                     <div class="result-card">
-
-                        <h4>
-                            Material Grade
-                        </h4>
-
-                        <p id="materialGrade">
-                            --
-                        </p>
-
+                        <h4>Material Grade</h4>
+                        <p id="materialGrade">--</p>
                     </div>
 
                 </div>
@@ -464,6 +371,7 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
     </div>
 
 </section>
+
 <!-- ================================= -->
 <!-- TESTIMONIALS -->
 <!-- ================================= -->
@@ -473,15 +381,8 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
     <div class="container">
 
         <div class="section-title text-center">
-
-            <h2>
-                Client Testimonials
-            </h2>
-
-            <p>
-                What our happy clients say.
-            </p>
-
+            <h2>Client Testimonials</h2>
+            <p>What our happy clients say.</p>
         </div>
 
         <div class="testimonial-carousel">
@@ -493,45 +394,25 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
                     <div class="testimonial-top">
 
                         <?php if(!empty($testimonial['client_image'])): ?>
-
                             <img
                                 src="<?php echo base_url($testimonial['client_image']); ?>"
-                                alt="<?php echo escape($testimonial['client_name']); ?>"
+                                alt="<?php echo escape((string)($testimonial['client_name'] ?? 'Client')); ?>"
                                 class="testimonial-user"
                             >
-
                         <?php else: ?>
-
                             <img
                                 src="<?php echo base_url('assets/images/default-user.png'); ?>"
                                 alt="Client"
                                 class="testimonial-user"
                             >
-
                         <?php endif; ?>
 
                     </div>
 
                     <div class="testimonial-content">
-
-                        <p>
-
-<?php echo limitText($testimonial['review'] ?? '', 180); ?>
-
-                        </p>
-
-                        <h4>
-
-                            <?php echo escape($testimonial['client_name']); ?>
-
-                        </h4>
-
-                        <span>
-
-                            <?php echo escape($testimonial['client_location']); ?>
-
-                        </span>
-
+                        <p><?php echo limitText((string)($testimonial['review'] ?? ''), 180); ?></p>
+                        <h4><?php echo escape((string)($testimonial['client_name'] ?? '')); ?></h4>
+                        <span><?php echo escape((string)($testimonial['client_location'] ?? '')); ?></span>
                     </div>
 
                 </div>
@@ -553,16 +434,8 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
     <div class="container">
 
         <div class="section-title text-center">
-
-            <h2>
-                Latest Construction Blogs
-            </h2>
-
-            <p>
-                Expert insights, pricing guides,
-                home ideas and construction knowledge.
-            </p>
-
+            <h2>Latest Construction Blogs</h2>
+            <p>Expert insights, pricing guides, home ideas and construction knowledge.</p>
         </div>
 
         <div class="blog-carousel">
@@ -572,45 +445,20 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
                 <div class="blog-card">
 
                     <div class="blog-image">
-
                         <img
-                            src="<?php echo base_url($blog['featured_image']); ?>"
-                            alt="<?php echo escape($blog['title']); ?>"
+                            src="<?php echo base_url($blog['featured_image'] ?? ''); ?>"
+                            alt="<?php echo escape((string)($blog['title'] ?? '')); ?>"
                         >
-
                     </div>
 
                     <div class="blog-content">
-
                         <span class="blog-date">
-
                             <i class="bi bi-calendar3"></i>
-
-                            <?php echo date('d M Y', strtotime($blog['published_at'])); ?>
-
+                            <?php echo date('d M Y', strtotime((string)($blog['published_at'] ?? 'now'))); ?>
                         </span>
-
-                        <h3>
-
-                            <?php echo escape($blog['title']); ?>
-
-                        </h3>
-
-                        <p>
-
-                            <?php echo limitText($blog['excerpt'], 120); ?>
-
-                        </p>
-
-                        <a
-                            href="blog-details.php?slug=<?php echo $blog['slug']; ?>"
-                            class="btn-main"
-                        >
-
-                            Read More
-
-                        </a>
-
+                        <h3><?php echo escape((string)($blog['title'] ?? '')); ?></h3>
+                        <p><?php echo limitText((string)($blog['excerpt'] ?? ''), 120); ?></p>
+                        <a href="blog-details.php?slug=<?php echo $blog['slug'] ?? ''; ?>" class="btn-main">Read More</a>
                     </div>
 
                 </div>
@@ -620,16 +468,7 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
         </div>
 
         <div class="text-center mt-5">
-
-            <a
-                href="blogs.php"
-                class="btn-main"
-            >
-
-                View All Blogs
-
-            </a>
-
+            <a href="blogs.php" class="btn-main">View All Blogs</a>
         </div>
 
     </div>
@@ -645,71 +484,25 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
     <div class="container">
 
         <div class="section-title text-center">
-
-            <h2>
-                Frequently Asked Questions
-            </h2>
-
-            <p>
-                Common questions about construction and pricing.
-            </p>
-
+            <h2>Frequently Asked Questions</h2>
+            <p>Common questions about construction and pricing.</p>
         </div>
 
         <div class="faq-wrapper">
 
             <div class="faq-item">
-
-                <button class="faq-question">
-
-                    What is the construction cost per sqft?
-
-                </button>
-
-                <div class="faq-answer">
-
-                    Construction cost usually ranges from
-                    ₹1800 to ₹3500 per sqft depending on
-                    material grade, location and finishes.
-
-                </div>
-
+                <button class="faq-question">What is the construction cost per sqft?</button>
+                <div class="faq-answer">Construction cost usually ranges from ₹1800 to ₹3500 per sqft depending on material grade, location and finishes.</div>
             </div>
 
             <div class="faq-item">
-
-                <button class="faq-question">
-
-                    Do you handle BBMP approvals?
-
-                </button>
-
-                <div class="faq-answer">
-
-                    Yes. We provide complete BBMP approval,
-                    plan sanction and legal documentation support.
-
-                </div>
-
+                <button class="faq-question">Do you handle BBMP approvals?</button>
+                <div class="faq-answer">Yes. We provide complete BBMP approval, plan sanction and legal documentation support.</div>
             </div>
 
             <div class="faq-item">
-
-                <button class="faq-question">
-
-                    Do you provide interior design services?
-
-                </button>
-
-                <div class="faq-answer">
-
-                    Yes. We provide modular kitchen,
-                    premium interiors,
-                    false ceiling,
-                    wardrobes and complete interior solutions.
-
-                </div>
-
+                <button class="faq-question">Do you provide interior design services?</button>
+                <div class="faq-answer">Yes. We provide modular kitchen, premium interiors, false ceiling, wardrobes and complete interior solutions.</div>
             </div>
 
         </div>
@@ -728,92 +521,27 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
 
         <div class="contact-content">
 
-            <h2>
-
-                Let's Build Something Great
-
-            </h2>
-
-            <p>
-
-                Contact us today for a free consultation,
-                construction planning and project estimate.
-
-            </p>
+            <h2>Let's Build Something Great</h2>
+            <p>Contact us today for a free consultation, construction planning and project estimate.</p>
 
             <div class="contact-info">
-
-                <div class="contact-item">
-
-                    <strong>Phone:</strong>
-
-                    +91 9876543210
-
-                </div>
-
-                <div class="contact-item">
-
-                    <strong>Email:</strong>
-
-                    info@kvnconstruction.com
-
-                </div>
-
-                <div class="contact-item">
-
-                    <strong>Location:</strong>
-
-                    Bengaluru, Karnataka
-
-                </div>
-
+                <div class="contact-item"><strong>Phone:</strong> +91 9876543210</div>
+                <div class="contact-item"><strong>Email:</strong> info@kvnconstruction.com</div>
+                <div class="contact-item"><strong>Location:</strong> Bengaluru, Karnataka</div>
             </div>
 
         </div>
 
-        <form
-            class="contact-form"
-            action="contact.php"
-            method="POST"
-        >
-
+        <form class="contact-form" action="contact.php" method="POST">
             <?php echo csrfField(); ?>
 
-            <input
-                type="text"
-                name="name"
-                placeholder="Full Name"
-                required
-            >
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="text" name="phone" placeholder="Phone Number" required>
 
-            <input
-                type="email"
-                name="email"
-                placeholder="Email Address"
-                required
-            >
+            <textarea name="message" placeholder="Tell us about your project"></textarea>
 
-            <input
-                type="text"
-                name="phone"
-                placeholder="Phone Number"
-                required
-            >
-
-            <textarea
-                name="message"
-                placeholder="Tell us about your project"
-            ></textarea>
-
-            <button
-                type="submit"
-                class="btn-main"
-            >
-
-                Send Message
-
-            </button>
-
+            <button type="submit" class="btn-main">Send Message</button>
         </form>
 
     </div>
@@ -824,64 +552,22 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
 <!-- LOGIN POPUP -->
 <!-- ================================= -->
 
-<div
-    class="login-popup"
-    id="loginPopup"
->
+<div class="login-popup" id="loginPopup">
 
     <div class="login-box">
 
-        <span
-            class="close-btn"
-            onclick="closeLogin()"
-        >
+        <span class="close-btn" onclick="closeLogin()">&times;</span>
 
-            &times;
+        <h2>Welcome Back</h2>
+        <p>Login to access your dashboard</p>
 
-        </span>
-
-        <h2>
-
-            Welcome Back
-
-        </h2>
-
-        <p>
-
-            Login to access your dashboard
-
-        </p>
-
-        <form
-            action="login.php"
-            method="POST"
-        >
-
+        <form action="login.php" method="POST">
             <?php echo csrfField(); ?>
 
-            <input
-                type="email"
-                name="email"
-                placeholder="Email Address"
-                required
-            >
+            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="password" name="password" placeholder="Password" required>
 
-            <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                required
-            >
-
-            <button
-                type="submit"
-                class="btn-main"
-            >
-
-                Login
-
-            </button>
-
+            <button type="submit" class="btn-main">Login</button>
         </form>
 
     </div>
@@ -889,3 +575,4 @@ href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>"
 </div>
 
 <?php include '../app/views/layouts/footer.php'; ?>
+

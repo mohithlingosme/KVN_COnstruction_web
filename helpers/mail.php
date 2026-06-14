@@ -25,14 +25,40 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 */
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// PHPMailer types are only available when Composer dependencies exist.
+// Kept unqualified usage below to avoid fatals when PHPMailer classes are missing.
+
 
 /*
 |--------------------------------------------------------------------------
-| LOAD PHPMailer
+| LOAD PHPMailer (guarded)
 |--------------------------------------------------------------------------
 */
+
+if (!defined('ROOT_PATH')) {
+
+    // If bootstrap is missing, avoid fatals from helper loading.
+
+    return false;
+
+}
+
+if (!file_exists(ROOT_PATH . '/vendor/autoload.php')) {
+
+    // Composer dependencies not installed.
+
+    return false;
+
+}
+
+if (!file_exists(ROOT_PATH . '/vendor/phpmailer/phpmailer/src/Exception.php') ||
+    !file_exists(ROOT_PATH . '/vendor/phpmailer/phpmailer/src/PHPMailer.php') ||
+    !file_exists(ROOT_PATH . '/vendor/phpmailer/phpmailer/src/SMTP.php')
+) {
+
+    return false;
+
+}
 
 require_once ROOT_PATH . '/vendor/phpmailer/phpmailer/src/Exception.php';
 
@@ -40,13 +66,14 @@ require_once ROOT_PATH . '/vendor/phpmailer/phpmailer/src/PHPMailer.php';
 
 require_once ROOT_PATH . '/vendor/phpmailer/phpmailer/src/SMTP.php';
 
+
 /*
 |--------------------------------------------------------------------------
 | CREATE MAILER INSTANCE
 |--------------------------------------------------------------------------
 */
 
-function createMailer(): PHPMailer
+function createMailer()
 {
     $mail = new PHPMailer(true);
 

@@ -105,7 +105,6 @@ if (
         "
         INSERT INTO client_downloads
         (
-
             client_id,
             document_title,
             category,
@@ -115,11 +114,8 @@ if (
             total_downloads,
             last_downloaded,
             status
-
         )
-
         VALUES
-
         (
             $clientId,
             'Villa Construction Agreement',
@@ -128,8 +124,27 @@ if (
             'PDF',
             '2.4 MB',
             5,
-            NOW
-            (),
+            NOW,
             'Available'
         ),
+        (
+            $clientId,
+            'Villa Design Drawings',
+            'Drawings',
+            'villa-design-drawings.pdf',
+            'PDF',
+            '1.8 MB',
+            2,
+            NOW,
+            'Available'
+        )
+        "
+    );
+
+}
+
+
+        
+
+
         

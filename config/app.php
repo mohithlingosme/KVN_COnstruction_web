@@ -1,4 +1,4 @@
-<?php
+    <?php
 
 /*
 |--------------------------------------------------------------------------
@@ -17,12 +17,7 @@ ob_start();
 */
 
 define('APP_NAME', 'KVN Construction');
-
-define(
-    'APP_URL',
-    'http://localhost/KVN_Construction/public'
-);
-
+define('APP_URL', 'http://localhost/kvn_construction/public');
 define('APP_ENV', 'development');
 
 /*
@@ -32,17 +27,11 @@ define('APP_ENV', 'development');
 */
 
 define('ROOT_PATH', dirname(__DIR__));
-
 define('APP_PATH', ROOT_PATH . '/app');
-
 define('CONFIG_PATH', ROOT_PATH . '/config');
-
 define('PUBLIC_PATH', ROOT_PATH . '/public');
-
 define('UPLOAD_PATH', ROOT_PATH . '/uploads');
-
 define('HELPER_PATH', ROOT_PATH . '/helpers');
-
 define('MIDDLEWARE_PATH', ROOT_PATH . '/middleware');
 
 /*
@@ -52,11 +41,8 @@ define('MIDDLEWARE_PATH', ROOT_PATH . '/middleware');
 */
 
 define('DB_HOST', 'localhost');
-
 define('DB_NAME', 'kvnc_platform');
-
 define('DB_USER', 'root');
-
 define('DB_PASS', '');
 
 /*
@@ -76,9 +62,7 @@ define('APP_DEBUG', true);
 */
 
 define('SESSION_TIMEOUT', 3600);
-
 define('ADMIN_SESSION_TIMEOUT', 1800);
-
 define('SESSION_NAME', 'KVNSESSID');
 
 /*
@@ -88,11 +72,8 @@ define('SESSION_NAME', 'KVNSESSID');
 */
 
 define('OTP_EXPIRY_MINUTES', 5);
-
 define('OTP_MAX_ATTEMPTS', 3);
-
 define('OTP_RESEND_LIMIT', 3);
-
 define('OTP_BLOCK_MINUTES', 15);
 
 /*
@@ -102,11 +83,9 @@ define('OTP_BLOCK_MINUTES', 15);
 */
 
 define('LOGIN_RATE_LIMIT', 5);
-
 define('LOGIN_RATE_WINDOW', 300);
 
 define('OTP_RATE_LIMIT', 3);
-
 define('OTP_RATE_WINDOW', 600);
 
 /*
@@ -118,20 +97,14 @@ define('OTP_RATE_WINDOW', 600);
 define('MAX_UPLOAD_SIZE', 5 * 1024 * 1024);
 
 define('ALLOWED_IMAGE_TYPES', [
-
     'image/jpeg',
-
     'image/png',
-
     'image/webp'
 ]);
 
 define('ALLOWED_DOCUMENT_TYPES', [
-
     'application/pdf',
-
     'application/msword',
-
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 ]);
 
@@ -142,48 +115,18 @@ define('ALLOWED_DOCUMENT_TYPES', [
 */
 
 ini_set('session.use_only_cookies', 1);
-
 ini_set('session.use_strict_mode', 1);
-
 ini_set('session.cookie_httponly', 1);
-
-/*
-|--------------------------------------------------------------------------
-| ENABLE HTTPS COOKIE ON LIVE SERVER
-|--------------------------------------------------------------------------
-*/
-
 ini_set('session.cookie_secure', 0);
-
-/*
-|--------------------------------------------------------------------------
-| SESSION NAME
-|--------------------------------------------------------------------------
-*/
 
 session_name(SESSION_NAME);
 
-/*
-|--------------------------------------------------------------------------
-| START SESSION
-|--------------------------------------------------------------------------
-*/
-
 if (session_status() === PHP_SESSION_NONE) {
-
     session_start();
 }
 
-/*
-|--------------------------------------------------------------------------
-| SESSION REGENERATION
-|--------------------------------------------------------------------------
-*/
-
 if (!isset($_SESSION['initiated'])) {
-
     session_regenerate_id(true);
-
     $_SESSION['initiated'] = true;
 }
 
@@ -195,30 +138,52 @@ if (!isset($_SESSION['initiated'])) {
 
 if (APP_ENV === 'development') {
 
-    ini_set('display_errors', 1);
-
-    ini_set('display_startup_errors', 1);
-
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
     error_reporting(E_ALL);
 
 } else {
 
-    ini_set('display_errors', 0);
-
-    error_reporting(0);
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+    ini_set('log_errors', '1');
+    error_reporting(E_ALL);
 }
+
+ini_set('html_errors', '0');
 
 /*
 |--------------------------------------------------------------------------
-| LOAD DATABASE
+| DATABASE CONNECTION
 |--------------------------------------------------------------------------
 */
 
-require_once CONFIG_PATH . '/database.php';
+$conn = null;
 
-$db = new Database();
+if (file_exists(CONFIG_PATH . '/database.php')) {
 
-$conn = $db->connect();
+    require_once CONFIG_PATH . '/database.php';
+
+    if (class_exists('Database')) {
+
+        try {
+
+            $db = new Database();
+            $conn = $db->connect();
+
+        } catch (Throwable $e) {
+
+            error_log(
+                'Database connection failed: ' .
+                $e->getMessage()
+            );
+
+            $conn = null;
+        }
+    }
+}
+
+$GLOBALS['conn'] = $conn;
 
 /*
 |--------------------------------------------------------------------------
@@ -226,13 +191,65 @@ $conn = $db->connect();
 |--------------------------------------------------------------------------
 */
 
-require_once HELPER_PATH . '/security.php';
+// Load core helpers early.
+// IMPORTANT: do NOT load mail/sms/otp runtime heavy helpers on every request.
+// This reduces latency on public routes.
+$helperFiles = [
+    HELPER_PATH . '/functions.php',
+    HELPER_PATH . '/formatter.php',
+    HELPER_PATH . '/csrf.php',
+    HELPER_PATH . '/session.php',
+    HELPER_PATH . '/rateLimiter.php',
+    HELPER_PATH . '/security.php',
+    HELPER_PATH . '/seo.php',
+    HELPER_PATH . '/upload.php',
+];
 
-require_once HELPER_PATH . '/csrf.php';
+foreach ($helperFiles as $file) {
+    if (file_exists($file)) {
+        require_once $file;
+    } else {
+        error_log("Missing helper file: {$file}");
+    }
+}
 
-require_once HELPER_PATH . '/session.php';
+// Lazy-load side-effectful helpers only when needed.
+if (!function_exists('requireOtpHelpers')) {
+    function requireOtpHelpers(): void {
+        static $loaded = false;
+        if ($loaded) return;
+        $loaded = true;
+        $files = [
+            HELPER_PATH . '/otp.php',
+            HELPER_PATH . '/mail.php',
+            HELPER_PATH . '/sms.php',
+        ];
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        }
+    }
+}
 
-require_once HELPER_PATH . '/rateLimiter.php';
+// Backward compatibility: if code calls these helpers, ensure lazy-load occurred.
+if (!function_exists('generateOtp')) {
+function generateOtp(int $length = 6): string {
+        requireOtpHelpers();
+        // Call canonical helper once lazy-loaded.
+        return \generateOtp($length);
+    }
+}
+
+
+
+// Backward compatibility alias (some views call csrfField()).
+if (!function_exists('csrfField') && function_exists('csrfInputField')) {
+    function csrfField(): string
+    {
+        return csrfInputField();
+    }
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -240,11 +257,13 @@ require_once HELPER_PATH . '/rateLimiter.php';
 |--------------------------------------------------------------------------
 */
 
-securityHeaders();
+if (function_exists('securityHeaders')) {
+    securityHeaders();
+}
 
 /*
 |--------------------------------------------------------------------------
-| BASE URL
+| URL HELPERS
 |--------------------------------------------------------------------------
 */
 
@@ -253,27 +272,15 @@ function base_url($path = '')
     return APP_URL . '/' . ltrim($path, '/');
 }
 
-/*
-|--------------------------------------------------------------------------
-| REDIRECT
-|--------------------------------------------------------------------------
-*/
-
-function redirect($path)
+function redirect($path = '')
 {
-    header(
-
-        'Location: '
-        .
-        base_url($path)
-    );
-
+    header('Location: ' . base_url($path));
     exit;
 }
 
 /*
 |--------------------------------------------------------------------------
-| AUTH USER
+| AUTH HELPERS
 |--------------------------------------------------------------------------
 */
 
@@ -282,60 +289,30 @@ function auth_user()
     return $_SESSION['user'] ?? null;
 }
 
-/*
-|--------------------------------------------------------------------------
-| AUTH CHECK
-|--------------------------------------------------------------------------
-*/
-
 function is_logged_in()
 {
-    return isset($_SESSION['logged_in']);
+    return !empty($_SESSION['logged_in']);
 }
-
-/*
-|--------------------------------------------------------------------------
-| ADMIN CHECK
-|--------------------------------------------------------------------------
-*/
 
 function is_admin()
 {
-    return (
-
-        isset($_SESSION['role'])
-
-        &&
-
+    return isset($_SESSION['role']) &&
         in_array(
             $_SESSION['role'],
             ['admin', 'super_admin'],
             true
-        )
-    );
+        );
 }
-
-/*
-|--------------------------------------------------------------------------
-| CLIENT CHECK
-|--------------------------------------------------------------------------
-*/
 
 function is_client()
 {
-    return (
-
-        isset($_SESSION['role'])
-
-        &&
-
-        $_SESSION['role'] === 'client'
-    );
+    return isset($_SESSION['role']) &&
+        $_SESSION['role'] === 'client';
 }
 
 /*
 |--------------------------------------------------------------------------
-| APP ENV CHECK
+| ENVIRONMENT
 |--------------------------------------------------------------------------
 */
 
@@ -346,42 +323,47 @@ function isProduction()
 
 /*
 |--------------------------------------------------------------------------
-| CURRENT URL
+| REQUEST HELPERS
 |--------------------------------------------------------------------------
 */
 
 function current_url()
 {
-    return
+    $scheme =
+        (!empty($_SERVER['HTTPS']) &&
+        $_SERVER['HTTPS'] !== 'off')
+        ? 'https'
+        : 'http';
 
-        (
-            isset($_SERVER['HTTPS'])
-            ? 'https'
-            : 'http'
-        )
-
-        .
-
-        '://'
-
-        .
-
-        $_SERVER['HTTP_HOST']
-
-        .
-
-        $_SERVER['REQUEST_URI'];
+    return $scheme .
+        '://' .
+        ($_SERVER['HTTP_HOST'] ?? '') .
+        ($_SERVER['REQUEST_URI'] ?? '');
 }
-
-/*
-|--------------------------------------------------------------------------
-| REQUEST METHOD
-|--------------------------------------------------------------------------
-*/
 
 function request_method()
 {
-    return $_SERVER['REQUEST_METHOD'];
+    return $_SERVER['REQUEST_METHOD'] ?? 'GET';
+}
+
+function request_ip()
+{
+    return $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+}
+
+function request_user_agent()
+{
+    return $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
+}
+
+function is_ajax_request()
+{
+    return !empty(
+        $_SERVER['HTTP_X_REQUESTED_WITH']
+    ) &&
+    strtolower(
+        $_SERVER['HTTP_X_REQUESTED_WITH']
+    ) === 'xmlhttprequest';
 }
 
 /*
@@ -391,63 +373,15 @@ function request_method()
 */
 
 function json_response(
-
     $data = [],
-
     $status = 200
 ) {
-
     http_response_code($status);
-
     header('Content-Type: application/json');
 
     echo json_encode($data);
 
     exit;
-}
-
-/*
-|--------------------------------------------------------------------------
-| AJAX REQUEST CHECK
-|--------------------------------------------------------------------------
-*/
-
-function is_ajax_request()
-{
-    return (
-
-        !empty(
-            $_SERVER['HTTP_X_REQUESTED_WITH']
-        )
-
-        &&
-
-        strtolower(
-            $_SERVER['HTTP_X_REQUESTED_WITH']
-        ) === 'xmlhttprequest'
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| REQUEST IP
-|--------------------------------------------------------------------------
-*/
-
-function request_ip()
-{
-    return $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-}
-
-/*
-|--------------------------------------------------------------------------
-| REQUEST USER AGENT
-|--------------------------------------------------------------------------
-*/
-
-function request_user_agent()
-{
-    return $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
 }
 
 /*
@@ -459,17 +393,8 @@ function request_user_agent()
 define('MAINTENANCE_MODE', false);
 
 if (
-
-    MAINTENANCE_MODE
-
-    &&
-
+    MAINTENANCE_MODE &&
     !is_admin()
 ) {
-
-    die(
-
-        '<h1>Maintenance Mode</h1>'
-    );
+    die('<h1>Maintenance Mode</h1>');      
 }
-?>

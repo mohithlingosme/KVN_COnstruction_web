@@ -100,16 +100,24 @@ if (
         "
         INSERT INTO client_notifications
         (
-
             client_id,
             title,
             message,
             type,
             is_read
-
         )
-
         VALUES
-
         (
-           
+            $clientId,
+            'Project Update',
+            'Your project timeline has been updated.',
+            'Project',
+            'No'
+        )
+        "
+    );
+
+}
+
+?>
+

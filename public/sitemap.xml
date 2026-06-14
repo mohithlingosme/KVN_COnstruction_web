@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>http://localhost/kvn_construction/public/</loc></url>
+  <url><loc>http://localhost/kvn_construction/public/login.php</loc></url>
+  <url><loc>http://localhost/kvn_construction/public/register.php</loc></url>
+  <url><loc>http://localhost/kvn_construction/public/services.php</loc></url>
+  <url><loc>http://localhost/kvn_construction/public/projects.php</loc></url>
+  <url><loc>http://localhost/kvn_construction/public/contact.php</loc></url>
+</urlset>
+

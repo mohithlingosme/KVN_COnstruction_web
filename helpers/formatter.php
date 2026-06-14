@@ -60,25 +60,29 @@ function formatDateTime(
 // LIMIT TEXT
 // =====================================
 
-function limitText(
-    $text,
-    $limit = 100
-)
-{
-    $text =
-    strip_tags($text);
+// limitText() canonical is defined in helpers/functions.php.
+// Avoid redeclaration (duplicate-functions remediation).
+if (!function_exists('limitText')) {
+    function limitText(
+        $text,
+        $limit = 100
+    )
+    {
+        $text = strip_tags($text);
 
-    if(strlen($text) > $limit){
+        if (strlen($text) > $limit) {
+            return substr(
+                $text,
+                0,
+                $limit
+            ) . '...';
+        }
 
-        return substr(
-            $text,
-            0,
-            $limit
-        ) . '...';
+        return $text;
     }
-
-    return $text;
 }
+
+
 
 // =====================================
 // FORMAT PHONE
