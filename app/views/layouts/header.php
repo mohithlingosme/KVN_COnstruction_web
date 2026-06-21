@@ -67,14 +67,20 @@ basename($_SERVER['PHP_SELF']);
     <meta property="og:description"
           content="<?php echo escape($metaDescription); ?>">
 
-    <meta property="og:image"
-          content="<?php echo $metaImage; ?>">
+<meta property="og:image"
+          content="<?php echo escapeAttr($metaImage ?? ''); ?>">
+
 
     <meta property="og:type"
           content="website">
 
-    <meta property="og:url"
-          content="<?php echo APP_URL; ?>">
+<meta property="og:url"
+          content="<?php echo escapeAttr(APP_URL); ?>">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?php echo escape($pageTitle); ?>">
+    <meta name="twitter:description" content="<?php echo escape($metaDescription); ?>">
+    <meta name="twitter:image" content="<?php echo escapeAttr($metaImage ?? ''); ?>">
 
     <!-- ================================= -->
     <!-- FAVICON -->
@@ -90,21 +96,10 @@ basename($_SERVER['PHP_SELF']);
     <!-- GOOGLE FONT -->
     <!-- ================================= -->
 
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    >
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
 
     <!-- ================================= -->
     <!-- BOOTSTRAP -->
@@ -141,205 +136,6 @@ basename($_SERVER['PHP_SELF']);
         rel="stylesheet"
         href="<?php echo base_url('assets/css/style.css'); ?>"
     >
-
-    <!-- ================================= -->
-    <!-- INLINE GLOBAL STYLES -->
-    <!-- ================================= -->
-
-    <style>
-
-        :root{
-
-            --primary:#f5b400;
-            --primary-dark:#d99d00;
-            --dark:#111;
-            --light:#fff;
-            --gray:#666;
-            --border:#eaeaea;
-        }
-
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
-
-        html{
-            scroll-behavior:smooth;
-        }
-
-        body{
-
-            font-family:'Poppins',sans-serif;
-
-            background:#f8f9fa;
-
-            color:#222;
-
-            overflow-x:hidden;
-        }
-
-        a{
-            text-decoration:none;
-        }
-
-        img{
-            width:100%;
-            display:block;
-        }
-
-        .header{
-
-            width:100%;
-
-            position:sticky;
-
-            top:0;
-
-            z-index:99999;
-
-            background:rgba(255,255,255,0.96);
-
-            backdrop-filter:blur(12px);
-
-            box-shadow:0 2px 15px rgba(0,0,0,0.04);
-        }
-
-        .navbar{
-
-            min-height:85px;
-        }
-
-        .navbar-brand{
-
-            font-size:30px;
-
-            font-weight:800;
-
-            color:#111 !important;
-        }
-
-        .navbar-brand span{
-            color:var(--primary);
-        }
-
-        .nav-link{
-
-            color:#222 !important;
-
-            font-weight:500;
-
-            margin-left:10px;
-
-            transition:0.3s ease;
-        }
-
-        .nav-link:hover{
-            color:var(--primary) !important;
-        }
-
-        .nav-link.active{
-            color:var(--primary) !important;
-        }
-
-        .btn-main{
-
-            background:var(--primary);
-
-            color:#fff;
-
-            border:none;
-
-            padding:14px 28px;
-
-            border-radius:14px;
-
-            font-weight:600;
-
-            transition:0.3s ease;
-
-            display:inline-flex;
-
-            align-items:center;
-
-            gap:10px;
-        }
-
-        .btn-main:hover{
-
-            background:var(--primary-dark);
-
-            color:#fff;
-
-            transform:translateY(-2px);
-        }
-
-        .btn-dark-custom{
-
-            background:#111;
-
-            color:#fff;
-        }
-
-        .btn-dark-custom:hover{
-
-            background:#000;
-        }
-
-        .mobile-btn{
-
-            border:none !important;
-
-            box-shadow:none !important;
-        }
-
-        .top-contact{
-
-            background:#111;
-
-            color:#fff;
-
-            font-size:14px;
-
-            padding:10px 0;
-        }
-
-        .top-contact a{
-
-            color:#fff;
-        }
-
-        .header-spacer{
-            height:85px;
-        }
-
-        @media(max-width:991px){
-
-            .navbar-collapse{
-
-                background:#fff;
-
-                padding:20px;
-
-                border-radius:20px;
-
-                margin-top:15px;
-
-                box-shadow:0 10px 30px rgba(0,0,0,0.08);
-            }
-
-            .nav-link{
-
-                padding:12px 0;
-            }
-
-            .mobile-action{
-
-                margin-top:20px;
-            }
-        }
-
-    </style>
 
 </head>
 
@@ -405,7 +201,7 @@ basename($_SERVER['PHP_SELF']);
 
             <a
                 class="navbar-brand"
-                href="<?php echo base_url('public/index.php'); ?>"
+                href="<?php echo base_url('index.php'); ?>"
             >
 
                 KVN<span>Construction</span>
@@ -438,7 +234,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'index.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('public/index.php'); ?>"
+                            href="<?php echo base_url('index.php'); ?>"
                         >
 
                             Home
@@ -451,7 +247,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'about-us.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('public/about-us.php'); ?>"
+                            href="<?php echo base_url('about-us.php'); ?>"
                         >
 
                             About
@@ -464,7 +260,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'services.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('public/services.php'); ?>"
+                            href="<?php echo base_url('services.php'); ?>"
                         >
 
                             Services
@@ -477,7 +273,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'projects.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('public/projects.php'); ?>"
+                            href="<?php echo base_url('projects.php'); ?>"
                         >
 
                             Projects
@@ -490,7 +286,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'blogs.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('public/blogs.php'); ?>"
+                            href="<?php echo base_url('blogs.php'); ?>"
                         >
 
                             Blogs
@@ -503,7 +299,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'careers.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('public/careers.php'); ?>"
+                            href="<?php echo base_url('careers.php'); ?>"
                         >
 
                             Careers
@@ -516,7 +312,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'contact.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('public/contact.php'); ?>"
+                            href="<?php echo base_url('contact.php'); ?>"
                         >
 
                             Contact
@@ -532,7 +328,7 @@ basename($_SERVER['PHP_SELF']);
                         <?php if(is_logged_in()): ?>
 
                             <a
-                                href="<?php echo base_url('public/admin/dashboard.php'); ?>"
+                                href="<?php echo base_url('admin/dashboard.php'); ?>"
                                 class="btn-main"
                             >
 
@@ -545,7 +341,7 @@ basename($_SERVER['PHP_SELF']);
                         <?php else: ?>
 
                             <a
-                                href="<?php echo base_url('public/login.php'); ?>"
+                                href="<?php echo base_url('login.php'); ?>"
                                 class="btn-main"
                             >
 

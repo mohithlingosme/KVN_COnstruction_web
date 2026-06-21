@@ -351,7 +351,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
     <style>
@@ -863,7 +863,7 @@ count(
                                         name="quotation_id"
                                         value="<?php
 
-                                        echo $quotation['id'];
+                                        echo (int)$quotation['id'];
 
                                         ?>"
                                     >
@@ -997,11 +997,7 @@ count(
                                         </button>
 
                                         <a
-                                            href="view.php?id=<?php
-
-                                            echo $quotation['id'];
-
-                                            ?>"
+                                            href="view.php?id=<?= (int)$quotation['id'] ?>"
                                             class="btn btn-dark"
                                         >
 
@@ -1010,11 +1006,7 @@ count(
                                         </a>
 
                                         <a
-                                            href="pdf.php?id=<?php
-
-                                            echo $quotation['id'];
-
-                                            ?>"
+                                            href="pdf.php?id=<?= (int)$quotation['id'] ?>"
                                             target="_blank"
                                             class="btn btn-warning"
                                         >
@@ -1078,7 +1070,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

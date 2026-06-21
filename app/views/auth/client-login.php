@@ -217,7 +217,7 @@ unset($_SESSION['success']);
         <?php endif; ?>
 
         <form
-            action="auth/phone-login-handler.php"
+            action="<?php echo base_url('auth/phone-login-handler.php'); ?>"
             method="POST"
             autocomplete="off"
         >
@@ -279,7 +279,7 @@ unset($_SESSION['success']);
 
             New Customer?
 
-            <a href="register.php">
+            <a href="<?php echo base_url('register.php'); ?>">
 
                 Create Account
 

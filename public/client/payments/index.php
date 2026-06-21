@@ -526,11 +526,11 @@ if ($payments && $payments->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
@@ -541,7 +541,7 @@ if ($payments && $payments->num_rows > 0) {
         Payments
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -573,7 +573,7 @@ if ($payments && $payments->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -594,7 +594,7 @@ if ($payments && $payments->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalInvoices;
+                    echo (int)$totalInvoices;
                 ?>
 
             </h2>
@@ -629,7 +629,7 @@ if ($payments && $payments->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalPending;
+                    echo (int)$totalPending;
                 ?>
 
             </h2>

@@ -552,15 +552,15 @@ if ($permits && $permits->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
-    <a href="../quotations/index.php">
+    <a href="<?php echo base_url('admin/quotations/index.php'); ?>">
         Quotations
     </a>
 
@@ -579,7 +579,7 @@ if ($permits && $permits->num_rows > 0) {
         Agreements
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -613,7 +613,7 @@ if ($permits && $permits->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -634,7 +634,7 @@ if ($permits && $permits->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalPermits;
+                    echo (int)$totalPermits;
                 ?>
 
             </h2>
@@ -650,7 +650,7 @@ if ($permits && $permits->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $approvedPermits;
+                    echo (int)$approvedPermits;
                 ?>
 
             </h2>
@@ -666,7 +666,7 @@ if ($permits && $permits->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $pendingPermits;
+                    echo (int)$pendingPermits;
                 ?>
 
             </h2>
@@ -682,7 +682,7 @@ if ($permits && $permits->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $expiredPermits;
+                    echo (int)$expiredPermits;
                 ?>
 
             </h2>
@@ -830,15 +830,17 @@ if ($permits && $permits->num_rows > 0) {
                     <div class="actions">
 
                         <a
-                            href="#"
+                            href="<?php echo base_url('uploads/client-permits/' . htmlspecialchars((string)$row['file_name'])); ?>"
                             class="btn view-btn"
+                            target="_blank"
                         >
                             View Permit
                         </a>
 
                         <a
-                            href="#"
+                            href="<?php echo base_url('uploads/client-permits/' . htmlspecialchars((string)$row['file_name'])); ?>"
                             class="btn download-btn"
+                            download
                         >
                             Download
                         </a>

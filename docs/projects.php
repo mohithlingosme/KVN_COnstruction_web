@@ -328,13 +328,13 @@ $conn->query(
 
                     <td>
 
-                        <?php echo $row['id']; ?>
+                        <?php echo (int)$row['id']; ?>
 
                     </td>
 
                     <td>
 
-                        <img src="uploads/projects/<?php echo $row['project_image']; ?>"
+                        <img src="uploads/projects/<?php echo escapeAttr($row['project_image']); ?>"
                              width="80"
                              style="border-radius:10px;">
 
@@ -342,25 +342,25 @@ $conn->query(
 
                     <td>
 
-                        <?php echo $row['project_name']; ?>
+                        <?php echo escape($row['project_name']); ?>
 
                     </td>
 
                     <td>
 
-                        <?php echo $row['client_name']; ?>
+                        <?php echo escape($row['client_name']); ?>
 
                     </td>
 
                     <td>
 
-                        <?php echo $row['status']; ?>
+                        <?php echo escape($row['status']); ?>
 
                     </td>
 
                     <td>
 
-                        <?php echo $row['progress']; ?>%
+                        <?php echo escape($row['progress']); ?>%
 
                     </td>
 
@@ -372,7 +372,7 @@ $conn->query(
 
                     <td>
 
-                        <a href="?delete=<?php echo $row['id']; ?>">
+                        <a href="?delete=<?php echo (int)$row['id']; ?>">
 
                             Delete
 

@@ -513,7 +513,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
     <style>
@@ -1137,11 +1137,7 @@ count(
                                         <!-- EDIT -->
 
                                         <a
-                                            href="edit-package.php?id=<?php
-
-                                            echo $package['id'];
-
-                                            ?>"
+                                            href="edit-package.php?id=<?= (int)$package['id'] ?>"
                                             class="btn btn-primary btn-sm"
                                         >
 
@@ -1152,11 +1148,7 @@ count(
                                         <!-- DELETE -->
 
                                         <a
-                                            href="?delete=<?php
-
-                                            echo $package['id'];
-
-                                            ?>"
+                                            href="?delete=<?= (int)$package['id'] ?>"
                                             class="
                                                 btn
                                                 btn-danger
@@ -1218,7 +1210,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

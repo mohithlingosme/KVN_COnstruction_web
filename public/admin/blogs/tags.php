@@ -531,7 +531,7 @@ array_sum(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -903,7 +903,7 @@ array_sum(
 
                                         <td>
 
-                                            #<?php echo $tag['id']; ?>
+                                            #<?php echo (int)$tag['id']; ?>
 
                                         </td>
 
@@ -1050,7 +1050,7 @@ array_sum(
                                             <a
                                                 href="?delete=<?php
 
-                                                echo $tag['id'];
+                                                echo (int)$tag['id'];
 
                                                 ?>&csrf_token=<?php
 
@@ -1134,7 +1134,7 @@ array_sum(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

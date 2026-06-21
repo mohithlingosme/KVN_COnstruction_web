@@ -698,7 +698,7 @@ if ($estimators && $estimators->num_rows > 0) {
             <h3>Total Estimations</h3>
 
             <h2>
-                <?php echo $totalEstimations; ?>
+                <?= (int)$totalEstimations ?>
             </h2>
 
         </div>
@@ -708,7 +708,7 @@ if ($estimators && $estimators->num_rows > 0) {
             <h3>Approved</h3>
 
             <h2>
-                <?php echo $approvedCount; ?>
+                <?= (int)$approvedCount ?>
             </h2>
 
         </div>
@@ -718,7 +718,7 @@ if ($estimators && $estimators->num_rows > 0) {
             <h3>Pending</h3>
 
             <h2>
-                <?php echo $pendingCount; ?>
+                <?= (int)$pendingCount ?>
             </h2>
 
         </div>
@@ -728,7 +728,7 @@ if ($estimators && $estimators->num_rows > 0) {
             <h3>Rejected</h3>
 
             <h2>
-                <?php echo $rejectedCount; ?>
+                <?= (int)$rejectedCount ?>
             </h2>
 
         </div>
@@ -1096,7 +1096,7 @@ if ($estimators && $estimators->num_rows > 0) {
     </div>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

@@ -6,17 +6,13 @@ class Database
     // DATABASE CONFIGURATION
     // =====================================
 
-    private $host     = 'localhost';
+     private $host     = 'localhost';
+     private $db_name  = 'kvnc_platform';
+     private $username = 'root';
+     private $password = '';
+     private $charset  = 'utf8mb4';
+     private $conn;
 
-    private $db_name  = 'kvnc_platform';
-
-    private $username = 'root';
-
-    private $password = '';
-
-    private $charset  = 'utf8mb4';
-
-    private $conn;
 
     // =====================================
     // CREATE CONNECTION

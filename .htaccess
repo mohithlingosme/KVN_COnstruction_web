@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block access to hidden files and directories
+    RewriteRule ^\.|/\. - [F]
+
+    # Block access to application source folders
+    RewriteRule ^(app|config|core|database|helpers|middleware|routes|storage)(/.*)?$ - [F]
+
+    # Block access to sensitive files
+    RewriteRule ^(README\.md|task\.md|\.env.*|composer\.(json|lock)|audit-report/.*)$ - [F]
+
+    # Redirect trailing slashes
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)/$ /$1 [L,R=301]
+</IfModule>

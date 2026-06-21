@@ -108,7 +108,7 @@ include '../app/views/layouts/header.php';
 
                 <h1>
 
-                    <?php echo $about['hero_title']; ?>
+                    <?php echo escape($about['hero_title']); ?>
 
                 </h1>
 
@@ -150,7 +150,7 @@ include '../app/views/layouts/header.php';
 
             <h2 class="mb-4">
 
-                <?php echo $about['vision_title']; ?>
+                <?php echo e($about['vision_title']); ?>
 
             </h2>
 
@@ -197,19 +197,19 @@ include '../app/views/layouts/header.php';
 
                         <div class="mb-4">
 
-                            <i class="<?php echo $advantage['icon']; ?> fs-1 text-warning"></i>
+                            <i class="<?php echo escapeCssClass($advantage['icon']); ?> fs-1 text-warning"></i>
 
                         </div>
 
                         <h3>
 
-                            <?php echo $advantage['title']; ?>
+                            <?php echo e($advantage['title']); ?>
 
                         </h3>
 
                         <p>
 
-                            <?php echo $advantage['description']; ?>
+                            <?php echo e($advantage['description']); ?>
 
                         </p>
 
@@ -253,13 +253,13 @@ include '../app/views/layouts/header.php';
 
                     <h3>
 
-                        <?php echo $step['step_title']; ?>
+                        <?php echo e($step['step_title']); ?>
 
                     </h3>
 
                     <p>
 
-                        <?php echo $step['step_description']; ?>
+                        <?php echo e($step['step_description']); ?>
 
                     </p>
 
@@ -299,7 +299,7 @@ include '../app/views/layouts/header.php';
 
                 <div class="spec-item">
 
-                    <?php echo $spec['specification_name']; ?>
+                    <?php echo e($spec['specification_name']); ?>
 
                 </div>
 
@@ -323,21 +323,21 @@ include '../app/views/layouts/header.php';
 
             <h2>
 
-                <?php echo $about['cta_title']; ?>
+                <?php echo e($about['cta_title']); ?>
 
             </h2>
 
             <p>
 
-                <?php echo $about['cta_description']; ?>
+                <?php echo e($about['cta_description']); ?>
 
             </p>
 
             <a
-                href="<?php echo $about['cta_button_link']; ?>"
+                href="<?php echo escapeAttr($about['cta_button_link']); ?>"
             >
 
-                <?php echo $about['cta_button_text']; ?>
+                <?php echo e($about['cta_button_text']); ?>
 
             </a>
 

@@ -167,7 +167,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -221,7 +221,7 @@ count(
                 <div>
 
                     <a
-                        href="../users/create.php"
+                        href="<?php echo base_url('admin/users/create.php'); ?>"
                         class="btn-admin"
                     >
 
@@ -475,7 +475,7 @@ count(
 
                                         <td>
 
-                                            #<?php echo $client['id']; ?>
+                                            #<?php echo (int)$client['id']; ?>
 
                                         </td>
 
@@ -689,7 +689,7 @@ count(
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="../users/view.php?id=<?php echo $client['id']; ?>"
+                                                    href="../users/view.php?id=<?= (int)$client['id'] ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -700,7 +700,7 @@ count(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="../users/edit.php?id=<?php echo $client['id']; ?>"
+                                                    href="../users/edit.php?id=<?= (int)$client['id'] ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -711,7 +711,7 @@ count(
                                                 <!-- PROJECTS -->
 
                                                 <a
-                                                    href="projects.php?id=<?php echo $client['id']; ?>"
+                                                    href="projects.php?id=<?= (int)$client['id'] ?>"
                                                     class="btn btn-sm btn-success"
                                                 >
 
@@ -722,7 +722,7 @@ count(
                                                 <!-- PAYMENTS -->
 
                                                 <a
-                                                    href="payments.php?id=<?php echo $client['id']; ?>"
+                                                    href="payments.php?id=<?= (int)$client['id'] ?>"
                                                     class="btn btn-sm btn-warning"
                                                 >
 
@@ -811,7 +811,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

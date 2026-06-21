@@ -183,7 +183,7 @@ include '../app/views/layouts/header.php';
                     <?php foreach($categories as $category): ?>
 
                         <a
-                            href="blogs.php?category=<?php echo $category['id']; ?>"
+                            href="blogs.php?category=<?php echo urlencode((string)($category['id'] ?? '')); ?>"
                         >
 
                             <?php echo escape($category['category_name']); ?>
@@ -264,14 +264,14 @@ include '../app/views/layouts/header.php';
 
                             <i class="bi bi-clock"></i>
 
-                            <?php echo $featuredBlog['reading_time'] ?? '5 min read'; ?>
+                            <?php echo e($featuredBlog['reading_time'] ?? '5 min read'); ?>
 
                         </span>
 
                     </div>
 
                     <a
-                        href="blog-details.php?slug=<?php echo $featuredBlog['slug']; ?>"
+                        href="blog-details.php?slug=<?php echo urlencode((string)($featuredBlog['slug'] ?? '')); ?>"
                         class="btn-main"
                     >
 
@@ -345,7 +345,7 @@ include '../app/views/layouts/header.php';
 
                                 <small class="text-muted">
 
-                                    <?php echo $blog['reading_time'] ?? '5 min'; ?>
+                                    <?php echo e($blog['reading_time'] ?? '5 min'); ?>
 
                                 </small>
 
@@ -374,7 +374,7 @@ include '../app/views/layouts/header.php';
                                 </small>
 
                                 <a
-                                    href="blog-details.php?slug=<?php echo $blog['slug']; ?>"
+                                    href="blog-details.php?slug=<?php echo urlencode((string)($blog['slug'] ?? '')); ?>"
                                     class="btn-main"
                                 >
 

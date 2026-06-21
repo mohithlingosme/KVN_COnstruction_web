@@ -211,7 +211,7 @@ include ROOT_PATH . '/app/views/layouts/header.php';
 
                         <strong>
 
-                            <?php echo $remainingAttempts; ?>
+                            <?php echo (int)$remainingAttempts; ?>
 
                         </strong>
 
@@ -293,7 +293,7 @@ include ROOT_PATH . '/app/views/layouts/header.php';
 
                             <span id="countdown">
 
-                                <?php echo $resendCooldown; ?>
+                                <?php echo (int)$resendCooldown; ?>
 
                             </span>s
 
@@ -569,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function(){
     */
 
     let countdown =
-    <?php echo $resendCooldown; ?>;
+    <?php echo (int)$resendCooldown; ?>;
 
     const timer =
     setInterval(() => {

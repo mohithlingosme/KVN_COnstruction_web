@@ -604,14 +604,14 @@ $milestones =
     <div class="topbar">
 
         <a
-            href="view.php?id=<?php echo $projectId; ?>"
+            href="view.php?id=<?php echo (int)$projectId; ?>"
             class="btn back-btn"
         >
             ← Back to Project
         </a>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="btn logout-btn"
         >
             Logout

@@ -4,16 +4,21 @@ require_once '../config/app.php';
 
 $pageTitle = "Projects Portfolio | " . APP_NAME;
 
-$query = "
-    SELECT *
-    FROM portfolio_projects
-    WHERE status = 'active'
-    ORDER BY id DESC
-";
+try {
+    $query = "
+        SELECT *
+        FROM portfolio_projects
+        WHERE status = 'active'
+        ORDER BY id DESC
+    ";
 
-$stmt = $conn->prepare($query);
-$stmt->execute();
-$projects = $stmt->fetchAll();
+    $stmt = $conn->prepare($query);
+    $stmt->execute();
+    $projects = $stmt->fetchAll();
+} catch (PDOException $e) {
+    error_log("Projects query failed: " . $e->getMessage());
+    $projects = [];
+}
 
 include '../app/views/layouts/header.php';
 
@@ -81,13 +86,13 @@ include '../app/views/layouts/header.php';
 
                                 <small>
                                     <i class="bi bi-rulers"></i>
-                                    <?php echo $project['area_sqft']; ?> sqft
+                                    <?php echo (int)$project['area_sqft']; ?> sqft
                                 </small>
 
                             </div>
 
                             <a
-                                href="project-details.php?slug=<?php echo $project['slug']; ?>"
+                                href="project-details.php?slug=<?php echo urlencode((string)($project['slug'] ?? '')); ?>"
                                 class="btn-main"
                             >
                                 View Project

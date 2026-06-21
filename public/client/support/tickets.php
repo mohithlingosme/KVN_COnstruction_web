@@ -760,15 +760,15 @@ if (
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
-    <a href="../documents/index.php">
+    <a href="<?php echo base_url('admin/documents/index.php'); ?>">
         Documents
     </a>
 
@@ -779,7 +779,7 @@ if (
         Support Tickets
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -813,7 +813,7 @@ if (
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -832,7 +832,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $totalTickets; ?>
+                <?php echo (int)$totalTickets; ?>
             </h2>
 
         </div>
@@ -844,7 +844,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $openTickets; ?>
+                <?php echo (int)$openTickets; ?>
             </h2>
 
         </div>
@@ -856,7 +856,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $progressTickets; ?>
+                <?php echo (int)$progressTickets; ?>
             </h2>
 
         </div>
@@ -868,7 +868,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $resolvedTickets; ?>
+                <?php echo (int)$resolvedTickets; ?>
             </h2>
 
         </div>
@@ -886,7 +886,7 @@ if (
         <?php if (!empty($successMessage)): ?>
 
             <div class="success">
-                <?php echo $successMessage; ?>
+                <?php echo (int)$successMessage; ?>
             </div>
 
         <?php endif; ?>
@@ -894,7 +894,7 @@ if (
         <?php if (!empty($errorMessage)): ?>
 
             <div class="error">
-                <?php echo $errorMessage; ?>
+                <?php echo escape($errorMessage); ?>
             </div>
 
         <?php endif; ?>

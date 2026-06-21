@@ -15,7 +15,7 @@ basename($_SERVER['PHP_SELF']);
 
     <div class="sidebar-logo">
 
-        <a href="<?php echo base_url('public/admin/dashboard.php'); ?>">
+        <a href="<?php echo base_url('admin/dashboard.php'); ?>">
 
             <img
                 src="<?php echo base_url('assets/images/logo.png'); ?>"
@@ -34,7 +34,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li class="<?php echo ($currentPage == 'dashboard.php') ? 'active' : ''; ?>">
 
-            <a href="<?php echo base_url('public/admin/dashboard.php'); ?>">
+            <a href="<?php echo base_url('admin/dashboard.php'); ?>">
 
                 <i class="bi bi-grid-fill"></i>
 
@@ -50,7 +50,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li class="<?php echo ($currentPage == 'leads.php') ? 'active' : ''; ?>">
 
-            <a href="<?php echo base_url('public/admin/leads/index.php'); ?>">
+            <a href="<?php echo base_url('admin/leads/index.php'); ?>">
 
                 <i class="bi bi-people-fill"></i>
 
@@ -91,7 +91,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/packages/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/packages/index.php'); ?>">
 
                             Packages
 
@@ -101,7 +101,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/multipliers/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/multipliers/index.php'); ?>">
 
                             Multipliers
 
@@ -111,7 +111,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/estimator-requests/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/estimator-requests/index.php'); ?>">
 
                             Requests
 
@@ -154,7 +154,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/projects/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/projects/index.php'); ?>">
 
                             All Projects
 
@@ -164,7 +164,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/projects/create.php'); ?>">
+                        <a href="<?php echo base_url('admin/projects/create.php'); ?>">
 
                             Add Project
 
@@ -174,7 +174,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/project-gallery/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/project-gallery/index.php'); ?>">
 
                             Gallery
 
@@ -192,7 +192,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li>
 
-            <a href="<?php echo base_url('public/admin/quotations/index.php'); ?>">
+            <a href="<?php echo base_url('admin/quotations/index.php'); ?>">
 
                 <i class="bi bi-file-earmark-text-fill"></i>
 
@@ -233,7 +233,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/blogs/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/blogs/index.php'); ?>">
 
                             All Blogs
 
@@ -243,7 +243,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/blogs/create.php'); ?>">
+                        <a href="<?php echo base_url('admin/blogs/create.php'); ?>">
 
                             Create Blog
 
@@ -253,7 +253,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('public/admin/blog-categories/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/blog-categories/index.php'); ?>">
 
                             Categories
 
@@ -271,7 +271,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li>
 
-            <a href="<?php echo base_url('public/admin/testimonials/index.php'); ?>">
+            <a href="<?php echo base_url('admin/testimonials/index.php'); ?>">
 
                 <i class="bi bi-chat-left-quote-fill"></i>
 
@@ -287,7 +287,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li>
 
-            <a href="<?php echo base_url('public/admin/videos/index.php'); ?>">
+            <a href="<?php echo base_url('admin/videos/index.php'); ?>">
 
                 <i class="bi bi-play-btn-fill"></i>
 
@@ -303,7 +303,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li>
 
-            <a href="<?php echo base_url('public/admin/media/index.php'); ?>">
+            <a href="<?php echo base_url('admin/media/index.php'); ?>">
 
                 <i class="bi bi-images"></i>
 
@@ -319,7 +319,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li>
 
-            <a href="<?php echo base_url('public/admin/clients/index.php'); ?>">
+            <a href="<?php echo base_url('admin/clients/index.php'); ?>">
 
                 <i class="bi bi-person-badge-fill"></i>
 
@@ -335,7 +335,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li>
 
-            <a href="<?php echo base_url('public/admin/settings/index.php'); ?>">
+            <a href="<?php echo base_url('admin/settings/index.php'); ?>">
 
                 <i class="bi bi-gear-fill"></i>
 
@@ -351,7 +351,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li class="logout-link">
 
-            <a href="<?php echo base_url('public/logout.php'); ?>">
+            <a href="<?php echo base_url('logout.php'); ?>">
 
                 <i class="bi bi-box-arrow-right"></i>
 

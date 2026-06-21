@@ -179,7 +179,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -531,7 +531,7 @@ count(
 
                                         <td>
 
-                                            #<?php echo $quotation['id']; ?>
+                                            #<?php echo (int)$quotation['id']; ?>
 
                                         </td>
 
@@ -701,7 +701,7 @@ count(
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="view.php?id=<?php echo $quotation['id']; ?>"
+                                                    href="view.php?id=<?= (int)$quotation['id'] ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -712,7 +712,7 @@ count(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="edit.php?id=<?php echo $quotation['id']; ?>"
+                                                    href="edit.php?id=<?= (int)$quotation['id'] ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -723,7 +723,7 @@ count(
                                                 <!-- PDF -->
 
                                                 <a
-                                                    href="pdf.php?id=<?php echo $quotation['id']; ?>"
+                                                    href="pdf.php?id=<?= (int)$quotation['id'] ?>"
                                                     target="_blank"
                                                     class="btn btn-sm btn-warning"
                                                 >
@@ -735,7 +735,7 @@ count(
                                                 <!-- DELETE -->
 
                                                 <a
-                                                    href="delete.php?id=<?php echo $quotation['id']; ?>"
+                                                    href="delete.php?id=<?= (int)$quotation['id'] ?>"
                                                     class="btn btn-sm btn-danger btn-delete"
                                                 >
 
@@ -804,7 +804,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

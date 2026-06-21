@@ -778,7 +778,7 @@ if (
     </form>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

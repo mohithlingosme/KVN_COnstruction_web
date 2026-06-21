@@ -267,12 +267,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     email,
                                     project_location,
                                     project_type,
-                                    budget_range,
+                                    budget,
                                     message,
-                                    attachment,
                                     lead_source,
-                                    ip_address,
-                                    user_agent,
                                     created_at
 
                                 ) VALUES (
@@ -282,12 +279,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     :email,
                                     :project_location,
                                     :project_type,
-                                    :budget_range,
+                                    :budget,
                                     :message,
-                                    :attachment,
                                     :lead_source,
-                                    :ip_address,
-                                    :user_agent,
                                     NOW()
                                 )
                             ";
@@ -312,23 +306,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ':project_type' =>
                                 $formData['project_type'],
 
-                                ':budget_range' =>
+                                ':budget' =>
                                 $formData['budget_range'],
 
                                 ':message' =>
                                 $formData['message'],
 
-                                ':attachment' =>
-                                $uploadedFile,
-
                                 ':lead_source' =>
-                                'website_contact_page',
-
-                                ':ip_address' =>
-                                $_SERVER['REMOTE_ADDR'] ?? '',
-
-                                ':user_agent' =>
-                                $_SERVER['HTTP_USER_AGENT'] ?? ''
+                                'Website'
                             ]);
 
                             // =====================================

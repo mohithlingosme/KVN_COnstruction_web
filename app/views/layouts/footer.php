@@ -42,25 +42,25 @@ if (!defined('APP_NAME')) {
 
                     <div class="footer-social">
 
-                        <a href="#">
+                        <a href="https://www.facebook.com/kvnconstruction" target="_blank" rel="noopener noreferrer" aria-label="KVN Construction on Facebook">
 
                             <i class="bi bi-facebook"></i>
 
                         </a>
 
-                        <a href="#">
+                        <a href="https://www.instagram.com/kvnconstruction" target="_blank" rel="noopener noreferrer" aria-label="KVN Construction on Instagram">
 
                             <i class="bi bi-instagram"></i>
 
                         </a>
 
-                        <a href="#">
+                        <a href="https://www.youtube.com/@kvnconstruction" target="_blank" rel="noopener noreferrer" aria-label="KVN Construction on YouTube">
 
                             <i class="bi bi-youtube"></i>
 
                         </a>
 
-                        <a href="#">
+                        <a href="https://www.linkedin.com/company/kvnconstruction" target="_blank" rel="noopener noreferrer" aria-label="KVN Construction on LinkedIn">
 
                             <i class="bi bi-linkedin"></i>
 
@@ -85,31 +85,31 @@ if (!defined('APP_NAME')) {
                     <ul>
 
                         <li>
-                            <a href="<?php echo base_url('public/index.php'); ?>">
+                            <a href="<?php echo base_url('index.php'); ?>">
                                 Home
                             </a>
                         </li>
 
                         <li>
-                            <a href="<?php echo base_url('public/about-us.php'); ?>">
+                            <a href="<?php echo base_url('about-us.php'); ?>">
                                 About Us
                             </a>
                         </li>
 
                         <li>
-                            <a href="<?php echo base_url('public/services.php'); ?>">
+                            <a href="<?php echo base_url('services.php'); ?>">
                                 Services
                             </a>
                         </li>
 
                         <li>
-                            <a href="<?php echo base_url('public/projects.php'); ?>">
+                            <a href="<?php echo base_url('projects.php'); ?>">
                                 Projects
                             </a>
                         </li>
 
                         <li>
-                            <a href="<?php echo base_url('public/blogs.php'); ?>">
+                            <a href="<?php echo base_url('blogs.php'); ?>">
                                 Blogs
                             </a>
                         </li>
@@ -133,31 +133,31 @@ if (!defined('APP_NAME')) {
                     <ul>
 
                         <li>
-                            <a href="#">
+                            <a href="<?php echo base_url('services.php'); ?>#residential">
                                 Residential Construction
                             </a>
                         </li>
 
                         <li>
-                            <a href="#">
+                            <a href="<?php echo base_url('services.php'); ?>#commercial">
                                 Commercial Construction
                             </a>
                         </li>
 
                         <li>
-                            <a href="#">
+                            <a href="<?php echo base_url('services.php'); ?>#interior">
                                 Interior Design
                             </a>
                         </li>
 
                         <li>
-                            <a href="#">
-                                Renovation & Remodeling
+                            <a href="<?php echo base_url('services.php'); ?>#renovation">
+                                Renovation &amp; Remodeling
                             </a>
                         </li>
 
                         <li>
-                            <a href="#">
+                            <a href="<?php echo base_url('services.php'); ?>#turnkey">
                                 Turnkey Projects
                             </a>
                         </li>
@@ -217,7 +217,7 @@ if (!defined('APP_NAME')) {
                     <!-- CTA -->
 
                     <a
-                        href="<?php echo base_url('public/contact.php'); ?>"
+                        href="<?php echo base_url('contact.php'); ?>"
                         class="footer-btn"
                     >
 

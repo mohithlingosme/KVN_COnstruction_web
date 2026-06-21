@@ -232,7 +232,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -294,7 +294,7 @@ count(
                 <div class="d-flex gap-2">
 
                     <a
-                        href="../projects/create.php?client_id=<?php echo $clientId; ?>"
+                        href="../projects/create.php?client_id=<?php echo (int)$clientId; ?>"
                         class="btn-admin"
                     >
 
@@ -305,7 +305,7 @@ count(
                     </a>
 
                     <a
-                        href="view.php?id=<?php echo $clientId; ?>"
+                        href="view.php?id=<?= (int)$clientId ?>"
                         class="btn btn-dark"
                     >
 
@@ -617,7 +617,7 @@ count(
 
                                         <td>
 
-                                            #<?php echo $project['id']; ?>
+                                            #<?php echo (int)$project['id']; ?>
 
                                         </td>
 
@@ -857,7 +857,7 @@ count(
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="../projects/view.php?id=<?php echo $project['id']; ?>"
+                                                    href="../projects/view.php?id=<?= (int)$project['id'] ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -868,7 +868,7 @@ count(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="../projects/edit.php?id=<?php echo $project['id']; ?>"
+                                                    href="../projects/edit.php?id=<?= (int)$project['id'] ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -879,7 +879,7 @@ count(
                                                 <!-- MILESTONES -->
 
                                                 <a
-                                                    href="../projects/milestones.php?id=<?php echo $project['id']; ?>"
+                                                    href="../projects/milestones.php?id=<?= (int)$project['id'] ?>"
                                                     class="btn btn-sm btn-success"
                                                 >
 
@@ -945,7 +945,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

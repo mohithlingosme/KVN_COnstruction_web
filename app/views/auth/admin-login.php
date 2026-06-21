@@ -245,7 +245,7 @@ unset($_SESSION['error'], $_SESSION['success']);
 
         <form
             id="adminLoginForm"
-            action="../auth/admin-login-handler.php"
+            action="<?php echo base_url('auth/admin-login-handler.php'); ?>"
             method="POST"
             autocomplete="off"
         >
@@ -334,7 +334,7 @@ unset($_SESSION['error'], $_SESSION['success']);
                 </div>
 
                 <a
-                    href="../forgot-password.php"
+                    href="<?php echo base_url('forgot-password.php'); ?>"
                     class="text-decoration-none"
                 >
                     Forgot Password?

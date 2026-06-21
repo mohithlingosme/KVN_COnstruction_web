@@ -227,7 +227,7 @@ APP_NAME;
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -289,7 +289,7 @@ APP_NAME;
                 <div class="d-flex gap-2">
 
                     <a
-                        href="view.php?id=<?php echo $clientId; ?>"
+                        href="view.php?id=<?= (int)$clientId ?>"
                         class="btn btn-dark"
                     >
 
@@ -772,7 +772,7 @@ APP_NAME;
                                         <!-- APPROVE -->
 
                                         <a
-                                            href="../feedback/approve.php?id=<?php echo $feedback['id']; ?>"
+                                            href="../feedback/approve.php?id=<?= (int)$feedback['id'] ?>"
                                             class="btn btn-success btn-sm"
                                         >
 
@@ -783,7 +783,7 @@ APP_NAME;
                                         <!-- REJECT -->
 
                                         <a
-                                            href="../feedback/reject.php?id=<?php echo $feedback['id']; ?>"
+                                            href="../feedback/reject.php?id=<?= (int)$feedback['id'] ?>"
                                             class="btn btn-danger btn-sm"
                                         >
 
@@ -794,7 +794,7 @@ APP_NAME;
                                         <!-- FEATURE -->
 
                                         <a
-                                            href="../feedback/feature.php?id=<?php echo $feedback['id']; ?>"
+                                            href="../feedback/feature.php?id=<?= (int)$feedback['id'] ?>"
                                             class="btn btn-warning btn-sm"
                                         >
 
@@ -848,7 +848,7 @@ APP_NAME;
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

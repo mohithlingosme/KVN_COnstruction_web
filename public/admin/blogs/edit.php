@@ -479,7 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
     <style>
@@ -681,7 +681,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ?>
 
                                     <option
-                                        value="<?php echo $category; ?>"
+                                        value="<?= e($category) ?>"
 
                                         <?php
 
@@ -700,7 +700,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                                         <?php
 
-                                        echo $category;
+                                        echo escape($category);
 
                                         ?>
 
@@ -1078,7 +1078,7 @@ $(document).ready(function(){
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

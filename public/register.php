@@ -90,7 +90,7 @@ unset($_SESSION['error'], $_SESSION['success']);
             <div class="alert alert-success"><?php echo escape($success); ?></div>
         <?php endif; ?>
 
-        <form action="auth/register-handler.php" method="POST" autocomplete="off">
+        <form action="<?php echo base_url('auth/register-handler.php'); ?>" method="POST" autocomplete="off">
             <?php echo csrfField(); ?>
 
             <div class="mb-3">
@@ -128,7 +128,7 @@ unset($_SESSION['error'], $_SESSION['success']);
 
         <p class="text-center mt-4 mb-0">
             Already registered?
-            <a href="login.php">Login with OTP</a>
+            <a href="<?php echo base_url('login.php'); ?>">Login with OTP</a>
         </p>
     </main>
 </body>

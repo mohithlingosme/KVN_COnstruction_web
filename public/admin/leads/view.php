@@ -199,7 +199,7 @@ $lead['name']
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -253,7 +253,7 @@ $lead['name']
                 <div class="d-flex gap-2">
 
                     <a
-                        href="edit.php?id=<?php echo $lead['id']; ?>"
+                        href="edit.php?id=<?= (int)$lead['id'] ?>"
                         class="btn-admin"
                     >
 
@@ -809,7 +809,7 @@ $lead['name']
 
                                         <td>
 
-                                            #<?php echo $project['id']; ?>
+                                            #<?php echo (int)$project['id']; ?>
 
                                         </td>
 
@@ -911,7 +911,7 @@ $lead['name']
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

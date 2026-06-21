@@ -369,7 +369,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -492,7 +492,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php foreach($clients as $client): ?>
 
                                     <option
-                                        value="<?php echo $client['id']; ?>"
+                                        value="<?= e($client['id']) ?>"
                                     >
 
                                         <?php
@@ -816,7 +816,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

@@ -536,11 +536,11 @@ if ($invoices && $invoices->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
@@ -555,7 +555,7 @@ if ($invoices && $invoices->num_rows > 0) {
         Invoices
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -589,7 +589,7 @@ if ($invoices && $invoices->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -610,7 +610,7 @@ if ($invoices && $invoices->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalInvoices;
+                    echo (int)$totalInvoices;
                 ?>
 
             </h2>
@@ -626,7 +626,7 @@ if ($invoices && $invoices->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $paidInvoices;
+                    echo (int)$paidInvoices;
                 ?>
 
             </h2>
@@ -642,7 +642,7 @@ if ($invoices && $invoices->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $pendingInvoices;
+                    echo (int)$pendingInvoices;
                 ?>
 
             </h2>
@@ -804,8 +804,9 @@ if ($invoices && $invoices->num_rows > 0) {
                             <td>
 
                                 <a
-                                    href="#"
+                                    href="<?php echo !empty($row['pdf_file']) ? base_url('uploads/invoices/' . htmlspecialchars((string)$row['pdf_file'])) : 'javascript:window.print()'; ?>"
                                     class="btn download-btn"
+                                    <?php echo !empty($row['pdf_file']) ? 'download' : ''; ?>
                                 >
                                     Download
                                 </a>

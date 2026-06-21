@@ -652,7 +652,7 @@ $totalAmount =
             </a>
 
             <a
-                href="#"
+                href="javascript:window.print()"
                 class="btn secondary-btn"
             >
                 Download PDF

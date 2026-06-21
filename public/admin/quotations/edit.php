@@ -607,7 +607,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
     <style>
@@ -764,7 +764,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php foreach($clients as $client): ?>
 
                                     <option
-                                        value="<?php echo $client['id']; ?>"
+                                        value="<?= e($client['id']) ?>"
 
                                         <?php
 
@@ -822,7 +822,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php foreach($projects as $project): ?>
 
                                     <option
-                                        value="<?php echo $project['id']; ?>"
+                                        value="<?= e($project['id']) ?>"
 
                                         <?php
 
@@ -937,7 +937,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ?>
 
                                     <option
-                                        value="<?php echo $status; ?>"
+                                        value="<?= e($status) ?>"
 
                                         <?php
 
@@ -1314,7 +1314,7 @@ document.addEventListener(
 
 </script>
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

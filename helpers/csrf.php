@@ -64,6 +64,13 @@ if (!function_exists('csrfInputField')) {
     }
 }
 
+if (!function_exists('csrfField')) {
+    function csrfField(): string
+    {
+        return csrfInputField();
+    }
+}
+
 /*
 |--------------------------------------------------------------------------
 | CSRF META TAG

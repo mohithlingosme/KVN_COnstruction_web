@@ -704,7 +704,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h3>Total Quotations</h3>
 
             <h2>
-                <?php echo $totalQuotations; ?>
+                <?= (int)$totalQuotations ?>
             </h2>
 
         </div>
@@ -714,7 +714,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h3>Approved</h3>
 
             <h2>
-                <?php echo $approvedQuotes; ?>
+                <?= (int)$approvedQuotes ?>
             </h2>
 
         </div>
@@ -724,7 +724,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h3>Pending</h3>
 
             <h2>
-                <?php echo $pendingQuotes; ?>
+                <?= (int)$pendingQuotes ?>
             </h2>
 
         </div>
@@ -734,7 +734,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h3>Rejected</h3>
 
             <h2>
-                <?php echo $rejectedQuotes; ?>
+                <?= (int)$rejectedQuotes ?>
             </h2>
 
         </div>
@@ -1072,7 +1072,7 @@ if ($quotations && $quotations->num_rows > 0) {
     </div>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

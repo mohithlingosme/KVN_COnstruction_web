@@ -61,26 +61,8 @@ function formatDateTime(
 // =====================================
 
 // limitText() canonical is defined in helpers/functions.php.
-// Avoid redeclaration (duplicate-functions remediation).
-if (!function_exists('limitText')) {
-    function limitText(
-        $text,
-        $limit = 100
-    )
-    {
-        $text = strip_tags($text);
+// Removed duplicate implementation to eliminate duplicate function declarations.
 
-        if (strlen($text) > $limit) {
-            return substr(
-                $text,
-                0,
-                $limit
-            ) . '...';
-        }
-
-        return $text;
-    }
-}
 
 
 

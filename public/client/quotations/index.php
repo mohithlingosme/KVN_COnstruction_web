@@ -528,11 +528,11 @@ if ($quotations && $quotations->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
@@ -543,11 +543,11 @@ if ($quotations && $quotations->num_rows > 0) {
         Quotations
     </a>
 
-    <a href="../payments/index.php">
+    <a href="<?php echo base_url('admin/payments/index.php'); ?>">
         Payments
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -581,7 +581,7 @@ if ($quotations && $quotations->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -602,7 +602,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalQuotations;
+                    echo (int)$totalQuotations;
                 ?>
 
             </h2>
@@ -618,7 +618,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $approvedCount;
+                    echo (int)$approvedCount;
                 ?>
 
             </h2>
@@ -634,7 +634,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $pendingCount;
+                    echo (int)$pendingCount;
                 ?>
 
             </h2>
@@ -796,7 +796,7 @@ if ($quotations && $quotations->num_rows > 0) {
                             <td>
 
                                 <a
-                                    href="#"
+                                    href="view.php?id=<?php echo (int)$row['id']; ?>"
                                     class="btn view-btn"
                                 >
                                     View

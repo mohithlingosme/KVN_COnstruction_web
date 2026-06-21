@@ -738,7 +738,7 @@ if (
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
@@ -761,7 +761,7 @@ if (
         Testimonials
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -795,7 +795,7 @@ if (
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -814,7 +814,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $totalTestimonials; ?>
+                <?php echo (int)$totalTestimonials; ?>
             </h2>
 
         </div>
@@ -826,7 +826,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $approvedTestimonials; ?>
+                <?php echo (int)$approvedTestimonials; ?>
             </h2>
 
         </div>
@@ -838,7 +838,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $pendingTestimonials; ?>
+                <?php echo (int)$pendingTestimonials; ?>
             </h2>
 
         </div>
@@ -850,7 +850,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $featuredTestimonials; ?>
+                <?php echo (int)$featuredTestimonials; ?>
             </h2>
 
         </div>
@@ -868,7 +868,7 @@ if (
         <?php if (!empty($successMessage)): ?>
 
             <div class="success">
-                <?php echo $successMessage; ?>
+                <?php echo (int)$successMessage; ?>
             </div>
 
         <?php endif; ?>
@@ -876,7 +876,7 @@ if (
         <?php if (!empty($errorMessage)): ?>
 
             <div class="error">
-                <?php echo $errorMessage; ?>
+                <?php echo escape($errorMessage); ?>
             </div>
 
         <?php endif; ?>

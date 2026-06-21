@@ -2016,7 +2016,7 @@ document.querySelectorAll(
 
 /* MAIN CALCULATION */
 
-function calculateCost(){
+function _calculateCostLegacy(){ 
 
     const plotSize =
         parseFloat(sqft.value) || 0;
@@ -2204,7 +2204,6 @@ fetch("get-packages.php")
 
     calculateCost();
 });
-
 /* ================================= */
 /* CALCULATOR */
 /* ================================= */
@@ -2244,17 +2243,11 @@ function calculateCost(){
     /* BASE PRICE */
 
     let totalCost =
-
         builtupArea *
-
         selectedPackage.base_price *
-
         selectedPackage.location_multiplier *
-
         selectedPackage.interior_multiplier *
-
         selectedPackage.smart_home_multiplier *
-
         selectedPackage.vastu_multiplier;
 
     /* GST */
@@ -2269,29 +2262,24 @@ function calculateCost(){
 
     document.getElementById("totalCost")
     .innerHTML =
-
         "₹" +
-
+        
         totalCost.toLocaleString("en-IN");
 
     document.getElementById("package")
     .innerHTML =
-
         selectedPackage.package_name;
 
     document.getElementById("timeline")
     .innerHTML =
-
         selectedPackage.estimated_timeline;
 
     document.getElementById("materialGrade")
     .innerHTML =
-
         selectedPackage.material_grade;
 
     document.getElementById("builtupArea")
     .innerHTML =
-
         builtupArea.toLocaleString("en-IN")
         + " sqft";
 }

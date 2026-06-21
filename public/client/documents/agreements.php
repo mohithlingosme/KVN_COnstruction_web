@@ -570,15 +570,15 @@ if ($agreements && $agreements->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
-    <a href="../quotations/index.php">
+    <a href="<?php echo base_url('admin/quotations/index.php'); ?>">
         Quotations
     </a>
 
@@ -593,11 +593,11 @@ if ($agreements && $agreements->num_rows > 0) {
         Documents
     </a>
 
-    <a href="../payments/index.php">
+    <a href="<?php echo base_url('admin/payments/index.php'); ?>">
         Payments
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -631,7 +631,7 @@ if ($agreements && $agreements->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -652,7 +652,7 @@ if ($agreements && $agreements->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalAgreements;
+                    echo (int)$totalAgreements;
                 ?>
 
             </h2>
@@ -668,7 +668,7 @@ if ($agreements && $agreements->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $activeAgreements;
+                    echo (int)$activeAgreements;
                 ?>
 
             </h2>
@@ -684,7 +684,7 @@ if ($agreements && $agreements->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $pendingAgreements;
+                    echo (int)$pendingAgreements;
                 ?>
 
             </h2>
@@ -700,7 +700,7 @@ if ($agreements && $agreements->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $completedAgreements;
+                    echo (int)$completedAgreements;
                 ?>
 
             </h2>
@@ -859,15 +859,17 @@ if ($agreements && $agreements->num_rows > 0) {
                     <div class="actions">
 
                         <a
-                            href="#"
+                            href="<?php echo base_url('uploads/client-agreements/' . htmlspecialchars((string)$row['file_name'])); ?>"
                             class="btn view-btn"
+                            target="_blank"
                         >
                             View Agreement
                         </a>
 
                         <a
-                            href="#"
+                            href="<?php echo base_url('uploads/client-agreements/' . htmlspecialchars((string)$row['file_name'])); ?>"
                             class="btn download-btn"
+                            download
                         >
                             Download PDF
                         </a>

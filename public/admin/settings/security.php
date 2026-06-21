@@ -702,14 +702,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['two_factor_auth'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['two_factor_auth'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['two_factor_auth'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['two_factor_auth'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -728,14 +728,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['maintenance_lock'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['maintenance_lock'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['maintenance_lock'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['maintenance_lock'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -755,7 +755,7 @@ if (
     </form>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

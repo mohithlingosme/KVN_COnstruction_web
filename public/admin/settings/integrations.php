@@ -746,14 +746,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['chatbot_status'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['chatbot_status'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['chatbot_status'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['chatbot_status'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -772,14 +772,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['recaptcha_status'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['recaptcha_status'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['recaptcha_status'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['recaptcha_status'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -798,14 +798,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['whatsapp_chat_status'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['whatsapp_chat_status'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['whatsapp_chat_status'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['whatsapp_chat_status'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -825,7 +825,7 @@ if (
     </form>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

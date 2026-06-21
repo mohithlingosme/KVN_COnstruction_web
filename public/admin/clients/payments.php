@@ -216,7 +216,7 @@ APP_NAME;
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -278,7 +278,7 @@ APP_NAME;
                 <div class="d-flex gap-2">
 
                     <a
-                        href="../payments/create.php?client_id=<?php echo $clientId; ?>"
+                        href="../payments/create.php?client_id=<?php echo (int)$clientId; ?>"
                         class="btn-admin"
                     >
 
@@ -289,7 +289,7 @@ APP_NAME;
                     </a>
 
                     <a
-                        href="view.php?id=<?php echo $clientId; ?>"
+                        href="view.php?id=<?= (int)$clientId ?>"
                         class="btn btn-dark"
                     >
 
@@ -599,7 +599,7 @@ APP_NAME;
 
                                         <td>
 
-                                            #<?php echo $payment['id']; ?>
+                                            #<?php echo (int)$payment['id']; ?>
 
                                         </td>
 
@@ -763,7 +763,7 @@ APP_NAME;
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="../payments/view.php?id=<?php echo $payment['id']; ?>"
+                                                    href="../payments/view.php?id=<?= (int)$payment['id'] ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -774,7 +774,7 @@ APP_NAME;
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="../payments/edit.php?id=<?php echo $payment['id']; ?>"
+                                                    href="../payments/edit.php?id=<?= (int)$payment['id'] ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -785,7 +785,7 @@ APP_NAME;
                                                 <!-- RECEIPT -->
 
                                                 <a
-                                                    href="../payments/receipt.php?id=<?php echo $payment['id']; ?>"
+                                                    href="../payments/receipt.php?id=<?= (int)$payment['id'] ?>"
                                                     class="btn btn-sm btn-success"
                                                 >
 
@@ -851,7 +851,7 @@ APP_NAME;
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

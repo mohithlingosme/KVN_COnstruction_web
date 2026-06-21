@@ -575,15 +575,15 @@ if ($images && $images->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
-    <a href="../documents/index.php">
+    <a href="<?php echo base_url('admin/documents/index.php'); ?>">
         Documents
     </a>
 
@@ -594,7 +594,7 @@ if ($images && $images->num_rows > 0) {
         Uploaded Images
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -630,14 +630,14 @@ if ($images && $images->num_rows > 0) {
         <div>
 
             <a
-                href="#"
+                href="<?php echo base_url('client/support/index.php'); ?>"
                 class="upload-btn"
             >
                 Upload Image
             </a>
 
             <a
-                href="../logout.php"
+                href="<?php echo base_url('logout.php'); ?>"
                 class="logout-btn"
             >
                 Logout
@@ -660,7 +660,7 @@ if ($images && $images->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalImages;
+                    echo (int)$totalImages;
                 ?>
 
             </h2>
@@ -676,7 +676,7 @@ if ($images && $images->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $approvedImages;
+                    echo (int)$approvedImages;
                 ?>
 
             </h2>
@@ -692,7 +692,7 @@ if ($images && $images->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $pendingImages;
+                    echo (int)$pendingImages;
                 ?>
 
             </h2>
@@ -708,7 +708,7 @@ if ($images && $images->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $rejectedImages;
+                    echo (int)$rejectedImages;
                 ?>
 
             </h2>
@@ -847,15 +847,17 @@ if ($images && $images->num_rows > 0) {
                         <div class="actions">
 
                             <a
-                                href="#"
+                                href="<?php echo base_url('uploads/client-images/' . htmlspecialchars((string)$row['image_file'])); ?>"
                                 class="btn view-btn"
+                                target="_blank"
                             >
                                 View
                             </a>
 
                             <a
-                                href="#"
+                                href="<?php echo base_url('uploads/client-images/' . htmlspecialchars((string)$row['image_file'])); ?>"
                                 class="btn download-btn"
+                                download
                             >
                                 Download
                             </a>

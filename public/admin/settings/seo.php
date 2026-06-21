@@ -802,14 +802,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['sitemap_status'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['sitemap_status'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['sitemap_status'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['sitemap_status'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -828,14 +828,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['seo_status'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['seo_status'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['seo_status'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['seo_status'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -855,7 +855,7 @@ if (
     </form>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

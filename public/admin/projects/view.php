@@ -245,7 +245,7 @@ $project['project_name']
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -295,7 +295,7 @@ $project['project_name']
                 <div class="d-flex gap-2">
 
                     <a
-                        href="edit.php?id=<?php echo $project['id']; ?>"
+                        href="edit.php?id=<?= (int)$project['id'] ?>"
                         class="btn-admin"
                     >
 
@@ -800,7 +800,7 @@ $project['project_name']
 
                                         <td>
 
-                                            #<?php echo $task['id']; ?>
+                                            #<?php echo (int)$task['id']; ?>
 
                                         </td>
 
@@ -949,7 +949,7 @@ $project['project_name']
 
                                         <td>
 
-                                            #<?php echo $payment['id']; ?>
+                                            #<?php echo (int)$payment['id']; ?>
 
                                         </td>
 
@@ -1103,7 +1103,7 @@ $project['project_name']
 
                                         <td>
 
-                                            #<?php echo $file['id']; ?>
+                                            #<?php echo (int)$file['id']; ?>
 
                                         </td>
 
@@ -1209,7 +1209,7 @@ $project['project_name']
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

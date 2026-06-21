@@ -49,6 +49,13 @@ function safeRichText(string $content): string
     );
 }
 
+if (!function_exists('sanitize_html')) {
+    function sanitize_html(string $content): string
+    {
+        return safeRichText($content);
+    }
+}
+
 /*
 |--------------------------------------------------------------------------
 | SECURITY HEADERS
@@ -103,12 +110,9 @@ function csrfToken(): string
 | CSRF FIELD
 |--------------------------------------------------------------------------
 */
-function csrfField(): string
-{
-    return '<input type="hidden" name="_token" value="' .
-        csrfToken() .
-        '">';
-}
+/* csrfField() canonical is defined in helpers/csrf.php. */
+
+
 
 /*
 |--------------------------------------------------------------------------

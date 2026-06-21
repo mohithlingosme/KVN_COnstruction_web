@@ -519,7 +519,7 @@ if (
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
@@ -534,19 +534,19 @@ if (
         Schedules
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
-    <a href="../payments/index.php">
+    <a href="<?php echo base_url('admin/payments/index.php'); ?>">
         Payments
     </a>
 
-    <a href="../support/tickets.php">
+    <a href="<?php echo base_url('admin/support/tickets.php'); ?>">
         Support
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -580,7 +580,7 @@ if (
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -599,7 +599,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $totalSchedules; ?>
+                <?php echo (int)$totalSchedules; ?>
             </h2>
 
         </div>
@@ -611,7 +611,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $upcomingSchedules; ?>
+                <?php echo (int)$upcomingSchedules; ?>
             </h2>
 
         </div>
@@ -623,7 +623,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $ongoingSchedules; ?>
+                <?php echo (int)$ongoingSchedules; ?>
             </h2>
 
         </div>
@@ -635,7 +635,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $completedSchedules; ?>
+                <?php echo (int)$completedSchedules; ?>
             </h2>
 
         </div>

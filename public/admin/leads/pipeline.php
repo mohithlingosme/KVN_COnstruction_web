@@ -163,7 +163,7 @@ foreach($pipelineStages as $stage){
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
     <style>
@@ -551,7 +551,7 @@ foreach($pipelineStages as $stage){
 
                             <h5>
 
-                                <?php echo $title; ?>
+                                <?php echo escape($title); ?>
 
                             </h5>
 
@@ -573,7 +573,7 @@ foreach($pipelineStages as $stage){
 
                         <div
                             class="pipeline-stage"
-                            data-stage="<?php echo $key; ?>"
+                            data-stage="<?= e($key) ?>"
                         >
 
                             <?php if(!empty($pipelineStages[$key])): ?>
@@ -582,7 +582,7 @@ foreach($pipelineStages as $stage){
 
                                     <div
                                         class="pipeline-card"
-                                        data-id="<?php echo $lead['id']; ?>"
+                                        data-id="<?= (int)$lead['id'] ?>"
                                     >
 
                                         <!-- NAME -->
@@ -709,7 +709,7 @@ foreach($pipelineStages as $stage){
                                             <!-- VIEW -->
 
                                             <a
-                                                href="view.php?id=<?php echo $lead['id']; ?>"
+                                                href="view.php?id=<?= (int)$lead['id'] ?>"
                                                 class="btn btn-sm btn-dark"
                                             >
 
@@ -720,7 +720,7 @@ foreach($pipelineStages as $stage){
                                             <!-- EDIT -->
 
                                             <a
-                                                href="edit.php?id=<?php echo $lead['id']; ?>"
+                                                href="edit.php?id=<?= (int)$lead['id'] ?>"
                                                 class="btn btn-sm btn-primary"
                                             >
 
@@ -733,7 +733,7 @@ foreach($pipelineStages as $stage){
                                             <?php if($key !== 'converted'): ?>
 
                                                 <a
-                                                    href="convert.php?id=<?php echo $lead['id']; ?>"
+                                                    href="convert.php?id=<?= (int)$lead['id'] ?>"
                                                     class="btn btn-sm btn-success"
                                                 >
 
@@ -790,7 +790,7 @@ foreach($pipelineStages as $stage){
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 <script>
 

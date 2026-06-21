@@ -691,11 +691,11 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
@@ -714,7 +714,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
         Feedback
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -748,7 +748,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -767,7 +767,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
             </h4>
 
             <h2>
-                <?php echo $totalFeedback; ?>
+                <?php echo (int)$totalFeedback; ?>
             </h2>
 
         </div>
@@ -779,7 +779,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
             </h4>
 
             <h2>
-                <?php echo $pendingFeedback; ?>
+                <?php echo (int)$pendingFeedback; ?>
             </h2>
 
         </div>
@@ -791,7 +791,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
             </h4>
 
             <h2>
-                <?php echo $reviewedFeedback; ?>
+                <?php echo (int)$reviewedFeedback; ?>
             </h2>
 
         </div>
@@ -803,7 +803,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
             </h4>
 
             <h2>
-                <?php echo $resolvedFeedback; ?>
+                <?php echo (int)$resolvedFeedback; ?>
             </h2>
 
         </div>
@@ -821,7 +821,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
         <?php if (!empty($successMessage)): ?>
 
             <div class="success">
-                <?php echo $successMessage; ?>
+                <?php echo (int)$successMessage; ?>
             </div>
 
         <?php endif; ?>
@@ -829,7 +829,7 @@ if ($feedbacks && $feedbacks->num_rows > 0) {
         <?php if (!empty($errorMessage)): ?>
 
             <div class="error">
-                <?php echo $errorMessage; ?>
+                <?php echo escape($errorMessage); ?>
             </div>
 
         <?php endif; ?>

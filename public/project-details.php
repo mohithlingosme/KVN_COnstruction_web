@@ -17,21 +17,26 @@ $slug = trim($_GET['slug']);
 // FETCH PROJECT
 // =====================================
 
-$query = "
-    SELECT *
-    FROM portfolio_projects
-    WHERE slug = :slug
-    AND status = 'active'
-    LIMIT 1
-";
+try {
+    $query = "
+        SELECT *
+        FROM portfolio_projects
+        WHERE slug = :slug
+        AND status = 'active'
+        LIMIT 1
+    ";
 
-$stmt = $conn->prepare($query);
+    $stmt = $conn->prepare($query);
 
-$stmt->bindParam(':slug', $slug);
+    $stmt->bindParam(':slug', $slug);
 
-$stmt->execute();
+    $stmt->execute();
 
-$project = $stmt->fetch();
+    $project = $stmt->fetch();
+} catch (PDOException $e) {
+    error_log("Project details query failed: " . $e->getMessage());
+    $project = false;
+}
 
 // =====================================
 // PROJECT NOT FOUND
@@ -115,7 +120,7 @@ include '../app/views/layouts/header.php';
 
                         <p class="text-muted">
 
-                            <?php echo $project['area_sqft']; ?> sqft
+                            <?php echo (int)$project['area_sqft']; ?> sqft
 
                         </p>
 
@@ -129,7 +134,7 @@ include '../app/views/layouts/header.php';
 
                         <p class="text-muted">
 
-                            <?php echo $project['duration_months']; ?> Months
+                            <?php echo (int)$project['duration_months']; ?> Months
 
                         </p>
 
@@ -312,7 +317,7 @@ include '../app/views/layouts/header.php';
                             </strong>
 
                             <span>
-                                <?php echo $project['area_sqft']; ?> sqft
+                                <?php echo (int)$project['area_sqft']; ?> sqft
                             </span>
 
                         </li>
@@ -339,7 +344,7 @@ include '../app/views/layouts/header.php';
 
                             <span>
 
-                                <?php echo $project['duration_months']; ?>
+                                <?php echo (int)$project['duration_months']; ?>
                                 Months
 
                             </span>
@@ -441,23 +446,28 @@ include '../app/views/layouts/header.php';
 
             <?php
 
-            $relatedQuery = "
-                SELECT *
-                FROM portfolio_projects
-                WHERE status = 'active'
-                AND id != :id
-                LIMIT 3
-            ";
+            try {
+                $relatedQuery = "
+                    SELECT *
+                    FROM portfolio_projects
+                    WHERE status = 'active'
+                    AND id != :id
+                    LIMIT 3
+                ";
 
-            $relatedStmt =
-            $conn->prepare($relatedQuery);
+                $relatedStmt =
+                $conn->prepare($relatedQuery);
 
-            $relatedStmt->bindParam(':id', $project['id']);
+                $relatedStmt->bindParam(':id', $project['id']);
 
-            $relatedStmt->execute();
+                $relatedStmt->execute();
 
-            $relatedProjects =
-            $relatedStmt->fetchAll();
+                $relatedProjects =
+                $relatedStmt->fetchAll();
+            } catch (PDOException $e) {
+                error_log("Related projects query failed: " . $e->getMessage());
+                $relatedProjects = [];
+            }
 
             foreach($relatedProjects as $related):
 
@@ -491,7 +501,7 @@ include '../app/views/layouts/header.php';
                             </p>
 
                             <a
-                                href="project-details.php?slug=<?php echo $related['slug']; ?>"
+                                href="project-details.php?slug=<?php echo urlencode((string)($related['slug'] ?? '')); ?>"
                                 class="btn-main"
                             >
 

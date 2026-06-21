@@ -30,116 +30,21 @@ $pageTitle =
 
 /*
 |--------------------------------------------------------------------------
-| FETCH PROJECTS
+| FETCH PROJECTS & STATS
 |--------------------------------------------------------------------------
 */
 
-$projects = [];
+require_once '../../../app/controllers/admin/ProjectController.php';
 
-try {
+$controller = new ProjectController($conn);
 
-    $query = "
+$projects = $controller->index();
+$stats = $controller->getStats($projects);
 
-        SELECT
-            p.*,
-            u.full_name AS client_name
-
-        FROM projects p
-
-        LEFT JOIN users u
-        ON p.client_id = u.id
-
-        ORDER BY p.id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
-    $projects =
-    $stmt->fetchAll();
-
-} catch(Exception $e){
-
-    $_SESSION['error'] =
-    'Failed to fetch projects.';
-}
-
-/*
-|--------------------------------------------------------------------------
-| PROJECT STATS
-|--------------------------------------------------------------------------
-*/
-
-$totalProjects =
-count($projects);
-
-$ongoingProjects =
-count(
-
-    array_filter(
-
-        $projects,
-
-        function($project){
-
-            return
-
-            strtolower(
-                $project['status']
-            )
-
-            ===
-
-            'ongoing';
-        }
-    )
-);
-
-$completedProjects =
-count(
-
-    array_filter(
-
-        $projects,
-
-        function($project){
-
-            return
-
-            strtolower(
-                $project['status']
-            )
-
-            ===
-
-            'completed';
-        }
-    )
-);
-
-$pendingProjects =
-count(
-
-    array_filter(
-
-        $projects,
-
-        function($project){
-
-            return
-
-            strtolower(
-                $project['status']
-            )
-
-            ===
-
-            'pending';
-        }
-    )
-);
+$totalProjects = $stats['total'];
+$ongoingProjects = $stats['ongoing'];
+$completedProjects = $stats['completed'];
+$pendingProjects = $stats['pending'];
 
 ?>
 
@@ -180,7 +85,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -549,7 +454,7 @@ count(
 
                                         <td>
 
-                                            #<?php echo $project['id']; ?>
+                                            #<?php echo (int)$project['id']; ?>
 
                                         </td>
 
@@ -815,7 +720,7 @@ count(
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="view.php?id=<?php echo $project['id']; ?>"
+                                                    href="view.php?id=<?= (int)$project['id'] ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -826,7 +731,7 @@ count(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="edit.php?id=<?php echo $project['id']; ?>"
+                                                    href="edit.php?id=<?= (int)$project['id'] ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -837,7 +742,7 @@ count(
                                                 <!-- TASKS -->
 
                                                 <a
-                                                    href="tasks.php?id=<?php echo $project['id']; ?>"
+                                                    href="tasks.php?id=<?= (int)$project['id'] ?>"
                                                     class="btn btn-sm btn-success"
                                                 >
 
@@ -848,7 +753,7 @@ count(
                                                 <!-- DELETE -->
 
                                                 <a
-                                                    href="delete.php?id=<?php echo $project['id']; ?>"
+                                                    href="delete.php?id=<?= (int)$project['id'] ?>"
                                                     class="btn btn-sm btn-danger btn-delete"
                                                 >
 
@@ -914,7 +819,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

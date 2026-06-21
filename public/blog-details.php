@@ -106,7 +106,7 @@ include '../app/views/layouts/header.php';
 
                         <i class="bi bi-clock"></i>
 
-                        <?php echo $blog['reading_time'] ?? '5 min read'; ?>
+                        <?php echo escape($blog['reading_time'] ?? '5 min read'); ?>
 
                     </span>
 
@@ -150,7 +150,7 @@ include '../app/views/layouts/header.php';
 
                 <div class="blog-content-box">
 
-                    <?php echo $blog['content']; ?>
+                    <?php echo sanitize_html($blog['content']); ?>
 
                 </div>
 
@@ -200,7 +200,7 @@ include '../app/views/layouts/header.php';
 
                             <span class="tag-item">
 
-                                <?php echo trim($tag); ?>
+                                <?php echo e(trim($tag)); ?>
 
                             </span>
 
@@ -291,7 +291,7 @@ include '../app/views/layouts/header.php';
 
                                 <h5>
 
-                                    <a href="blog-details.php?slug=<?php echo $related['slug']; ?>">
+                                <a href="blog-details.php?slug=<?php echo urlencode((string)($related['slug'] ?? '')); ?>">
 
                                         <?php echo escape($related['title']); ?>
 
@@ -422,7 +422,7 @@ include '../app/views/layouts/header.php';
                             </p>
 
                             <a
-                                href="blog-details.php?slug=<?php echo $more['slug']; ?>"
+                                href="blog-details.php?slug=<?php echo urlencode((string)($more['slug'] ?? '')); ?>"
                                 class="btn-main"
                             >
 

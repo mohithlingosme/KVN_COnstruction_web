@@ -569,7 +569,7 @@ if ($projects && $projects->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
@@ -588,7 +588,7 @@ if ($projects && $projects->num_rows > 0) {
         Support
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -620,7 +620,7 @@ if ($projects && $projects->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout"
         >
             Logout
@@ -639,7 +639,7 @@ if ($projects && $projects->num_rows > 0) {
             </h3>
 
             <h2>
-                <?php echo $totalProjects; ?>
+                <?php echo (int)$totalProjects; ?>
             </h2>
 
         </div>
@@ -651,7 +651,7 @@ if ($projects && $projects->num_rows > 0) {
             </h3>
 
             <h2>
-                <?php echo $ongoingProjects; ?>
+                <?php echo (int)$ongoingProjects; ?>
             </h2>
 
         </div>
@@ -663,7 +663,7 @@ if ($projects && $projects->num_rows > 0) {
             </h3>
 
             <h2>
-                <?php echo $completedProjects; ?>
+                <?php echo (int)$completedProjects; ?>
             </h2>
 
         </div>
@@ -675,7 +675,7 @@ if ($projects && $projects->num_rows > 0) {
             </h3>
 
             <h2>
-                <?php echo $planningProjects; ?>
+                <?php echo (int)$planningProjects; ?>
             </h2>
 
         </div>

@@ -499,7 +499,7 @@ array_sum(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -877,7 +877,7 @@ array_sum(
 
                                         <td>
 
-                                            #<?php echo $category['id']; ?>
+                                            #<?php echo (int)$category['id']; ?>
 
                                         </td>
 
@@ -1028,7 +1028,7 @@ array_sum(
                                                 <a
                                                     href="?delete=<?php
 
-                                                    echo $category['id'];
+                                                    echo (int)$category['id'];
 
                                                     ?>&csrf_token=<?php
 
@@ -1114,7 +1114,7 @@ array_sum(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

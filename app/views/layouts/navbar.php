@@ -81,19 +81,19 @@ $_SESSION['user_role'] ?? 'admin';
 
                 </h6>
 
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="<?php echo base_url('admin/leads/index.php'); ?>">
 
                     New lead inquiry received
 
                 </a>
 
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="<?php echo base_url('admin/projects/index.php'); ?>">
 
                     Project update uploaded
 
                 </a>
 
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="<?php echo base_url('admin/testimonials/index.php'); ?>">
 
                     New testimonial submitted
 
@@ -142,7 +142,7 @@ $_SESSION['user_role'] ?? 'admin';
 
                 <a
                     class="dropdown-item"
-                    href="#"
+                    href="<?php echo base_url('admin/users/index.php'); ?>"
                 >
 
                     <i class="bi bi-person-circle"></i>
@@ -153,7 +153,7 @@ $_SESSION['user_role'] ?? 'admin';
 
                 <a
                     class="dropdown-item"
-                    href="#"
+                    href="<?php echo base_url('admin/settings/index.php'); ?>"
                 >
 
                     <i class="bi bi-gear-fill"></i>
@@ -166,7 +166,7 @@ $_SESSION['user_role'] ?? 'admin';
 
                 <a
                     class="dropdown-item text-danger"
-                    href="<?php echo base_url('public/logout.php'); ?>"
+                    href="<?php echo base_url('logout.php'); ?>"
                 >
 
                     <i class="bi bi-box-arrow-right"></i>

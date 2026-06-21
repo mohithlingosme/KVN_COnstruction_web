@@ -19,7 +19,7 @@ $pageTitle = "Construction Services | " . APP_NAME;
     >
 
     <title>
-        <?php echo $pageTitle; ?>
+        <?php echo e($pageTitle); ?>
     </title>
 
     <!-- GOOGLE FONT -->
@@ -54,266 +54,8 @@ $pageTitle = "Construction Services | " . APP_NAME;
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     >
 
-    <style>
-
-        body{
-            font-family:'Poppins',sans-serif;
-            background:#f8f9fa;
-            color:#222;
-        }
-
-        .hero{
-
-            padding:120px 0;
-
-            background:
-            linear-gradient(
-                135deg,
-                #fff9e8 0%,
-                #ffffff 50%,
-                #f5f5f5 100%
-            );
-        }
-
-        .hero h1{
-
-            font-size:60px;
-
-            font-weight:800;
-
-            line-height:1.1;
-
-            margin-bottom:25px;
-        }
-
-        .hero h1 span{
-            color:#f5b400;
-        }
-
-        .hero p{
-
-            font-size:18px;
-
-            color:#666;
-
-            line-height:1.8;
-
-            max-width:800px;
-        }
-
-        .section-title{
-
-            text-align:center;
-
-            margin-bottom:60px;
-        }
-
-        .section-title h2{
-
-            font-size:48px;
-
-            font-weight:700;
-
-            margin-bottom:15px;
-        }
-
-        .section-title p{
-
-            color:#666;
-
-            font-size:18px;
-        }
-
-        section{
-            padding:100px 0;
-        }
-
-        .service-card{
-
-            background:#fff;
-
-            border-radius:24px;
-
-            padding:40px;
-
-            height:100%;
-
-            transition:0.3s ease;
-
-            border:1px solid rgba(0,0,0,0.05);
-
-            box-shadow:0 5px 20px rgba(0,0,0,0.04);
-        }
-
-        .service-card:hover{
-
-            transform:translateY(-8px);
-        }
-
-        .service-icon{
-
-            width:80px;
-            height:80px;
-
-            border-radius:20px;
-
-            background:#fff4cf;
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:center;
-
-            margin-bottom:25px;
-
-            font-size:34px;
-
-            color:#f5b400;
-        }
-
-        .service-card h3{
-
-            font-size:28px;
-
-            margin-bottom:20px;
-
-            font-weight:700;
-        }
-
-        .service-card p{
-
-            color:#666;
-
-            line-height:1.8;
-        }
-
-        .feature-list{
-
-            margin-top:25px;
-
-            padding-left:0;
-
-            list-style:none;
-        }
-
-        .feature-list li{
-
-            margin-bottom:12px;
-
-            color:#444;
-        }
-
-        .feature-list li i{
-
-            color:#f5b400;
-
-            margin-right:10px;
-        }
-
-        .why-us{
-
-            background:#fff;
-        }
-
-        .why-card{
-
-            text-align:center;
-
-            padding:35px;
-        }
-
-        .why-card i{
-
-            font-size:50px;
-
-            color:#f5b400;
-
-            margin-bottom:20px;
-        }
-
-        .why-card h4{
-
-            font-weight:700;
-
-            margin-bottom:15px;
-        }
-
-        .cta-section{
-
-            background:#111;
-
-            color:#fff;
-
-            border-radius:40px;
-
-            padding:80px 50px;
-
-            text-align:center;
-        }
-
-        .cta-section h2{
-
-            font-size:48px;
-
-            font-weight:700;
-
-            margin-bottom:20px;
-        }
-
-        .cta-section p{
-
-            color:#ccc;
-
-            max-width:700px;
-
-            margin:auto;
-
-            margin-bottom:40px;
-        }
-
-        .btn-main{
-
-            background:#f5b400;
-
-            color:#fff;
-
-            border:none;
-
-            padding:16px 34px;
-
-            border-radius:14px;
-
-            font-weight:600;
-
-            text-decoration:none;
-
-            transition:0.3s ease;
-        }
-
-        .btn-main:hover{
-
-            background:#d99d00;
-
-            color:#fff;
-        }
-
-        @media(max-width:768px){
-
-            .hero h1{
-                font-size:42px;
-            }
-
-            .section-title h2{
-                font-size:34px;
-            }
-
-            .cta-section h2{
-                font-size:34px;
-            }
-        }
-
-    </style>
+    <!-- CUSTOM CSS -->
+    <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css'); ?>">
 
 </head>
 
@@ -371,7 +113,7 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
             <!-- SERVICE 1 -->
 
-            <div class="col-lg-6">
+            <div class="col-lg-6" id="residential">
 
                 <div class="service-card">
 
@@ -422,7 +164,7 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
             <!-- SERVICE 2 -->
 
-            <div class="col-lg-6">
+            <div class="col-lg-6" id="commercial">
 
                 <div class="service-card">
 
@@ -473,7 +215,7 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
             <!-- SERVICE 3 -->
 
-            <div class="col-lg-6">
+            <div class="col-lg-6" id="interior">
 
                 <div class="service-card">
 
@@ -524,7 +266,7 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
             <!-- SERVICE 4 -->
 
-            <div class="col-lg-6">
+            <div class="col-lg-6" id="renovation">
 
                 <div class="service-card">
 
@@ -573,11 +315,61 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
             </div>
 
+            <!-- SERVICE 4 ends -->
+
+            </div><!-- /.col-lg-6#renovation -->
+
+            <!-- SERVICE 5 -->
+
+            <div class="col-lg-6" id="turnkey">
+
+                <div class="service-card">
+
+                    <div class="service-icon">
+                        <i class="bi bi-key-fill"></i>
+                    </div>
+
+                    <h3>
+                        Turnkey Projects
+                    </h3>
+
+                    <p>
+
+                        End-to-end construction from planning to handover,
+                        including civil work, interiors, MEP,
+                        landscaping, and complete finishing — fully managed.
+
+                    </p>
+
+                    <ul class="feature-list">
+
+                        <li>
+                            <i class="bi bi-check-circle-fill"></i>
+                            Full Project Management
+                        </li>
+
+                        <li>
+                            <i class="bi bi-check-circle-fill"></i>
+                            Civil & Structural Work
+                        </li>
+
+                        <li>
+                            <i class="bi bi-check-circle-fill"></i>
+                            Interior Finishing
+                        </li>
+
+                        <li>
+                            <i class="bi bi-check-circle-fill"></i>
+                            Key Handover
+                        </li>
+
+                    </ul>
+
+                </div>
+
+            </div>
+
         </div>
-
-    </div>
-
-</section>
 
 <!-- WHY US -->
 

@@ -455,7 +455,7 @@ if ($totalPackages > 0) {
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -863,7 +863,7 @@ if ($totalPackages > 0) {
 
                                         <td>
 
-                                            #<?php echo $package['id']; ?>
+                                            #<?php echo (int)$package['id']; ?>
 
                                         </td>
 
@@ -1012,7 +1012,7 @@ if ($totalPackages > 0) {
 
                                                     data-bs-target="#editModal<?php
 
-                                                    echo $package['id'];
+                                                    echo (int)$package['id'];
 
                                                     ?>"
                                                 >
@@ -1026,7 +1026,7 @@ if ($totalPackages > 0) {
                                                 <a
                                                     href="?delete=<?php
 
-                                                    echo $package['id'];
+                                                    echo (int)$package['id'];
 
                                                     ?>"
                                                     class="
@@ -1055,7 +1055,7 @@ if ($totalPackages > 0) {
 
                                                 id="editModal<?php
 
-                                                echo $package['id'];
+                                                echo (int)$package['id'];
 
                                                 ?>"
 
@@ -1100,7 +1100,7 @@ if ($totalPackages > 0) {
                                                                     name="pricing_id"
                                                                     value="<?php
 
-                                                                    echo $package['id'];
+                                                                    echo (int)$package['id'];
 
                                                                     ?>"
                                                                 >
@@ -1337,7 +1337,7 @@ if ($totalPackages > 0) {
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

@@ -390,9 +390,9 @@ function sendOtpEmail(
     |--------------------------------------------------------------------------
     */
 
-    if (
+if (
         !checkRateLimit(
-            'otp_email_' . md5($email),
+            'otp_email_' . hash('sha256', strtolower(trim($email))),
             3,
             600
         )
@@ -507,9 +507,9 @@ function sendPasswordResetEmail(
     |--------------------------------------------------------------------------
     */
 
-    if (
+if (
         !checkRateLimit(
-            'password_reset_' . md5($email),
+            'password_reset_' . hash('sha256', strtolower(trim($email))),
             3,
             600
         )
@@ -739,7 +739,7 @@ function sendSecurityAlert(
 
     if (
         !checkRateLimit(
-            'security_alert_' . md5($email),
+            'security_alert_' . hash('sha256', strtolower(trim($email))),
             5,
             3600
         )

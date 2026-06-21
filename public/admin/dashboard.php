@@ -36,76 +36,22 @@ $pageTitle =
 |--------------------------------------------------------------------------
 */
 
-class DashboardModel extends Model
-{
-    public function total($table)
-    {
-        return $this->count($table);
-    }
+require_once '../../app/controllers/admin/AdminController.php';
 
-    public function latest($table, $limit = 5)
-    {
-        return $this->paginate(
+$controller = new AdminController($conn);
+$data = $controller->dashboard();
 
-            $table,
+$totalUsers = $data['totalUsers'];
+$totalProjects = $data['totalProjects'];
+$totalBlogs = $data['totalBlogs'];
+$totalLeads = $data['totalLeads'];
+$totalTestimonials = $data['totalTestimonials'];
+$totalQuotations = $data['totalQuotations'];
+$totalEstimatorRequests = $data['totalEstimatorRequests'];
 
-            $limit,
-
-            0,
-
-            '',
-
-            'id DESC'
-        );
-    }
-}
-
-$dashboardModel =
-new DashboardModel();
-
-$leadModel =
-new Lead();
-
-$totalUsers = $dashboardModel->total('users');
-
-$totalProjects = $dashboardModel->total('projects');
-
-$totalBlogs = $dashboardModel->total('blog_posts');
-
-$totalLeads = $leadModel->count();
-
-$totalTestimonials = $dashboardModel->total('testimonials');
-
-$totalQuotations = $dashboardModel->total('quotations');
-
-$totalEstimatorRequests = $dashboardModel->total('estimator_requests');
-
-/*
-|--------------------------------------------------------------------------
-| RECENT LEADS
-|--------------------------------------------------------------------------
-*/
-
-$recentLeads =
-$leadModel->latest(5);
-
-/*
-|--------------------------------------------------------------------------
-| RECENT PROJECTS
-|--------------------------------------------------------------------------
-*/
-
-$recentProjects =
-$dashboardModel->latest('projects', 5);
-
-/*
-|--------------------------------------------------------------------------
-| RECENT BLOGS
-|--------------------------------------------------------------------------
-*/
-
-$recentBlogs =
-$dashboardModel->latest('blog_posts', 5);
+$recentLeads = $data['recentLeads'];
+$recentProjects = $data['recentProjects'];
+$recentBlogs = $data['recentBlogs'];
 
 ?>
 
@@ -146,7 +92,7 @@ $dashboardModel->latest('blog_posts', 5);
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -201,7 +147,7 @@ $dashboardModel->latest('blog_posts', 5);
                 <div class="dashboard-actions">
 
                     <a
-                        href="../projects/create.php"
+                        href="<?php echo base_url('admin/projects/create.php'); ?>"
                         class="btn btn-warning"
                     >
 
@@ -431,7 +377,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                     <div class="col-lg-2 col-md-4 col-6">
 
-                        <a href="users/index.php" class="quick-card">
+                        <a href="<?php echo base_url('admin/users/index.php'); ?>" class="quick-card">
 
                             <i class="bi bi-people"></i>
 
@@ -443,7 +389,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                     <div class="col-lg-2 col-md-4 col-6">
 
-                        <a href="projects/index.php" class="quick-card">
+                        <a href="<?php echo base_url('admin/projects/index.php'); ?>" class="quick-card">
 
                             <i class="bi bi-building"></i>
 
@@ -455,7 +401,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                     <div class="col-lg-2 col-md-4 col-6">
 
-                        <a href="blogs/index.php" class="quick-card">
+                        <a href="<?php echo base_url('admin/blogs/index.php'); ?>" class="quick-card">
 
                             <i class="bi bi-journal"></i>
 
@@ -467,7 +413,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                     <div class="col-lg-2 col-md-4 col-6">
 
-                        <a href="portfolio/index.php" class="quick-card">
+                        <a href="<?php echo base_url('admin/portfolio/index.php'); ?>" class="quick-card">
 
                             <i class="bi bi-images"></i>
 
@@ -479,7 +425,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                     <div class="col-lg-2 col-md-4 col-6">
 
-                        <a href="quotations/index.php" class="quick-card">
+                        <a href="<?php echo base_url('admin/quotations/index.php'); ?>" class="quick-card">
 
                             <i class="bi bi-receipt"></i>
 
@@ -491,7 +437,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                     <div class="col-lg-2 col-md-4 col-6">
 
-                        <a href="security/logs.php" class="quick-card">
+                        <a href="<?php echo base_url('admin/security/logs.php'); ?>" class="quick-card">
 
                             <i class="bi bi-shield-lock"></i>
 
@@ -525,7 +471,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                             </h4>
 
-                            <a href="leads/index.php">
+                            <a href="<?php echo base_url('admin/leads/index.php'); ?>">
 
                                 View All
 
@@ -623,7 +569,7 @@ $dashboardModel->latest('blog_posts', 5);
 
                             </h4>
 
-                            <a href="projects/index.php">
+                            <a href="<?php echo base_url('admin/projects/index.php'); ?>">
 
                                 View All
 
@@ -724,7 +670,7 @@ $dashboardModel->latest('blog_posts', 5);
                     </h4>
 
                     <a
-                        href="blogs/create.php"
+                        href="<?php echo base_url('admin/blogs/create.php'); ?>"
                         class="btn btn-sm btn-warning"
                     >
 
@@ -787,7 +733,7 @@ $dashboardModel->latest('blog_posts', 5);
                                         <td>
 
                                             <a
-                                                href="blogs/edit.php?id=<?php echo $blog['id']; ?>"
+                                                href="blogs/edit.php?id=<?= (int)$blog['id'] ?>"
                                                 class="btn btn-sm btn-dark"
                                             >
 
@@ -835,7 +781,7 @@ $dashboardModel->latest('blog_posts', 5);
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

@@ -512,7 +512,7 @@ if ($quotations && $quotations->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
@@ -527,11 +527,11 @@ if ($quotations && $quotations->num_rows > 0) {
         Approvals
     </a>
 
-    <a href="../payments/index.php">
+    <a href="<?php echo base_url('admin/payments/index.php'); ?>">
         Payments
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -565,7 +565,7 @@ if ($quotations && $quotations->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -598,7 +598,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalCount;
+                    echo (int)$totalCount;
                 ?>
 
             </h2>
@@ -614,7 +614,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $approvedCount;
+                    echo (int)$approvedCount;
                 ?>
 
             </h2>
@@ -630,7 +630,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $pendingCount;
+                    echo (int)$pendingCount;
                 ?>
 
             </h2>
@@ -646,7 +646,7 @@ if ($quotations && $quotations->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $rejectedCount;
+                    echo (int)$rejectedCount;
                 ?>
 
             </h2>

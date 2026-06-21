@@ -185,7 +185,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -547,7 +547,7 @@ count(
 
                                         <td>
 
-                                            #<?php echo $lead['id']; ?>
+                                            #<?php echo (int)$lead['id']; ?>
 
                                         </td>
 
@@ -757,7 +757,7 @@ count(
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="view.php?id=<?php echo $lead['id']; ?>"
+                                                    href="view.php?id=<?= (int)$lead['id'] ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -768,7 +768,7 @@ count(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="edit.php?id=<?php echo $lead['id']; ?>"
+                                                    href="edit.php?id=<?= (int)$lead['id'] ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -779,7 +779,7 @@ count(
                                                 <!-- DELETE -->
 
                                                 <a
-                                                    href="delete.php?id=<?php echo $lead['id']; ?>"
+                                                    href="delete.php?id=<?= (int)$lead['id'] ?>"
                                                     class="btn btn-sm btn-danger btn-delete"
                                                 >
 
@@ -845,7 +845,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

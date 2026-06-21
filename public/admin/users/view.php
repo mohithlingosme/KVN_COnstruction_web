@@ -178,7 +178,7 @@ base_url(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -232,7 +232,7 @@ base_url(
                 <div class="d-flex gap-2">
 
                     <a
-                        href="edit.php?id=<?php echo $user['id']; ?>"
+                        href="edit.php?id=<?= (int)$user['id'] ?>"
                         class="btn-admin"
                     >
 
@@ -388,7 +388,7 @@ base_url(
 
                                 <h6>
 
-                                    #<?php echo $user['id']; ?>
+                                    #<?php echo (int)$user['id']; ?>
 
                                 </h6>
 
@@ -709,7 +709,7 @@ base_url(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

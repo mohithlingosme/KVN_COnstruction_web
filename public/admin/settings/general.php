@@ -913,14 +913,14 @@ if (
 
                     <option
                         value="off"
-                        <?php echo $data['maintenance_mode'] === 'off' ? 'selected' : ''; ?>
+                        <?php echo escape($data['maintenance_mode'] === 'off' ? 'selected' : ''); ?>
                     >
                         OFF
                     </option>
 
                     <option
                         value="on"
-                        <?php echo $data['maintenance_mode'] === 'on' ? 'selected' : ''; ?>
+                        <?php echo escape($data['maintenance_mode'] === 'on' ? 'selected' : ''); ?>
                     >
                         ON
                     </option>
@@ -940,7 +940,7 @@ if (
     </form>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

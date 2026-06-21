@@ -19,15 +19,18 @@ function projectImageFallback(): string
     return asset('assets/images/favicon.png');
 }
 
-function limitText(string $text, int $length = 120): string {
-    $text = trim(strip_tags($text));
+if (!function_exists('limitText')) {
+    function limitText(string $text, int $length = 120): string {
+        $text = trim(strip_tags($text));
 
-    if (mb_strlen($text) <= $length) {
-        return $text;
+        if (mb_strlen($text) <= $length) {
+            return $text;
+        }
+
+        return mb_substr($text, 0, $length) . '...';
     }
-
-    return mb_substr($text, 0, $length) . '...';
 }
+
 
 // Secure HTML escaping helper (widely used in public views).
 // Keep signature compatible with helpers/security.php usage.
@@ -42,6 +45,15 @@ if (!function_exists('escape')) {
     }
 }
 
+// Context-aware escaping for HTML attributes / URL params.
+// Implementations live in helpers/functions_security.php.
+// This file is included by bootstrap/helpers autoload in many setups,
+// but we also defensively include it here if possible.
+$__functions_security_path = __DIR__ . '/functions_security.php';
+if (file_exists($__functions_security_path)) {
+    require_once $__functions_security_path;
+}
+
 
 // Common alias used in some codebases.
 if (!function_exists('e')) {
@@ -50,6 +62,7 @@ if (!function_exists('e')) {
         return escape($value);
     }
 }
+
 
 
 

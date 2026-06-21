@@ -27,16 +27,12 @@ class View
             $data
         );
 
-        // EXTRACT VARIABLES
-
-        extract($data);
+        // VIEW DATA: templates should read from $viewData['key']
+        $viewData = $data;
 
         // VIEW PATH
+        $viewPath = '../app/views/' . $view . '.php';
 
-        $viewPath =
-        '../app/views/' .
-        $view .
-        '.php';
 
         // CHECK VIEW EXISTS
 
@@ -54,10 +50,13 @@ class View
 
         ob_start();
 
+        // Make view data available inside templates
+        $data = $viewData;
+        $content = '';
+
         require $viewPath;
 
-        $content =
-        ob_get_clean();
+        $content = ob_get_clean();
 
         // LOAD LAYOUT
 
@@ -78,11 +77,14 @@ class View
                 );
             }
 
+            // Make view data available inside layout
+            $data = $viewData;
+
             require $layoutPath;
 
         } else {
 
-            echo $content;
+            print $content;
         }
     }
 

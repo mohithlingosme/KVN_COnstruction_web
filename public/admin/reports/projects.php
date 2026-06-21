@@ -733,7 +733,7 @@ if ($projects && $projects->num_rows > 0) {
             <h3>Total Projects</h3>
 
             <h2>
-                <?php echo $totalProjects; ?>
+                <?= (int)$totalProjects ?>
             </h2>
 
         </div>
@@ -743,7 +743,7 @@ if ($projects && $projects->num_rows > 0) {
             <h3>Planning</h3>
 
             <h2>
-                <?php echo $planningProjects; ?>
+                <?= (int)$planningProjects ?>
             </h2>
 
         </div>
@@ -753,7 +753,7 @@ if ($projects && $projects->num_rows > 0) {
             <h3>In Progress</h3>
 
             <h2>
-                <?php echo $progressProjects; ?>
+                <?= (int)$progressProjects ?>
             </h2>
 
         </div>
@@ -763,7 +763,7 @@ if ($projects && $projects->num_rows > 0) {
             <h3>Completed</h3>
 
             <h2>
-                <?php echo $completedProjects; ?>
+                <?= (int)$completedProjects ?>
             </h2>
 
         </div>
@@ -773,7 +773,7 @@ if ($projects && $projects->num_rows > 0) {
             <h3>On Hold</h3>
 
             <h2>
-                <?php echo $holdProjects; ?>
+                <?= (int)$holdProjects ?>
             </h2>
 
         </div>
@@ -1131,7 +1131,7 @@ if ($projects && $projects->num_rows > 0) {
     </div>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

@@ -432,7 +432,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
     <style>
@@ -909,7 +909,7 @@ count(
                                         name="comment_id"
                                         value="<?php
 
-                                        echo $comment['id'];
+                                        echo (int)$comment['id'];
 
                                         ?>"
                                     >
@@ -1066,7 +1066,7 @@ count(
                                         <a
                                             href="?delete=<?php
 
-                                            echo $comment['id'];
+                                            echo (int)$comment['id'];
 
                                             ?>&csrf_token=<?php
 
@@ -1139,7 +1139,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

@@ -406,7 +406,7 @@ array_sum(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -874,7 +874,7 @@ array_sum(
 
                                         <td>
 
-                                            #<?php echo $material['id']; ?>
+                                            #<?php echo (int)$material['id']; ?>
 
                                         </td>
 
@@ -1021,11 +1021,7 @@ array_sum(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="edit-material.php?id=<?php
-
-                                                    echo $material['id'];
-
-                                                    ?>"
+                                                    href="edit-material.php?id=<?= (int)$material['id'] ?>"
                                                     class="
                                                         btn
                                                         btn-sm
@@ -1040,11 +1036,7 @@ array_sum(
                                                 <!-- DELETE -->
 
                                                 <a
-                                                    href="?delete=<?php
-
-                                                    echo $material['id'];
-
-                                                    ?>"
+                                                    href="?delete=<?= (int)$material['id'] ?>"
                                                     class="
                                                         btn
                                                         btn-sm
@@ -1118,7 +1110,7 @@ array_sum(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

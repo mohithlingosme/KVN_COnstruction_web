@@ -1,0 +1,387 @@
+KVN Construction - Include/Require Report
+Generated : 2026-06-17 21:05:23
+============================================================
+
+C:\xampp\htdocs\KVN_Construction\app\views\layouts\footer.php:4 ->     require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\app\views\layouts\header.php:4 ->     require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\docs\projects.php:3 -> include "includes/auth.php";
+C:\xampp\htdocs\KVN_Construction\docs\projects.php:4 -> include "includes/db.php";
+C:\xampp\htdocs\KVN_Construction\public\about-us.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\about-us.php:91 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\about-us.php:350 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\blog-details.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\blog-details.php:67 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\blog-details.php:571 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\blogs.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\blogs.php:98 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\blogs.php:633 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\careers.php:2 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\careers.php:6 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\careers.php:171 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\contact.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\contact.php:376 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\contact.php:691 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\estimator.php:14 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\forgot-password.php:27 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\index.php:87 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\index.php:577 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\login.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\login.php:5 -> include '../app/views/auth/client-login.php';
+C:\xampp\htdocs\KVN_Construction\public\logout.php:14 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:5 -> require_once '../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:7 -> require_once '../helpers/otp.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:9 -> require_once '../helpers/sms.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:11 -> require_once '../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:13 -> require_once '../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:164 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\phone-login.php:574 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\project-details.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\project-details.php:58 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\project-details.php:622 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\projects.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\projects.php:18 -> include '../app/views/layouts/header.php';
+C:\xampp\htdocs\KVN_Construction\public\projects.php:110 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\register.php:5 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\register.php:6 -> require_once '../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\register.php:7 -> require_once '../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\register.php:8 -> require_once '../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\register.php:9 -> require_once '../middleware/guest.php';
+C:\xampp\htdocs\KVN_Construction\public\reset-password.php:26 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\services.php:3 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\services.php:64 -> <?php include '../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\services.php:462 -> <?php include '../app/views/layouts/footer.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\verify-phone-otp.php:27 -> require_once '../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:14 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:16 -> require_once '../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:18 -> require_once '../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:20 -> require_once '../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:22 -> require_once '../../app/models/Lead.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:162 ->     <?php include '../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:172 ->         <?php include '../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\login.php:3 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\login.php:5 -> include '../../app/views/auth/admin-login.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\logout.php:5 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:22 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:513 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\categories.php:521 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:22 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:477 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:485 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:22 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:26 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:413 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\create.php:421 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:22 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:26 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:517 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:525 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:22 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:363 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\index.php:371 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:22 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:545 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\tags.php:553 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\feedback.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\feedback.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\feedback.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\feedback.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\feedback.php:241 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\feedback.php:249 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\index.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\index.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\index.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\index.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\index.php:183 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\index.php:193 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\payments.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\payments.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\payments.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\payments.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\payments.php:230 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\payments.php:238 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\projects.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\projects.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\projects.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\projects.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\projects.php:246 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\projects.php:254 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\view.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\view.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\view.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\view.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\view.php:273 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\clients\view.php:281 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\cms\about.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\cms\contact.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\cms\faq.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\packages.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\packages.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\packages.php:26 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\packages.php:583 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\packages.php:591 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:469 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:477 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\requests.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\requests.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\requests.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\requests.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\requests.php:283 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\requests.php:291 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:290 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\create.php:298 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:356 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:364 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\index.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\index.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\index.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\index.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\index.php:201 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\index.php:211 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\pipeline.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\pipeline.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\pipeline.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\pipeline.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\pipeline.php:290 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\pipeline.php:298 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\view.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\view.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\view.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\view.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\view.php:215 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\view.php:225 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\media\documents.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\media\images.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\media\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\media\uploads.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\media\videos.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\create.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\edit.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\featured.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:26 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:383 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:391 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:26 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:479 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:487 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:22 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:24 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:505 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:513 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\index.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\index.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\index.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\index.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\index.php:196 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\index.php:206 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:439 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:447 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\view.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\view.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\view.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\view.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\view.php:259 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\view.php:267 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:22 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:403 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:411 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:546 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:554 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:636 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:640 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:193 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:201 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\pdf.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\pdf.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\pdf.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\services\create.php:23 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\services\edit.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\testimonials\approvals.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\testimonials\featured.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\testimonials\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\testimonials\videos.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:26 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:355 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\users\create.php:363 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\users\delete.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\delete.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\delete.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\delete.php:20 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\delete.php:22 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:20 -> require_once '../../../helpers/csrf.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:22 -> require_once '../../../helpers/session.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:24 -> require_once '../../../helpers/rateLimiter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:26 -> require_once '../../../helpers/upload.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:461 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:469 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\users\index.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\index.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\index.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\index.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\index.php:121 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\users\index.php:131 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\users\view.php:14 -> require_once '../../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\view.php:16 -> require_once '../../../middleware/admin.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\view.php:18 -> require_once '../../../helpers/security.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\view.php:20 -> require_once '../../../helpers/formatter.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\users\view.php:194 ->     <?php include '../../../app/views/layouts/sidebar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\users\view.php:204 ->         <?php include '../../../app/views/layouts/navbar.php'; ?>
+C:\xampp\htdocs\KVN_Construction\public\admin\videos\categories.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\videos\create.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\admin\videos\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\auth\admin-login-handler.php:5 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\auth\phone-login-handler.php:5 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\auth\register-handler.php:5 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\auth\resend-otp-handler.php:5 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\auth\verify-phone-otp-handler.php:5 -> require_once '../../config/app.php';
+C:\xampp\htdocs\KVN_Construction\public\client\dashboard.php:25 -> require_once '../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\documents\agreements.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\documents\downloads.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\documents\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\documents\permits.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\payments\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\payments\invoices.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\payments\receipts.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\payments\transactions.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\profile\edit.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\profile\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\profile\notifications.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\profile\password.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\projects\gallery.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\projects\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\projects\milestones.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\projects\updates.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\projects\view.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\quotations\approvals.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\quotations\downloads.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\quotations\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\quotations\view.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\support\create-ticket.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\support\messages.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\support\tickets.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\timeline\index.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\timeline\progress.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\timeline\schedules.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\uploads\feedback.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\uploads\images.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\uploads\testimonials.php:25 -> require_once '../../includes/db.php';
+C:\xampp\htdocs\KVN_Construction\public\client\uploads\videos.php:25 -> require_once '../../includes/db.php';

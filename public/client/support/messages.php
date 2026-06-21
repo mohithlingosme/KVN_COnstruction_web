@@ -660,7 +660,7 @@ if (
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
@@ -679,7 +679,7 @@ if (
         Create Ticket
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -713,7 +713,7 @@ if (
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -732,7 +732,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $totalMessages; ?>
+                <?php echo (int)$totalMessages; ?>
             </h2>
 
         </div>
@@ -744,7 +744,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $unreadMessages; ?>
+                <?php echo (int)$unreadMessages; ?>
             </h2>
 
         </div>
@@ -756,7 +756,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $adminMessages; ?>
+                <?php echo (int)$adminMessages; ?>
             </h2>
 
         </div>
@@ -768,7 +768,7 @@ if (
             </h4>
 
             <h2>
-                <?php echo $clientMessages; ?>
+                <?php echo (int)$clientMessages; ?>
             </h2>
 
         </div>
@@ -786,7 +786,7 @@ if (
         <?php if (!empty($successMessage)): ?>
 
             <div class="success">
-                <?php echo $successMessage; ?>
+                <?php echo (int)$successMessage; ?>
             </div>
 
         <?php endif; ?>
@@ -794,7 +794,7 @@ if (
         <?php if (!empty($errorMessage)): ?>
 
             <div class="error">
-                <?php echo $errorMessage; ?>
+                <?php echo escape($errorMessage); ?>
             </div>
 
         <?php endif; ?>
@@ -866,12 +866,12 @@ if (
                         </span>
 
                         <span
-                            class="badge <?php echo $row['is_read'] === 'Yes' ? 'Read' : 'Unread'; ?>"
+                            class="badge <?php echo escape($row['is_read'] === 'Yes' ? 'Read' : 'Unread'); ?>"
                         >
 
                             <?php
-                                echo $row['is_read'] === 'Yes'
-                                    ? 'Read'
+                                echo escape($row['is_read'] === 'Yes'
+)                                    ? 'Read'
                                     : 'Unread';
                             ?>
 

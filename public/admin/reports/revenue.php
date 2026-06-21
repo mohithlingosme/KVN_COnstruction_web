@@ -994,7 +994,7 @@ if ($revenues && $revenues->num_rows > 0) {
     </div>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

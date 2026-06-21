@@ -259,7 +259,7 @@ $client['full_name']
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -309,7 +309,7 @@ $client['full_name']
                 <div class="d-flex gap-2">
 
                     <a
-                        href="../users/edit.php?id=<?php echo $client['id']; ?>"
+                        href="../users/edit.php?id=<?= (int)$client['id'] ?>"
                         class="btn-admin"
                     >
 
@@ -658,7 +658,7 @@ $client['full_name']
 
                                         <td>
 
-                                            #<?php echo $project['id']; ?>
+                                            #<?php echo (int)$project['id']; ?>
 
                                         </td>
 
@@ -794,7 +794,7 @@ $client['full_name']
 
                                         <td>
 
-                                            #<?php echo $payment['id']; ?>
+                                            #<?php echo (int)$payment['id']; ?>
 
                                         </td>
 
@@ -980,7 +980,7 @@ $client['full_name']
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

@@ -550,15 +550,15 @@ if ($documents && $documents->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
-    <a href="../projects/index.php">
+    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
         Projects
     </a>
 
-    <a href="../quotations/index.php">
+    <a href="<?php echo base_url('admin/quotations/index.php'); ?>">
         Quotations
     </a>
 
@@ -569,11 +569,11 @@ if ($documents && $documents->num_rows > 0) {
         Documents
     </a>
 
-    <a href="../payments/index.php">
+    <a href="<?php echo base_url('admin/payments/index.php'); ?>">
         Payments
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -607,7 +607,7 @@ if ($documents && $documents->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -628,7 +628,7 @@ if ($documents && $documents->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalDocuments;
+                    echo (int)$totalDocuments;
                 ?>
 
             </h2>
@@ -644,7 +644,7 @@ if ($documents && $documents->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $activeDocuments;
+                    echo (int)$activeDocuments;
                 ?>
 
             </h2>
@@ -660,7 +660,7 @@ if ($documents && $documents->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $pendingDocuments;
+                    echo (int)$pendingDocuments;
                 ?>
 
             </h2>
@@ -676,7 +676,7 @@ if ($documents && $documents->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $archivedDocuments;
+                    echo (int)$archivedDocuments;
                 ?>
 
             </h2>
@@ -807,8 +807,9 @@ if ($documents && $documents->num_rows > 0) {
                     <div class="actions">
 
                         <a
-                            href="#"
+                            href="<?php echo base_url('uploads/client-documents/' . htmlspecialchars((string)$row['file_name'])); ?>"
                             class="btn view-btn"
+                            target="_blank"
                         >
                             View
                         </a>
@@ -816,8 +817,9 @@ if ($documents && $documents->num_rows > 0) {
                         <?php if ($row['status'] !== 'Archived'): ?>
 
                             <a
-                                href="#"
+                                href="<?php echo base_url('uploads/client-documents/' . htmlspecialchars((string)$row['file_name'])); ?>"
                                 class="btn download-btn"
+                                download
                             >
                                 Download
                             </a>

@@ -660,14 +660,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['sms_status'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['sms_status'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['sms_status'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['sms_status'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -686,14 +686,14 @@ if (
 
                     <option
                         value="yes"
-                        <?php echo $data['notify_contact_form'] === 'yes' ? 'selected' : ''; ?>
+                        <?php echo escape($data['notify_contact_form'] === 'yes' ? 'selected' : ''); ?>
                     >
                         Yes
                     </option>
 
                     <option
                         value="no"
-                        <?php echo $data['notify_contact_form'] === 'no' ? 'selected' : ''; ?>
+                        <?php echo escape($data['notify_contact_form'] === 'no' ? 'selected' : ''); ?>
                     >
                         No
                     </option>
@@ -712,14 +712,14 @@ if (
 
                     <option
                         value="yes"
-                        <?php echo $data['notify_new_lead'] === 'yes' ? 'selected' : ''; ?>
+                        <?php echo escape($data['notify_new_lead'] === 'yes' ? 'selected' : ''); ?>
                     >
                         Yes
                     </option>
 
                     <option
                         value="no"
-                        <?php echo $data['notify_new_lead'] === 'no' ? 'selected' : ''; ?>
+                        <?php echo escape($data['notify_new_lead'] === 'no' ? 'selected' : ''); ?>
                     >
                         No
                     </option>
@@ -739,7 +739,7 @@ if (
     </form>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

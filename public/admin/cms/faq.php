@@ -622,7 +622,7 @@ if ($result) {
             <input
                 type="hidden"
                 name="faq_id"
-                value="<?php echo $editId; ?>"
+                value="<?= e($editId) ?>"
             >
 
             <div class="form-group">
@@ -634,7 +634,7 @@ if ($result) {
                 <input
                     type="text"
                     name="question"
-                    value="<?php echo htmlspecialchars($question); ?>"
+                    value="<?= e($question) ?>"
                     required
                 >
 
@@ -662,7 +662,7 @@ if ($result) {
                 <input
                     type="number"
                     name="display_order"
-                    value="<?php echo $displayOrder; ?>"
+                    value="<?= e($displayOrder) ?>"
                 >
 
             </div>
@@ -677,14 +677,14 @@ if ($result) {
 
                     <option
                         value="active"
-                        <?php echo $status === 'active' ? 'selected' : ''; ?>
+                        <?php echo escape($status === 'active' ? 'selected' : ''); ?>
                     >
                         Active
                     </option>
 
                     <option
                         value="inactive"
-                        <?php echo $status === 'inactive' ? 'selected' : ''; ?>
+                        <?php echo escape($status === 'inactive' ? 'selected' : ''); ?>
                     >
                         Inactive
                     </option>
@@ -855,7 +855,7 @@ if ($result) {
     </div>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

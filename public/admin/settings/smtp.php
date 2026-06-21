@@ -634,21 +634,21 @@ if (
 
                     <option
                         value="tls"
-                        <?php echo $data['smtp_encryption'] === 'tls' ? 'selected' : ''; ?>
+                        <?php echo escape($data['smtp_encryption'] === 'tls' ? 'selected' : ''); ?>
                     >
                         TLS
                     </option>
 
                     <option
                         value="ssl"
-                        <?php echo $data['smtp_encryption'] === 'ssl' ? 'selected' : ''; ?>
+                        <?php echo escape($data['smtp_encryption'] === 'ssl' ? 'selected' : ''); ?>
                     >
                         SSL
                     </option>
 
                     <option
                         value="none"
-                        <?php echo $data['smtp_encryption'] === 'none' ? 'selected' : ''; ?>
+                        <?php echo escape($data['smtp_encryption'] === 'none' ? 'selected' : ''); ?>
                     >
                         None
                     </option>
@@ -732,14 +732,14 @@ if (
 
                     <option
                         value="smtp"
-                        <?php echo $data['mail_driver'] === 'smtp' ? 'selected' : ''; ?>
+                        <?php echo escape($data['mail_driver'] === 'smtp' ? 'selected' : ''); ?>
                     >
                         SMTP
                     </option>
 
                     <option
                         value="mail"
-                        <?php echo $data['mail_driver'] === 'mail' ? 'selected' : ''; ?>
+                        <?php echo escape($data['mail_driver'] === 'mail' ? 'selected' : ''); ?>
                     >
                         PHP Mail
                     </option>
@@ -758,14 +758,14 @@ if (
 
                     <option
                         value="enabled"
-                        <?php echo $data['smtp_status'] === 'enabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['smtp_status'] === 'enabled' ? 'selected' : ''); ?>
                     >
                         Enabled
                     </option>
 
                     <option
                         value="disabled"
-                        <?php echo $data['smtp_status'] === 'disabled' ? 'selected' : ''; ?>
+                        <?php echo escape($data['smtp_status'] === 'disabled' ? 'selected' : ''); ?>
                     >
                         Disabled
                     </option>
@@ -785,7 +785,7 @@ if (
     </form>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

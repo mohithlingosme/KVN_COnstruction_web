@@ -164,7 +164,7 @@ count(
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -526,7 +526,7 @@ count(
 
                                         <td>
 
-                                            #<?php echo $item['id']; ?>
+                                            #<?php echo (int)$item['id']; ?>
 
                                         </td>
 
@@ -767,7 +767,7 @@ count(
                                                 <!-- VIEW -->
 
                                                 <a
-                                                    href="view.php?id=<?php echo $item['id']; ?>"
+                                                    href="view.php?id=<?= (int)$item['id'] ?>"
                                                     class="btn btn-sm btn-dark"
                                                 >
 
@@ -778,7 +778,7 @@ count(
                                                 <!-- EDIT -->
 
                                                 <a
-                                                    href="edit.php?id=<?php echo $item['id']; ?>"
+                                                    href="edit.php?id=<?= (int)$item['id'] ?>"
                                                     class="btn btn-sm btn-primary"
                                                 >
 
@@ -789,7 +789,7 @@ count(
                                                 <!-- CONVERT -->
 
                                                 <a
-                                                    href="convert.php?id=<?php echo $item['id']; ?>"
+                                                    href="convert.php?id=<?= (int)$item['id'] ?>"
                                                     class="btn btn-sm btn-success"
                                                 >
 
@@ -800,7 +800,7 @@ count(
                                                 <!-- DELETE -->
 
                                                 <a
-                                                    href="delete.php?id=<?php echo $item['id']; ?>"
+                                                    href="delete.php?id=<?= (int)$item['id'] ?>"
                                                     class="btn btn-sm btn-danger btn-delete"
                                                 >
 
@@ -866,7 +866,7 @@ count(
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

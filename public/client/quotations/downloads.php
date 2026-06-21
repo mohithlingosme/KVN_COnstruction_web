@@ -523,7 +523,7 @@ if ($downloads && $downloads->num_rows > 0) {
         KVN Client
     </h2>
 
-    <a href="../dashboard.php">
+    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
         Dashboard
     </a>
 
@@ -542,11 +542,11 @@ if ($downloads && $downloads->num_rows > 0) {
         Downloads
     </a>
 
-    <a href="../payments/index.php">
+    <a href="<?php echo base_url('admin/payments/index.php'); ?>">
         Payments
     </a>
 
-    <a href="../logout.php">
+    <a href="<?php echo base_url('logout.php'); ?>">
         Logout
     </a>
 
@@ -580,7 +580,7 @@ if ($downloads && $downloads->num_rows > 0) {
         </div>
 
         <a
-            href="../logout.php"
+            href="<?php echo base_url('logout.php'); ?>"
             class="logout-btn"
         >
             Logout
@@ -601,7 +601,7 @@ if ($downloads && $downloads->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $totalFiles;
+                    echo (int)$totalFiles;
                 ?>
 
             </h2>
@@ -617,7 +617,7 @@ if ($downloads && $downloads->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $availableFiles;
+                    echo (int)$availableFiles;
                 ?>
 
             </h2>
@@ -633,7 +633,7 @@ if ($downloads && $downloads->num_rows > 0) {
             <h2>
 
                 <?php
-                    echo $expiredFiles;
+                    echo (int)$expiredFiles;
                 ?>
 
             </h2>

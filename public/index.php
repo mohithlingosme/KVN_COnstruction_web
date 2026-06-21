@@ -107,7 +107,7 @@ include '../app/views/layouts/header.php';
             <h1>
 
                 Build Your
-                <span>Dream Home</span>
+                <span class="text-gradient">Dream Home</span>
                 in Bengaluru
 
             </h1>
@@ -234,9 +234,9 @@ include '../app/views/layouts/header.php';
 
                     <div class="project-image">
 
-                        <img
-                            src="<?php echo base_url($project['featured_image'] ?? ''); ?>"
-                            alt="<?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>"
+<img
+                            src="<?php echo htmlspecialchars(base_url($project['featured_image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                            alt="<?php echo e($project['project_name'] ?? 'Untitled Project'); ?>"
                         >
 
                     </div>
@@ -251,7 +251,7 @@ include '../app/views/layouts/header.php';
                             <?php echo limitText($project['short_description'] ?? '', 120); ?>
                         </p>
 
-                        <a href="project-details.php?slug=<?php echo $project['slug'] ?? ''; ?>" class="btn-main">
+<a href="project-details.php?slug=<?= urlencode((string)($project['slug'] ?? '')) ?>" class="btn-main">
                             View Project
                         </a>
 
@@ -287,7 +287,7 @@ include '../app/views/layouts/header.php';
 
         </div>
 
-        <div class="estimate-box">
+        <div class="estimate-box glass-panel">
 
             <div class="plot-grid">
 
@@ -458,7 +458,7 @@ include '../app/views/layouts/header.php';
                         </span>
                         <h3><?php echo escape((string)($blog['title'] ?? '')); ?></h3>
                         <p><?php echo limitText((string)($blog['excerpt'] ?? ''), 120); ?></p>
-                        <a href="blog-details.php?slug=<?php echo $blog['slug'] ?? ''; ?>" class="btn-main">Read More</a>
+                        <a href="blog-details.php?slug=<?php echo urlencode((string)($blog['slug'] ?? '')); ?>" class="btn-main">Read More</a>
                     </div>
 
                 </div>

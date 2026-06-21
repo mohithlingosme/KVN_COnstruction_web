@@ -351,7 +351,7 @@ try {
 
                             for ($i = 1; $i <= 5; $i++) {
 
-                                echo $i <= $rating
+                                echo (int)($i <= $rating)
                                     ? '★'
                                     : '☆';
                             }
@@ -406,7 +406,7 @@ try {
     <?php endif; ?>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

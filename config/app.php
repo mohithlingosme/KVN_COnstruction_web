@@ -40,7 +40,7 @@ define('MIDDLEWARE_PATH', ROOT_PATH . '/middleware');
 |--------------------------------------------------------------------------
 */
 
-define('DB_HOST', 'localhost');
+define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'kvnc_platform');
 define('DB_USER', 'root');
 define('DB_PASS', '');
@@ -152,6 +152,30 @@ if (APP_ENV === 'development') {
 
 ini_set('html_errors', '0');
 
+set_exception_handler(function (\Throwable $exception) {
+    error_log("Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine());
+    
+    if (APP_ENV !== 'development') {
+        http_response_code(500);
+        if (is_ajax_request()) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Internal Server Error']);
+        } else {
+            echo "<h1>500 Internal Server Error</h1><p>Something went wrong. Our team has been notified.</p>";
+        }
+        exit;
+    }
+    // In development, let the default handler print the stack trace if display_errors is on
+    throw $exception;
+});
+
+set_error_handler(function ($level, $message, $file, $line) {
+    if (error_reporting() & $level) {
+        throw new \ErrorException($message, 0, $level, $file, $line);
+    }
+    return false;
+});
+
 /*
 |--------------------------------------------------------------------------
 | DATABASE CONNECTION
@@ -233,23 +257,10 @@ if (!function_exists('requireOtpHelpers')) {
 }
 
 // Backward compatibility: if code calls these helpers, ensure lazy-load occurred.
-if (!function_exists('generateOtp')) {
-function generateOtp(int $length = 6): string {
-        requireOtpHelpers();
-        // Call canonical helper once lazy-loaded.
-        return \generateOtp($length);
-    }
-}
+// generateOtp() canonical is defined in helpers/otp.php.
+// Backward compatibility wrapper removed to eliminate duplicate function declarations.
 
 
-
-// Backward compatibility alias (some views call csrfField()).
-if (!function_exists('csrfField') && function_exists('csrfInputField')) {
-    function csrfField(): string
-    {
-        return csrfInputField();
-    }
-}
 
 /*
 |--------------------------------------------------------------------------

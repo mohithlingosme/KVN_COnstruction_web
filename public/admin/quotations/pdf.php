@@ -356,17 +356,17 @@ ob_start();
 
                 <div class="company-name">
 
-                    <?php echo $companyName; ?>
+                    <?php echo escape($companyName); ?>
 
                 </div>
 
                 <div class="company-info">
 
-                    <?php echo $companyAddress; ?><br>
+                    <?php echo escape($companyAddress); ?><br>
 
-                    <?php echo $companyPhone; ?><br>
+                    <?php echo escape($companyPhone); ?><br>
 
-                    <?php echo $companyEmail; ?>
+                    <?php echo escape($companyEmail); ?>
 
                 </div>
 
@@ -396,7 +396,7 @@ ob_start();
 
                 ?>
 
-                <span class="badge <?php echo $status; ?>">
+                <span class="badge <?php echo escapeCssClass($status); ?>">
 
                     <?php echo strtoupper($status); ?>
 
@@ -702,7 +702,7 @@ ob_start();
 
                                 <?php
 
-                                echo $index + 1;
+                                echo (int)($index + 1);
 
                                 ?>
 

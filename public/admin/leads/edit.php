@@ -342,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
 </head>
@@ -550,7 +550,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ?>
 
                                     <option
-                                        value="<?php echo $type; ?>"
+                                        value="<?= e($type) ?>"
 
                                         <?php
 
@@ -613,7 +613,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ?>
 
                                     <option
-                                        value="<?php echo $source; ?>"
+                                        value="<?= e($source) ?>"
 
                                         <?php
 
@@ -675,7 +675,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 ?>
 
                                     <option
-                                        value="<?php echo $status; ?>"
+                                        value="<?= e($status) ?>"
 
                                         <?php
 
@@ -832,7 +832,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 

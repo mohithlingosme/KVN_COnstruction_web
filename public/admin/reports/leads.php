@@ -700,7 +700,7 @@ if ($leads && $leads->num_rows > 0) {
             <h3>Total Leads</h3>
 
             <h2>
-                <?php echo $totalLeads; ?>
+                <?= (int)$totalLeads ?>
             </h2>
 
         </div>
@@ -710,7 +710,7 @@ if ($leads && $leads->num_rows > 0) {
             <h3>New Leads</h3>
 
             <h2>
-                <?php echo $newLeads; ?>
+                <?= (int)$newLeads ?>
             </h2>
 
         </div>
@@ -720,7 +720,7 @@ if ($leads && $leads->num_rows > 0) {
             <h3>Contacted</h3>
 
             <h2>
-                <?php echo $contactedLeads; ?>
+                <?= (int)$contactedLeads ?>
             </h2>
 
         </div>
@@ -730,7 +730,7 @@ if ($leads && $leads->num_rows > 0) {
             <h3>Qualified</h3>
 
             <h2>
-                <?php echo $qualifiedLeads; ?>
+                <?= (int)$qualifiedLeads ?>
             </h2>
 
         </div>
@@ -740,7 +740,7 @@ if ($leads && $leads->num_rows > 0) {
             <h3>Closed</h3>
 
             <h2>
-                <?php echo $closedLeads; ?>
+                <?= (int)$closedLeads ?>
             </h2>
 
         </div>
@@ -1067,7 +1067,7 @@ if ($leads && $leads->num_rows > 0) {
     </div>
 
     <a
-        href="../dashboard.php"
+        href="<?php echo base_url('admin/dashboard.php'); ?>"
         class="back"
     >
         ← Back to Dashboard

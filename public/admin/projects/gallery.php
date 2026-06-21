@@ -444,7 +444,7 @@ APP_NAME;
 
     <link
         rel="stylesheet"
-        href="<?php echo base_url('../assets/admin/css/admin.css'); ?>"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
     >
 
     <style>
@@ -541,7 +541,7 @@ APP_NAME;
                 <div class="d-flex gap-2">
 
                     <a
-                        href="view.php?id=<?php echo $projectId; ?>"
+                        href="view.php?id=<?= (int)$projectId ?>"
                         class="btn btn-dark"
                     >
 
@@ -865,15 +865,7 @@ APP_NAME;
                                         <!-- DELETE -->
 
                                         <a
-                                            href="?id=<?php
-
-                                            echo $projectId;
-
-                                            ?>&delete=<?php
-
-                                            echo $image['id'];
-
-                                            ?>"
+                                            href="?id=<?= (int)$projectId ?>&delete=<?= (int)$image['id'] ?>"
                                             class="btn btn-sm btn-danger btn-delete"
                                         >
 
@@ -927,7 +919,7 @@ APP_NAME;
 
 <!-- Admin JS -->
 
-<script src="<?php echo base_url('../assets/admin/js/admin.js'); ?>"></script>
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
 
 </body>
 
