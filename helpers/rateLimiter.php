@@ -64,10 +64,16 @@ function checkRateLimit(
 
     $maxAttempts = DEFAULT_RATE_LIMIT,
 
-    $decaySeconds = DEFAULT_RATE_WINDOW
+    $decaySeconds = DEFAULT_RATE_WINDOW,
+    ?PDO $pdo = null
 ) {
 
-    global $conn;
+    $conn = $pdo ?? ($GLOBALS['conn'] ?? null);
+
+    if (!$conn || !($conn instanceof PDO)) {
+        error_log('Rate limiter: no PDO connection available');
+        return true;
+    }
 
     $identifier =
     limiterIdentifier();
@@ -310,14 +316,25 @@ function createRateLimit(
 
 function incrementRateLimit(
 
-    $identifier,
+    $identifierOrActionType,
 
-    $actionType,
+    ?string $actionType = null,
 
-    $routeName
+    ?string $routeName = null
 ) {
 
     global $conn;
+
+    // Most callers only know the action name. Keep the explicit three-argument
+    // form for internal use while deriving request context for public callers.
+    if ($actionType === null) {
+        $actionType = (string) $identifierOrActionType;
+        $identifier = limiterIdentifier();
+        $routeName = currentRouteName();
+    } else {
+        $identifier = (string) $identifierOrActionType;
+        $routeName = $routeName ?? currentRouteName();
+    }
 
     $query = "
 
@@ -619,7 +636,11 @@ function retryAfter($actionType)
 
 function cleanupExpiredRateLimits()
 {
-    global $conn;
+    $conn = $GLOBALS['conn'] ?? null;
+
+    if (!$conn || !($conn instanceof PDO)) {
+        return;
+    }
 
     try {
 
@@ -636,8 +657,11 @@ function cleanupExpiredRateLimits()
             )
         ";
 
-        $stmt =
-        $conn->prepare($query);
+        $stmt = $conn->prepare($query);
+
+        if ($stmt === false) {
+            return;
+        }
 
         $stmt->execute();
 

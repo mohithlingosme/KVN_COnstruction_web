@@ -7,7 +7,7 @@ $pageTitle = "Projects Portfolio | " . APP_NAME;
 try {
     $query = "
         SELECT *
-        FROM portfolio_projects
+FROM portfolio
         WHERE status = 'active'
         ORDER BY id DESC
     ";
@@ -69,27 +69,27 @@ include '../app/views/layouts/header.php';
                                 <?php echo ucfirst($project['project_type']); ?>
                             </span>
 
-                            <h3>
-                                <?php echo escape($project['title']); ?>
-                            </h3>
+                <h3>
+                    <?php echo escape($project['title'] ?? ''); ?>
+                </h3>
 
-                            <p>
-                                <?php echo substr(strip_tags($project['description']),0,120); ?>...
-                            </p>
+                <p>
+                    <?php echo substr(strip_tags($project['description'] ?? ''),0,120); ?>...
+                </p>
 
-                            <div class="d-flex justify-content-between mb-4">
+                <div class="d-flex justify-content-between mb-4">
 
-                                <small>
-                                    <i class="bi bi-geo-alt"></i>
-                                    <?php echo escape($project['location']); ?>
-                                </small>
+                    <small>
+                        <i class="bi bi-geo-alt"></i>
+                        <?php echo escape($project['location'] ?? ''); ?>
+                    </small>
 
-                                <small>
-                                    <i class="bi bi-rulers"></i>
-                                    <?php echo (int)$project['area_sqft']; ?> sqft
-                                </small>
+                    <small>
+                        <i class="bi bi-rulers"></i>
+                        <?php echo (int)($project['area_sqft'] ?? 0); ?> sqft
+                    </small>
 
-                            </div>
+                </div>
 
                             <a
                                 href="project-details.php?slug=<?php echo urlencode((string)($project['slug'] ?? '')); ?>"

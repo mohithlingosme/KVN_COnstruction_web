@@ -19,9 +19,9 @@ $metaDescription =
 
 $featuredQuery = "
     SELECT *
-    FROM blog_posts
+FROM blogs
     WHERE status = 'published'
-    AND featured = 1
+    AND is_featured = 1
     ORDER BY published_at DESC
     LIMIT 1
 ";
@@ -38,17 +38,17 @@ $featuredBlog = $featuredStmt->fetch();
 
 $query = "
     SELECT
-        blog_posts.*,
+        blogs.*,
         blog_categories.category_name
 
-    FROM blog_posts
+    FROM blogs
 
     LEFT JOIN blog_categories
-        ON blog_posts.category_id = blog_categories.id
+        ON blogs.category_id = blog_categories.id
 
-    WHERE blog_posts.status = 'published'
+    WHERE blogs.status = 'published'
 
-    ORDER BY blog_posts.published_at DESC
+    ORDER BY blogs.published_at DESC
 ";
 
 $stmt = $conn->prepare($query);

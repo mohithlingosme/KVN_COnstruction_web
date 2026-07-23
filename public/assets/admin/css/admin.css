@@ -873,3 +873,33 @@ textarea.form-control{
         padding:30px 20px;
     }
 }
+
+/* Collapsible desktop navigation.  The same toggle opens the off-canvas
+   sidebar on smaller screens (see the mobile rules below). */
+body.sidebar-collapsed .admin-sidebar{
+    transform:translateX(-100%);
+}
+
+body.sidebar-collapsed .admin-main{
+    margin-left:0;
+    width:100%;
+}
+
+body.sidebar-collapsed .admin-navbar{
+    left:0;
+}
+
+/* Consistent interaction states across tables, cards and controls. */
+.admin-content .btn, .admin-navbar button, .sidebar-menu a{ transition:transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.admin-content .btn:hover{ transform:translateY(-1px); }
+.admin-content .form-control:focus, .admin-content .form-select:focus{ border-color:var(--primary); box-shadow:0 0 0 .22rem rgba(245,180,0,.18); }
+.dashboard-card, .mini-card, .section-card{ border:1px solid rgba(17,24,39,.06); }
+.dashboard-card:hover, .mini-card:hover{ transform:translateY(-3px); box-shadow:0 16px 30px rgba(17,24,39,.08); }
+
+@media(max-width:576px){
+    .admin-navbar{ height:64px; padding:0 14px; }
+    .user-info, .navbar-right > .dropdown:first-of-type{ display:none; }
+    .admin-content{ padding:84px 14px 24px; }
+    .dashboard-header h1{ font-size:24px; }
+    .dashboard-actions .btn{ width:100%; }
+}

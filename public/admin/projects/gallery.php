@@ -1,396 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
-| PROJECT GALLERY
+| PROJECT GALLERY MANAGEMENT
 |--------------------------------------------------------------------------
-| File:
-| /public/admin/projects/gallery.php
+| File: /public/admin/projects/gallery.php
 |--------------------------------------------------------------------------
 */
 
 require_once '../../../config/app.php';
-
 require_once '../../../middleware/admin.php';
-
 require_once '../../../helpers/security.php';
-
+require_once '../../../helpers/formatter.php';
 require_once '../../../helpers/csrf.php';
-
-require_once '../../../helpers/upload.php';
-
-require_once '../../../helpers/session.php';
+require_once '../../../app/controllers/admin/MediaController.php';
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE PROJECT ID
+| PROJECT ID
 |--------------------------------------------------------------------------
 */
 
-$projectId =
-(int) ($_GET['id'] ?? 0);
+$projectId = (int) ($_GET['project_id'] ?? 0);
 
 if ($projectId <= 0) {
-
-    $_SESSION['error'] =
-    'Invalid project ID.';
-
+    $_SESSION['error'] = 'Invalid project ID.';
     redirect('admin/projects/index.php');
 }
-
-/*
-|--------------------------------------------------------------------------
-| FETCH PROJECT
-|--------------------------------------------------------------------------
-*/
-
-$projectQuery = "
-
-    SELECT
-        id,
-        project_name,
-        project_type,
-        location
-
-    FROM projects
-
-    WHERE id = :id
-
-    LIMIT 1
-";
-
-$projectStmt =
-$conn->prepare($projectQuery);
-
-$projectStmt->execute([
-
-    ':id' => $projectId
-]);
-
-$project =
-$projectStmt->fetch();
-
-if (!$project) {
-
-    $_SESSION['error'] =
-    'Project not found.';
-
-    redirect('admin/projects/index.php');
-}
-
-/*
-|--------------------------------------------------------------------------
-| HANDLE IMAGE UPLOAD
-|--------------------------------------------------------------------------
-*/
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    validateCsrf();
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATE FILE
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        !isset($_FILES['gallery_image'])
-
-        ||
-
-        $_FILES['gallery_image']['error'] !== 0
-    ) {
-
-        $_SESSION['error'] =
-        'Please select an image.';
-
-        redirect(
-
-            'admin/projects/gallery.php?id='
-            .
-            $projectId
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | IMAGE UPLOAD
-    |--------------------------------------------------------------------------
-    */
-
-    $upload =
-    uploadFile(
-
-        $_FILES['gallery_image'],
-
-        ROOT_PATH . '/uploads/project-gallery/',
-
-        [
-
-            'jpg',
-            'jpeg',
-            'png',
-            'webp'
-        ]
-    );
-
-    if (!$upload['success']) {
-
-        $_SESSION['error'] =
-        $upload['message'];
-
-        redirect(
-
-            'admin/projects/gallery.php?id='
-            .
-            $projectId
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | INSERT IMAGE
-    |--------------------------------------------------------------------------
-    */
-
-    try {
-
-        $title =
-        sanitize($_POST['title'] ?? '');
-
-        $description =
-        sanitize($_POST['description'] ?? '');
-
-        $query = "
-
-            INSERT INTO project_gallery (
-
-                project_id,
-                image,
-                title,
-                description,
-                created_at
-
-            ) VALUES (
-
-                :project_id,
-                :image,
-                :title,
-                :description,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':project_id' =>
-            $projectId,
-
-            ':image' =>
-            $upload['filename'],
-
-            ':title' =>
-            $title,
-
-            ':description' =>
-            $description
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOG EVENT
-        |--------------------------------------------------------------------------
-        */
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'project_gallery_upload',
-
-            'info',
-
-            'Uploaded project gallery image'
-        );
-
-        $_SESSION['success'] =
-        'Gallery image uploaded successfully.';
-
-        redirect(
-
-            'admin/projects/gallery.php?id='
-            .
-            $projectId
-        );
-
-    } catch(Exception $e){
-
-        $_SESSION['error'] =
-        'Failed to upload gallery image.';
-
-        redirect(
-
-            'admin/projects/gallery.php?id='
-            .
-            $projectId
-        );
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| DELETE IMAGE
-|--------------------------------------------------------------------------
-*/
-
-if (
-
-    isset($_GET['delete'])
-
-    &&
-
-    is_numeric($_GET['delete'])
-) {
-
-    $galleryId =
-    (int) $_GET['delete'];
-
-    try {
-
-        /*
-        |--------------------------------------------------------------------------
-        | FETCH IMAGE
-        |--------------------------------------------------------------------------
-        */
-
-        $fetchQuery = "
-
-            SELECT image
-
-            FROM project_gallery
-
-            WHERE id = :id
-
-            LIMIT 1
-        ";
-
-        $fetchStmt =
-        $conn->prepare($fetchQuery);
-
-        $fetchStmt->execute([
-
-            ':id' => $galleryId
-        ]);
-
-        $image =
-        $fetchStmt->fetch();
-
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE FILE
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-
-            $image
-
-            &&
-
-            !empty($image['image'])
-        ) {
-
-            $filePath =
-            ROOT_PATH
-            .
-            '/uploads/project-gallery/'
-            .
-            $image['image'];
-
-            if (file_exists($filePath)) {
-
-                unlink($filePath);
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE RECORD
-        |--------------------------------------------------------------------------
-        */
-
-        $deleteQuery = "
-
-            DELETE FROM project_gallery
-
-            WHERE id = :id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':id' => $galleryId
-        ]);
-
-        $_SESSION['success'] =
-        'Gallery image deleted successfully.';
-
-        redirect(
-
-            'admin/projects/gallery.php?id='
-            .
-            $projectId
-        );
-
-    } catch(Exception $e){
-
-        $_SESSION['error'] =
-        'Failed to delete image.';
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH GALLERY
-|--------------------------------------------------------------------------
-*/
-
-$gallery = [];
-
-try {
-
-    $galleryQuery = "
-
-        SELECT *
-
-        FROM project_gallery
-
-        WHERE project_id = :project_id
-
-        ORDER BY id DESC
-    ";
-
-    $galleryStmt =
-    $conn->prepare($galleryQuery);
-
-    $galleryStmt->execute([
-
-        ':project_id' => $projectId
-    ]);
-
-    $gallery =
-    $galleryStmt->fetchAll();
-
-} catch(Exception $e){}
 
 /*
 |--------------------------------------------------------------------------
@@ -398,529 +38,242 @@ try {
 |--------------------------------------------------------------------------
 */
 
-$pageTitle =
-$project['project_name']
-.
-' Gallery | '
-.
-APP_NAME;
+$pageTitle = 'Project Gallery | ' . APP_NAME;
+
+/*
+|--------------------------------------------------------------------------
+| FETCH PROJECT
+|--------------------------------------------------------------------------
+*/
+
+try {
+    require_once '../../../app/models/Project.php';
+    $projectModel = new Project($conn);
+    $project = $projectModel->find($projectId);
+
+    if (!$project) {
+        $_SESSION['error'] = 'Project not found.';
+        redirect('admin/projects/index.php');
+    }
+} catch (Exception $e) {
+    $_SESSION['error'] = 'Failed to load project.';
+    redirect('admin/projects/index.php');
+}
+
+/*
+|--------------------------------------------------------------------------
+| MEDIA CONTROLLER
+|--------------------------------------------------------------------------
+*/
+
+$mediaController = new MediaController($conn);
+
+/*
+|--------------------------------------------------------------------------
+| HANDLE UPLOAD
+|--------------------------------------------------------------------------
+*/
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['media'])) {
+    if (!validateCsrf($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = 'Invalid security token.';
+        redirect('admin/projects/gallery.php?project_id=' . $projectId);
+    }
+
+    $files = $_FILES['media'];
+    $uploadCount = 0;
+    $errorCount = 0;
+
+    // Handle single or multiple files
+    if (is_array($files['name'])) {
+        $fileCount = count($files['name']);
+        for ($i = 0; $i < $fileCount; $i++) {
+            if ($files['error'][$i] === UPLOAD_ERR_NO_FILE) continue;
+
+            $file = [
+                'name' => $files['name'][$i],
+                'type' => $files['type'][$i],
+                'tmp_name' => $files['tmp_name'][$i],
+                'error' => $files['error'][$i],
+                'size' => $files['size'][$i]
+            ];
+
+            $result = $mediaController->uploadProjectMedia($projectId, $file);
+            if ($result['success']) {
+                $uploadCount++;
+            } else {
+                $errorCount++;
+            }
+        }
+    } else {
+        if ($files['error'] !== UPLOAD_ERR_NO_FILE) {
+            $result = $mediaController->uploadProjectMedia($projectId, $files);
+            if ($result['success']) {
+                $uploadCount++;
+            } else {
+                $errorCount++;
+            }
+        }
+    }
+
+    if ($uploadCount > 0) {
+        $_SESSION['success'] = "$uploadCount file(s) uploaded successfully.";
+    }
+    if ($errorCount > 0) {
+        $_SESSION['error'] = "$errorCount file(s) failed to upload.";
+    }
+
+    redirect('admin/projects/gallery.php?project_id=' . $projectId);
+}
+
+/*
+|--------------------------------------------------------------------------
+| HANDLE DELETE
+|--------------------------------------------------------------------------
+*/
+
+if (isset($_GET['delete'])) {
+    if (!validateCsrf($_GET['csrf_token'] ?? '')) {
+        $_SESSION['error'] = 'Invalid security token.';
+        redirect('admin/projects/gallery.php?project_id=' . $projectId);
+    }
+
+    $mediaId = (int) $_GET['delete'];
+    if ($mediaController->deleteMedia($mediaId)) {
+        $_SESSION['success'] = 'File deleted successfully.';
+    } else {
+        $_SESSION['error'] = 'Failed to delete file.';
+    }
+
+    redirect('admin/projects/gallery.php?project_id=' . $projectId);
+}
+
+/*
+|--------------------------------------------------------------------------
+| FETCH MEDIA
+|--------------------------------------------------------------------------
+*/
+
+$mediaItems = $mediaController->getProjectMedia($projectId);
+
+/*
+|--------------------------------------------------------------------------
+| FLASH MESSAGES
+|--------------------------------------------------------------------------
+*/
+
+$error = $_SESSION['error'] ?? '';
+$success = $_SESSION['success'] ?? '';
+unset($_SESSION['error'], $_SESSION['success']);
 
 ?>
 
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-
-        <?php echo escape($pageTitle); ?>
-
-    </title>
-
-    <!-- Bootstrap -->
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <!-- Bootstrap Icons -->
-
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    >
-
-    <!-- Admin CSS -->
-
-    <link
-        rel="stylesheet"
-        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
-    >
-
-    <style>
-
-        .gallery-grid{
-
-            display:grid;
-
-            grid-template-columns:
-            repeat(auto-fill,minmax(280px,1fr));
-
-            gap:24px;
-        }
-
-        .gallery-card{
-
-            background:#fff;
-
-            border-radius:18px;
-
-            overflow:hidden;
-
-            box-shadow:
-            0 4px 20px rgba(0,0,0,0.08);
-
-            transition:0.3s;
-        }
-
-        .gallery-card:hover{
-
-            transform:translateY(-5px);
-        }
-
-        .gallery-image{
-
-            width:100%;
-
-            height:220px;
-
-            object-fit:cover;
-        }
-
-        .gallery-content{
-
-            padding:18px;
-        }
-
-    </style>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo escape($pageTitle); ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo base_url('assets/admin/css/admin.css'); ?>">
 </head>
-
 <body>
-
 <div class="admin-layout">
-
-    <!-- SIDEBAR -->
-
     <?php include '../../../app/views/layouts/sidebar.php'; ?>
-
-    <!-- MAIN -->
-
     <div class="admin-main">
-
-        <!-- NAVBAR -->
-
         <?php include '../../../app/views/layouts/navbar.php'; ?>
-
-        <!-- CONTENT -->
-
         <div class="admin-content">
 
-            <!-- ================================= -->
-            <!-- HEADER -->
-            <!-- ================================= -->
-
+            <!-- PAGE HEADER -->
             <div class="dashboard-header">
-
                 <div>
-
-                    <h1>
-
-                        Project Gallery
-
-                    </h1>
-
-                    <p>
-
-                        Manage project images and site progress gallery.
-
-                    </p>
-
+                    <h1>Project Gallery</h1>
+                    <p>Manage images for: <strong><?php echo escape($project['title'] ?? 'Project #' . $projectId); ?></strong></p>
                 </div>
-
                 <div class="d-flex gap-2">
-
-                    <a
-                        href="view.php?id=<?= (int)$projectId ?>"
-                        class="btn btn-dark"
-                    >
-
-                        Back
-
+                    <a href="../projects/view.php?id=<?php echo escape($projectId); ?>" class="btn btn-dark">
+                        <i class="bi bi-arrow-left"></i> Back to Project
                     </a>
-
                 </div>
-
             </div>
 
-            <!-- ================================= -->
             <!-- ALERTS -->
-            <!-- ================================= -->
-
-            <?php if(isset($_SESSION['success'])): ?>
-
-                <div class="alert alert-success">
-
-                    <?php
-
-                    echo escape(
-                        $_SESSION['success']
-                    );
-
-                    unset($_SESSION['success']);
-
-                    ?>
-
-                </div>
-
+            <?php if (!empty($error)): ?>
+                <div class="alert alert-danger"><?php echo escape($error); ?></div>
+            <?php endif; ?>
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success"><?php echo escape($success); ?></div>
             <?php endif; ?>
 
-            <?php if(isset($_SESSION['error'])): ?>
-
-                <div class="alert alert-danger">
-
-                    <?php
-
-                    echo escape(
-                        $_SESSION['error']
-                    );
-
-                    unset($_SESSION['error']);
-
-                    ?>
-
-                </div>
-
-            <?php endif; ?>
-
-            <!-- ================================= -->
-            <!-- PROJECT CARD -->
-            <!-- ================================= -->
-
-            <div class="section-card mb-4">
-
-                <h3>
-
-                    <?php
-
-                    echo escape(
-                        $project['project_name']
-                    );
-
-                    ?>
-
-                </h3>
-
-                <p class="mb-1">
-
-                    <strong>Type:</strong>
-
-                    <?php
-
-                    echo escape(
-                        $project['project_type']
-                    );
-
-                    ?>
-
-                </p>
-
-                <p>
-
-                    <strong>Location:</strong>
-
-                    <?php
-
-                    echo escape(
-                        $project['location']
-                    );
-
-                    ?>
-
-                </p>
-
-            </div>
-
-            <!-- ================================= -->
             <!-- UPLOAD FORM -->
-            <!-- ================================= -->
-
-            <div class="section-card mb-4">
-
-                <div class="section-header">
-
-                    <h4>
-
-                        Upload Gallery Image
-
-                    </h4>
-
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-upload"></i> Upload Images</h5>
                 </div>
-
-                <form
-                    method="POST"
-                    enctype="multipart/form-data"
-                >
-
-                    <?php echo csrfField(); ?>
-
-                    <div class="row">
-
-                        <!-- TITLE -->
-
-                        <div class="col-lg-6 mb-4">
-
-                            <label class="form-label">
-
-                                Image Title
-
-                            </label>
-
-                            <input
-                                type="text"
-                                name="title"
-                                class="form-control"
-                            >
-
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <?php echo csrfField(); ?>
+                        <div class="mb-3">
+                            <label class="form-label">Select Images (JPG, PNG, WebP, GIF - Max 5MB each)</label>
+                            <input type="file" name="media[]" class="form-control" multiple accept="image/*" required>
                         </div>
-
-                        <!-- IMAGE -->
-
-                        <div class="col-lg-6 mb-4">
-
-                            <label class="form-label">
-
-                                Select Image
-
-                            </label>
-
-                            <input
-                                type="file"
-                                name="gallery_image"
-                                class="form-control"
-                                accept=".jpg,.jpeg,.png,.webp"
-                                required
-                            >
-
-                        </div>
-
-                        <!-- DESCRIPTION -->
-
-                        <div class="col-lg-12 mb-4">
-
-                            <label class="form-label">
-
-                                Description
-
-                            </label>
-
-                            <textarea
-                                name="description"
-                                rows="4"
-                                class="form-control"
-                            ></textarea>
-
-                        </div>
-
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="btn-admin"
-                    >
-
-                        <i class="bi bi-upload"></i>
-
-                        Upload Image
-
-                    </button>
-
-                </form>
-
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-cloud-upload"></i> Upload Files
+                        </button>
+                    </form>
+                </div>
             </div>
 
-            <!-- ================================= -->
-            <!-- GALLERY -->
-            <!-- ================================= -->
-
-            <div class="section-card">
-
-                <div class="section-header">
-
-                    <h4>
-
-                        Project Gallery
-
-                    </h4>
-
+            <!-- GALLERY GRID -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Gallery</h5>
+                    <span class="badge bg-dark"><?php echo count($mediaItems); ?> files</span>
                 </div>
-
-                <?php if(!empty($gallery)): ?>
-
-                    <div class="gallery-grid">
-
-                        <?php foreach($gallery as $image): ?>
-
-                            <div class="gallery-card">
-
-                                <!-- IMAGE -->
-
-                                <img
-                                    src="<?php
-
-                                    echo base_url(
-
-                                        '../uploads/project-gallery/'
-                                        .
-                                        $image['image']
-                                    );
-
-                                    ?>"
-                                    alt="Gallery"
-                                    class="gallery-image"
-                                >
-
-                                <!-- CONTENT -->
-
-                                <div class="gallery-content">
-
-                                    <h5>
-
-                                        <?php
-
-                                        echo escape(
-
-                                            $image['title']
-                                            ??
-                                            'Project Image'
-                                        );
-
-                                        ?>
-
-                                    </h5>
-
-                                    <p class="text-muted">
-
-                                        <?php
-
-                                        echo nl2br(
-
-                                            escape(
-
-                                                $image['description']
-                                                ??
-                                                ''
-                                            )
-                                        );
-
-                                        ?>
-
-                                    </p>
-
-                                    <small class="text-muted">
-
-                                        Uploaded:
-
-                                        <?php
-
-                                        echo date(
-
-                                            'd M Y h:i A',
-
-                                            strtotime(
-
-                                                $image['created_at']
-                                            )
-                                        );
-
-                                        ?>
-
-                                    </small>
-
-                                    <!-- ACTIONS -->
-
-                                    <div class="mt-3 d-flex gap-2">
-
-                                        <!-- VIEW -->
-
-                                        <a
-                                            href="<?php
-
-                                            echo base_url(
-
-                                                '../uploads/project-gallery/'
-                                                .
-                                                $image['image']
-                                            );
-
-                                            ?>"
-                                            target="_blank"
-                                            class="btn btn-sm btn-dark"
-                                        >
-
-                                            <i class="bi bi-eye"></i>
-
-                                        </a>
-
-                                        <!-- DELETE -->
-
-                                        <a
-                                            href="?id=<?= (int)$projectId ?>&delete=<?= (int)$image['id'] ?>"
-                                            class="btn btn-sm btn-danger btn-delete"
-                                        >
-
-                                            <i class="bi bi-trash"></i>
-
-                                        </a>
-
+                <div class="card-body">
+                    <?php if (empty($mediaItems)): ?>
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-images" style="font-size: 48px;"></i>
+                            <p class="mt-3">No images uploaded yet.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="row g-3">
+                            <?php foreach ($mediaItems as $item): ?>
+                                <div class="col-lg-3 col-md-4 col-sm-6">
+                                    <div class="card h-100">
+                                        <img src="<?php echo base_url($item['file_path']); ?>"
+                                             class="card-img-top"
+                                             alt="<?php echo escape($item['original_name']); ?>"
+                                             style="height: 200px; object-fit: cover;">
+                                        <div class="card-body p-2">
+                                            <small class="text-muted d-block text-truncate">
+                                                <?php echo escape($item['original_name']); ?>
+                                            </small>
+                                            <small class="text-muted d-block">
+                                                <?php echo date('d M Y', strtotime($item['created_at'])); ?>
+                                            </small>
+                                        </div>
+                                        <div class="card-footer p-2 bg-transparent border-top-0">
+                                            <a href="?project_id=<?php echo escape($projectId); ?>&delete=<?php echo (int)$item['id']; ?>&csrf_token=<?php echo csrfToken(); ?>"
+                                               class="btn btn-sm btn-danger w-100"
+                                               onclick="return confirm('Delete this image?')">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </a>
+                                        </div>
                                     </div>
-
                                 </div>
-
-                            </div>
-
-                        <?php endforeach; ?>
-
-                    </div>
-
-                <?php else: ?>
-
-                    <div class="text-center py-5">
-
-                        <i
-                            class="bi bi-images"
-                            style="
-                                font-size:60px;
-                                color:#d1d5db;
-                            "
-                        ></i>
-
-                        <p class="mt-3">
-
-                            No gallery images uploaded.
-
-                        </p>
-
-                    </div>
-
-                <?php endif; ?>
-
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
             </div>
 
         </div>
-
     </div>
-
 </div>
 
-<!-- Bootstrap -->
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Admin JS -->
-
 <script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
-
 </body>
-
 </html>

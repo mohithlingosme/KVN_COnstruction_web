@@ -157,6 +157,37 @@ function generateSecureToken(int $length = 32): string
 | PASSWORD HASH
 |--------------------------------------------------------------------------
 */
+/**
+ * Validate password strength
+ * Minimum 8 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 special character
+ */
+function validatePasswordStrength(string $password): array
+{
+    $errors = [];
+
+    if (strlen($password) < 8) {
+        $errors[] = 'Password must be at least 8 characters long.';
+    }
+
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = 'Password must contain at least one uppercase letter.';
+    }
+
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = 'Password must contain at least one lowercase letter.';
+    }
+
+    if (!preg_match('/[0-9]/', $password)) {
+        $errors[] = 'Password must contain at least one number.';
+    }
+
+    if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        $errors[] = 'Password must contain at least one special character.';
+    }
+
+    return $errors;
+}
+
 function hashPassword(string $password): string
 {
     return password_hash(
@@ -275,11 +306,34 @@ function requireAjax(): void
 |--------------------------------------------------------------------------
 */
 function logSecurityEvent(
-    ?int $userId,
-    string $event,
-    string $severity = 'info',
-    string $details = ''
+    $userIdOrEvent,
+    $eventOrMessage,
+    $severity = 'info',
+    $details = ''
 ): void {
+
+    // Support both call signatures used across the codebase:
+    // 1) logSecurityEvent(?int $userId, string $event, string $severity, string $details)
+    // 2) logSecurityEvent(string $event, string $message, array $context)
+    // If first argument is not numeric (e.g. event code), shift parameters.
+    if (!is_null($userIdOrEvent) && !is_int($userIdOrEvent) && !is_numeric($userIdOrEvent)) {
+        $event = (string)$userIdOrEvent;
+        $message = $eventOrMessage;
+        // In signature #2, $severity param carries context array.
+        $context = $severity;
+        if (is_array($context)) {
+            $details = json_encode($context);
+        } else {
+            $details = (string)$message;
+        }
+        $severity = 'info';
+        $userId = null;
+
+    } else {
+        $userId = $userIdOrEvent === null ? null : (int)$userIdOrEvent;
+        $event = $eventOrMessage;
+    }
+
 
     if (!isset($GLOBALS['conn'])) {
         return;

@@ -14,7 +14,7 @@
 require_once '../config/app.php';
 require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/session.php';
-require_once ROOT_PATH . '/app/controllers/AuthController.php';
+require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
 
 $controller = new AuthController($conn);
 $controller->logout();
@@ -26,5 +26,5 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $_SESSION['success'] = 'Logged out successfully.';
 
-header('Location: ' . APP_URL . '/login.php');
+header('Location: ' . base_url('login.php'));
 exit;

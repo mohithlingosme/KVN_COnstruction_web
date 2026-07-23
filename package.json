@@ -1,0 +1,19 @@
+{
+  "name": "kvn-construction",
+  "version": "1.0.0",
+  "description": "KVN Construction Platform - Asset Build Pipeline",
+  "private": true,
+  "scripts": {
+    "build:css": "cleancss -o public/assets/css/style.min.css public/assets/css/style.css",
+    "build:js": "uglifyjs public/assets/js/main.js -o public/assets/js/main.min.js --compress --mangle",
+    "build:admin:css": "cleancss -o public/assets/admin/css/admin.min.css public/assets/admin/css/admin.css",
+    "build:admin:js": "uglifyjs public/assets/admin/js/admin.js -o public/assets/admin/js/admin.min.js --compress --mangle",
+    "build": "npm run build:css && npm run build:js && npm run build:admin:css && npm run build:admin:js",
+    "watch": "nodemon --watch public/assets/css --watch public/assets/js --ext css,js --exec \"npm run build\""
+  },
+  "devDependencies": {
+    "clean-css-cli": "^5.6.3",
+    "uglify-js": "^3.17.4",
+    "nodemon": "^3.1.0"
+  }
+}

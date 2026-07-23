@@ -17,7 +17,7 @@ $projects = [];
 if ($conn) {
     $projectsQuery = "
         SELECT *
-        FROM portfolio_projects
+        FROM portfolio
         WHERE status = 'active'
         ORDER BY created_at DESC
         LIMIT 6
@@ -36,7 +36,7 @@ $blogs = [];
 if ($conn) {
     $blogsQuery = "
         SELECT *
-        FROM blog_posts
+        FROM blogs
         WHERE status = 'published'
         ORDER BY published_at DESC
         LIMIT 6
@@ -56,8 +56,8 @@ if ($conn) {
     $testimonialQuery = "
         SELECT *
         FROM testimonials
-        WHERE status = 'approved'
-        ORDER BY created_at DESC
+        WHERE status = 'active'
+        ORDER BY sort_order ASC, created_at DESC
         LIMIT 6
     ";
 
@@ -226,40 +226,50 @@ include '../app/views/layouts/header.php';
 
         </div>
 
-        <div class="project-carousel">
+        <div class="swiper projectSwiper">
+
+            <div class="swiper-wrapper">
 
             <?php foreach($projects as $project): ?>
 
-                <div class="project-card">
+                <div class="swiper-slide">
 
-                    <div class="project-image">
+                    <div class="project-card">
 
-<img
-                            src="<?php echo htmlspecialchars(base_url($project['featured_image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
-                            alt="<?php echo e($project['project_name'] ?? 'Untitled Project'); ?>"
-                        >
+                        <div class="project-image">
 
-                    </div>
+                            <img
+                                src="<?php echo htmlspecialchars(base_url($project['featured_image'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo e($project['title'] ?? 'Untitled Project'); ?>"
+                            >
 
-                    <div class="project-content">
+                        </div>
 
-                        <h3>
-                            <?php echo escape($project['project_name'] ?? 'Untitled Project'); ?>
-                        </h3>
+                        <div class="project-content">
 
-                        <p>
-                            <?php echo limitText($project['short_description'] ?? '', 120); ?>
-                        </p>
+                            <h3>
+                                <?php echo escape($project['title'] ?? 'Untitled Project'); ?>
+                            </h3>
 
-<a href="project-details.php?slug=<?= urlencode((string)($project['slug'] ?? '')) ?>" class="btn-main">
-                            View Project
-                        </a>
+                            <p>
+                                <?php echo limitText($project['description'] ?? '', 120); ?>
+                            </p>
+
+                            <a href="project-details.php?slug=<?= urlencode((string)($project['slug'] ?? '')) ?>" class="btn-main">
+                                View Project
+                            </a>
+
+                        </div>
 
                     </div>
 
                 </div>
 
             <?php endforeach; ?>
+
+            </div>
+
+            <div class="swiper-pagination"></div>
 
         </div>
 

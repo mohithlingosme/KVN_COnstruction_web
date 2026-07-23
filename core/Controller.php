@@ -8,11 +8,10 @@ class Controller
 
     protected function view($view, $data = [])
     {
-        // EXTRACT DATA TO VARIABLES
-
-        extract($data);
-
-        // VIEW PATH
+        // Validate view name to prevent directory traversal
+        if (preg_match('/[\/\\\\]/', $view)) {
+            die("Invalid view path: {$view}");
+        }
 
         $viewPath =
         '../app/views/' . $view . '.php';
@@ -21,6 +20,7 @@ class Controller
 
         if(file_exists($viewPath)){
 
+            // Use $data directly instead of extract()
             require_once $viewPath;
 
         }else{

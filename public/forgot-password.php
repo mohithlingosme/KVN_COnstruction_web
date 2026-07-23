@@ -38,7 +38,7 @@ require_once ROOT_PATH . '/helpers/mail.php';
 
 require_once ROOT_PATH . '/app/models/User.php';
 
-require_once ROOT_PATH . '/app/controllers/AuthController.php';
+require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
 
 require_once ROOT_PATH . '/middleware/guest.php';
 
@@ -144,8 +144,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
+    $userModel = new \App\Models\User($GLOBALS['conn']);
+    
     $user =
-    User::findByEmail($email);
+    $userModel->findByEmail($email);
 
     /*
     |--------------------------------------------------------------------------
@@ -193,13 +195,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     */
 
     $saved =
-    User::savePasswordResetOtp(
+    $userModel->saveOtp(
 
         (int) $user['id'],
 
-        $otpHash,
-
-        $expiresAt
+        (string) $otp,
+        
+        'password_reset',
+        
+        5
     );
 
     if (!$saved) {

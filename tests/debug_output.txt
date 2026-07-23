@@ -1,0 +1,5 @@
+PDO test: PASS
+AuthController loaded: PASS
+Empty phone test: PASS
+AdminController loaded: PASS
+All 4 tests completed.

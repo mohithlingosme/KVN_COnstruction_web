@@ -2,6 +2,24 @@
 
 /*
 |--------------------------------------------------------------------------
+| LOCAL TESTING BYPASS
+|--------------------------------------------------------------------------
+| Set ADMIN_AUTH_BYPASS_FOR_TESTING=true only in the local web-server
+| environment. The bypass is deliberately limited to loopback requests, so it
+| cannot disable administrator authentication for remote traffic.
+*/
+$adminTestingBypass = filter_var(
+    getenv('ADMIN_AUTH_BYPASS_FOR_TESTING') ?: 'false',
+    FILTER_VALIDATE_BOOLEAN
+);
+$adminTestingIp = $_SERVER['REMOTE_ADDR'] ?? '';
+
+if ($adminTestingBypass && in_array($adminTestingIp, ['127.0.0.1', '::1'], true)) {
+    return;
+}
+
+/*
+|--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | ADMIN SECURITY MIDDLEWARE
@@ -67,11 +85,7 @@ if (!validateSession()) {
 
     header(
 
-        'Location: '
-        .
-        APP_URL
-        .
-        '/admin/login.php'
+        'Location: ' . base_url('admin/login.php')
     );
 
     exit;
@@ -98,11 +112,7 @@ if (!isLoggedIn()) {
 
     header(
 
-        'Location: '
-        .
-        APP_URL
-        .
-        '/admin/login.php'
+        'Location: ' . base_url('admin/login.php')
     );
 
     exit;
@@ -131,11 +141,7 @@ if (!isAdmin()) {
 
     header(
 
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
+        'Location: ' . base_url('login.php')
     );
 
     exit;
@@ -171,11 +177,7 @@ if (
 
     header(
 
-        'Location: '
-        .
-        APP_URL
-        .
-        '/admin/login.php'
+        'Location: ' . base_url('admin/login.php')
     );
 
     exit;
@@ -242,11 +244,7 @@ try {
 
         header(
 
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/login.php'
+            'Location: ' . base_url('admin/login.php')
         );
 
         exit;
@@ -280,11 +278,7 @@ try {
 
         header(
 
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/login.php'
+            'Location: ' . base_url('admin/login.php')
         );
 
         exit;
@@ -321,11 +315,7 @@ try {
 
         header(
 
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/login.php'
+            'Location: ' . base_url('admin/login.php')
         );
 
         exit;
@@ -344,11 +334,7 @@ try {
 
     header(
 
-        'Location: '
-        .
-        APP_URL
-        .
-        '/admin/login.php'
+        'Location: ' . base_url('admin/login.php')
     );
 
     exit;
@@ -404,11 +390,7 @@ try {
 
         header(
 
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/login.php'
+            'Location: ' . base_url('admin/login.php')
         );
 
         exit;

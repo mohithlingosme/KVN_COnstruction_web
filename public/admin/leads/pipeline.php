@@ -54,32 +54,10 @@ $pipelineStages = [
 
 try {
 
-    $query = "
+    require_once '../../../app/controllers/admin/LeadController.php';
+    $controller = new LeadController($conn);
 
-        SELECT
-            id,
-            name,
-            phone,
-            email,
-            budget,
-            lead_type,
-            lead_source,
-            status,
-            assigned_to,
-            created_at
-
-        FROM leads
-
-        ORDER BY id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
-    $leads =
-    $stmt->fetchAll();
+    $leads = $controller->index();
 
     foreach($leads as $lead){
 

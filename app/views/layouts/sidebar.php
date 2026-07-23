@@ -9,7 +9,7 @@ basename($_SERVER['PHP_SELF']);
 <!-- SIDEBAR -->
 <!-- ================================= -->
 
-<aside class="admin-sidebar">
+<aside id="sidebar" class="admin-sidebar">
 
     <!-- LOGO -->
 
@@ -17,10 +17,7 @@ basename($_SERVER['PHP_SELF']);
 
         <a href="<?php echo base_url('admin/dashboard.php'); ?>">
 
-            <img
-                src="<?php echo base_url('assets/images/logo.png'); ?>"
-                alt="KVN Construction"
-            >
+            <span class="sidebar-brand">KVN<span>Construction</span></span>
 
         </a>
 
@@ -91,7 +88,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('admin/packages/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/estimators/packages.php'); ?>">
 
                             Packages
 
@@ -101,9 +98,9 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('admin/multipliers/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/estimators/pricing.php'); ?>">
 
-                            Multipliers
+                            Pricing
 
                         </a>
 
@@ -111,7 +108,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('admin/estimator-requests/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/estimators/requests.php'); ?>">
 
                             Requests
 
@@ -174,7 +171,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('admin/project-gallery/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/projects/gallery.php'); ?>">
 
                             Gallery
 
@@ -253,7 +250,7 @@ basename($_SERVER['PHP_SELF']);
 
                     <li>
 
-                        <a href="<?php echo base_url('admin/blog-categories/index.php'); ?>">
+                        <a href="<?php echo base_url('admin/blogs/categories.php'); ?>">
 
                             Categories
 
@@ -335,7 +332,7 @@ basename($_SERVER['PHP_SELF']);
 
         <li>
 
-            <a href="<?php echo base_url('admin/settings/index.php'); ?>">
+            <a href="<?php echo base_url('admin/settings/smtp.php'); ?>">
 
                 <i class="bi bi-gear-fill"></i>
 
@@ -405,10 +402,16 @@ basename($_SERVER['PHP_SELF']);
     margin-bottom:20px;
 }
 
-.sidebar-logo img{
+.sidebar-brand{
 
-    max-width:180px;
+    display:block;
+    color:#fff;
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:-.5px;
 }
+
+.sidebar-brand span{ color:#f5b400; }
 
 .sidebar-menu{
 

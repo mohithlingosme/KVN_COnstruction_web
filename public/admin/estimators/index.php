@@ -39,12 +39,10 @@ $estimators = [];
 try {
 
     $query = "
-
-        SELECT *
-
-        FROM estimators
-
-        ORDER BY id DESC
+        SELECT er.*, ep.package_name AS package
+        FROM estimators er
+        LEFT JOIN estimator_packages ep ON er.package_id = ep.id
+        ORDER BY er.id DESC
     ";
 
     $stmt =
@@ -542,7 +540,7 @@ count(
 
                                                     echo escape(
 
-                                                        $item['name']
+                                                        $item['full_name']
                                                         ??
                                                         'N/A'
                                                     );
@@ -595,12 +593,12 @@ count(
 
                                             <?php
 
-                                            echo escape(
+                                                echo escape(
 
-                                                $item['location']
-                                                ??
-                                                'N/A'
-                                            );
+                                                    $item['location']
+                                                    ??
+                                                    'N/A'
+                                                );
 
                                             ?>
 
@@ -614,7 +612,7 @@ count(
 
                                             echo number_format(
 
-                                                $item['area']
+                                                $item['plot_area']
                                                 ??
                                                 0
                                             );

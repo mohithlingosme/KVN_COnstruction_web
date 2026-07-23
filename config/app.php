@@ -1,4 +1,4 @@
-    <?php
+<?php
 
 /*
 |--------------------------------------------------------------------------
@@ -10,41 +10,62 @@
 
 ob_start();
 
+/* Load deployment configuration before constants are defined.  Values already
+ * supplied by the web server always take precedence over the local .env file. */
+$envFile = dirname(__DIR__) . '/.env';
+if (is_file($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $envLine) {
+        $envLine = trim($envLine);
+        if ($envLine === '' || str_starts_with($envLine, '#') || !str_contains($envLine, '=')) {
+            continue;
+        }
+        [$envKey, $envValue] = explode('=', $envLine, 2);
+        $envKey = trim($envKey);
+        $envValue = trim($envValue);
+        $envValue = trim($envValue, "\"'");
+        if ($envKey !== '' && getenv($envKey) === false) {
+            putenv($envKey . '=' . $envValue);
+            $_ENV[$envKey] = $envValue;
+        }
+    }
+}
+
+function env_value(string $key, mixed $default = null): mixed
+{
+    $value = getenv($key);
+    return $value === false || $value === '' ? $default : $value;
+}
+
 /*
 |--------------------------------------------------------------------------
 | APPLICATION INFO
 |--------------------------------------------------------------------------
 */
-
-define('APP_NAME', 'KVN Construction');
-define('APP_URL', 'http://localhost/kvn_construction/public');
-define('APP_ENV', 'development');
-
+if (!defined('APP_NAME')) { define('APP_NAME', env_value('APP_NAME', 'KVN Construction')); }
+if (!defined('APP_URL')) { define('APP_URL', rtrim((string) env_value('APP_URL', 'https://kvnconstruction.com'), '/')); }
+if (!defined('APP_ENV')) { define('APP_ENV', env_value('APP_ENV', 'production')); }
 /*
 |--------------------------------------------------------------------------
 | ROOT PATHS
 |--------------------------------------------------------------------------
 */
-
-define('ROOT_PATH', dirname(__DIR__));
-define('APP_PATH', ROOT_PATH . '/app');
-define('CONFIG_PATH', ROOT_PATH . '/config');
-define('PUBLIC_PATH', ROOT_PATH . '/public');
-define('UPLOAD_PATH', ROOT_PATH . '/uploads');
-define('HELPER_PATH', ROOT_PATH . '/helpers');
-define('MIDDLEWARE_PATH', ROOT_PATH . '/middleware');
-
+if (!defined('ROOT_PATH')) { define('ROOT_PATH', dirname(__DIR__)); }
+if (!defined('APP_PATH')) { define('APP_PATH', ROOT_PATH . '/app'); }
+if (!defined('CONFIG_PATH')) { define('CONFIG_PATH', ROOT_PATH . '/config'); }
+if (!defined('PUBLIC_PATH')) { define('PUBLIC_PATH', ROOT_PATH . '/public'); }
+if (!defined('UPLOAD_PATH')) { define('UPLOAD_PATH', ROOT_PATH . '/uploads'); }
+if (!defined('HELPER_PATH')) { define('HELPER_PATH', ROOT_PATH . '/helpers'); }
+if (!defined('MIDDLEWARE_PATH')) { define('MIDDLEWARE_PATH', ROOT_PATH . '/middleware'); }
 /*
 |--------------------------------------------------------------------------
 | DATABASE CONFIG
 |--------------------------------------------------------------------------
 */
-
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'kvnc_platform');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-
+if (!defined('DB_HOST')) { define('DB_HOST', env_value('DB_HOST', '127.0.0.1')); }
+if (!defined('DB_PORT')) { define('DB_PORT', (int) env_value('DB_PORT', 3306)); }
+if (!defined('DB_NAME')) { define('DB_NAME', env_value('DB_NAME', 'kvnc_platform')); }
+if (!defined('DB_USER')) { define('DB_USER', env_value('DB_USER', 'root')); }
+if (!defined('DB_PASS')) { define('DB_PASS', env_value('DB_PASS', '')); }
 /*
 |--------------------------------------------------------------------------
 | APPLICATION SETTINGS
@@ -52,50 +73,39 @@ define('DB_PASS', '');
 */
 
 date_default_timezone_set('Asia/Kolkata');
-
-define('APP_DEBUG', true);
-
+if (!defined('APP_DEBUG')) { define('APP_DEBUG', filter_var(env_value('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN)); }
 /*
 |--------------------------------------------------------------------------
 | SESSION SETTINGS
 |--------------------------------------------------------------------------
 */
-
-define('SESSION_TIMEOUT', 3600);
-define('ADMIN_SESSION_TIMEOUT', 1800);
-define('SESSION_NAME', 'KVNSESSID');
-
+if (!defined('SESSION_TIMEOUT')) { define('SESSION_TIMEOUT', 3600); }
+if (!defined('ADMIN_SESSION_TIMEOUT')) { define('ADMIN_SESSION_TIMEOUT', 1800); }
+if (!defined('SESSION_NAME')) { define('SESSION_NAME', 'KVNSESSID'); }
 /*
 |--------------------------------------------------------------------------
 | OTP SETTINGS
 |--------------------------------------------------------------------------
 */
-
-define('OTP_EXPIRY_MINUTES', 5);
-define('OTP_MAX_ATTEMPTS', 3);
-define('OTP_RESEND_LIMIT', 3);
-define('OTP_BLOCK_MINUTES', 15);
-
+if (!defined('OTP_EXPIRY_MINUTES')) { define('OTP_EXPIRY_MINUTES', 5); }
+if (!defined('OTP_MAX_ATTEMPTS')) { define('OTP_MAX_ATTEMPTS', 3); }
+if (!defined('OTP_RESEND_LIMIT')) { define('OTP_RESEND_LIMIT', 3); }
+if (!defined('OTP_BLOCK_MINUTES')) { define('OTP_BLOCK_MINUTES', 15); }
 /*
 |--------------------------------------------------------------------------
 | RATE LIMIT SETTINGS
 |--------------------------------------------------------------------------
 */
-
-define('LOGIN_RATE_LIMIT', 5);
-define('LOGIN_RATE_WINDOW', 300);
-
-define('OTP_RATE_LIMIT', 3);
-define('OTP_RATE_WINDOW', 600);
-
+if (!defined('LOGIN_RATE_LIMIT')) { define('LOGIN_RATE_LIMIT', 5); }
+if (!defined('LOGIN_RATE_WINDOW')) { define('LOGIN_RATE_WINDOW', 300); }
+if (!defined('OTP_RATE_LIMIT')) { define('OTP_RATE_LIMIT', 3); }
+if (!defined('OTP_RATE_WINDOW')) { define('OTP_RATE_WINDOW', 600); }
 /*
 |--------------------------------------------------------------------------
 | FILE UPLOAD SETTINGS
 |--------------------------------------------------------------------------
 */
-
-define('MAX_UPLOAD_SIZE', 5 * 1024 * 1024);
-
+if (!defined('MAX_UPLOAD_SIZE')) { define('MAX_UPLOAD_SIZE', 5 * 1024 * 1024); }
 define('ALLOWED_IMAGE_TYPES', [
     'image/jpeg',
     'image/png',
@@ -110,25 +120,13 @@ define('ALLOWED_DOCUMENT_TYPES', [
 
 /*
 |--------------------------------------------------------------------------
-| SESSION SECURITY
+| SESSION SECURITY - Delegated to helpers/session.php
 |--------------------------------------------------------------------------
+| Session initialization and security hardening is handled by
+| helpers/session.php which is loaded below. This ensures
+| consistent configuration with proper HTTPS detection.
+| Do NOT duplicate session_start() here.
 */
-
-ini_set('session.use_only_cookies', 1);
-ini_set('session.use_strict_mode', 1);
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0);
-
-session_name(SESSION_NAME);
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (!isset($_SESSION['initiated'])) {
-    session_regenerate_id(true);
-    $_SESSION['initiated'] = true;
-}
 
 /*
 |--------------------------------------------------------------------------
@@ -147,6 +145,7 @@ if (APP_ENV === 'development') {
     ini_set('display_errors', '0');
     ini_set('display_startup_errors', '0');
     ini_set('log_errors', '1');
+    ini_set('error_log', ROOT_PATH . '/storage/logs/error.log');
     error_reporting(E_ALL);
 }
 
@@ -280,7 +279,21 @@ if (function_exists('securityHeaders')) {
 
 function base_url($path = '')
 {
-    return APP_URL . '/' . ltrim($path, '/');
+    // XAMPP installations are commonly served from a project subdirectory
+    // (for example /KVN_Construction/public).  Prefer that detected local
+    // web path so assets do not incorrectly point at the production domain
+    // when a production .env file is present locally.
+    $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+    $isLocal = preg_match('/^(localhost|127\\.0\\.0\\.1|::1)(:\\d+)?$/i', $host) === 1;
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+    $publicPosition = stripos($scriptName, '/public/');
+
+    if ($isLocal && $publicPosition !== false) {
+        $localBase = substr($scriptName, 0, $publicPosition + strlen('/public'));
+        return rtrim($localBase, '/') . '/' . ltrim((string) $path, '/');
+    }
+
+    return rtrim(APP_URL, '/') . '/' . ltrim((string) $path, '/');
 }
 
 function redirect($path = '')
@@ -400,9 +413,7 @@ function json_response(
 | MAINTENANCE MODE
 |--------------------------------------------------------------------------
 */
-
-define('MAINTENANCE_MODE', false);
-
+if (!defined('MAINTENANCE_MODE')) { define('MAINTENANCE_MODE', false); }
 if (
     MAINTENANCE_MODE &&
     !is_admin()

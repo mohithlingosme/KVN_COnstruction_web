@@ -336,6 +336,7 @@ function sendViaFast2Sms(
 |--------------------------------------------------------------------------
 */
 
+if (!function_exists('sendOtpSms')) {
 function sendOtpSms(
     string $phone,
     string $otp
@@ -377,6 +378,7 @@ function sendOtpSms(
 
         'otp'
     );
+}
 }
 
 /*

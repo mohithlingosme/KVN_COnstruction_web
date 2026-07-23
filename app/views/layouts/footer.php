@@ -619,98 +619,58 @@ if (!defined('APP_NAME')) {
     // SWIPER INITIALIZATION
     // =================================
 
-    const projectSwiper =
-    new Swiper('.projectSwiper', {
+    // Only initialize if the element exists on the page
+    if (document.querySelector('.projectSwiper')) {
+        const projectSwiper =
+        new Swiper('.projectSwiper', {
 
-        loop:true,
+            loop:true,
 
-        spaceBetween:30,
+            spaceBetween:30,
 
-        autoplay:{
-            delay:3500
-        },
-
-        pagination:{
-            el:'.swiper-pagination',
-            clickable:true
-        },
-
-        breakpoints:{
-
-            320:{
-                slidesPerView:1
+            autoplay:{
+                delay:3500
             },
 
-            768:{
-                slidesPerView:2
+            pagination:{
+                el:'.swiper-pagination',
+                clickable:true
             },
 
-            1200:{
-                slidesPerView:3
+            breakpoints:{
+
+                320:{
+                    slidesPerView:1
+                },
+
+                768:{
+                    slidesPerView:2
+                },
+
+                1200:{
+                    slidesPerView:3
+                }
             }
-        }
-    });
+        });
+    }
 
     // =================================
     // TESTIMONIAL SWIPER
     // =================================
 
-    const testimonialSwiper =
-    new Swiper('.testimonialSwiper', {
-
-        loop:true,
-
-        autoplay:{
-            delay:4000
-        },
-
-        pagination:{
-            el:'.testimonial-pagination',
-            clickable:true
-        },
-
-        breakpoints:{
-
-            320:{
-                slidesPerView:1
-            },
-
-            992:{
-                slidesPerView:2
-            }
-        }
-    });
+    if (!document.querySelector('.testimonial-carousel')?.classList.contains('swiper')) {
+        // Non-swiper layout - testimonials are displayed as a grid already in CSS
+        // No additional initialization needed
+    }
 
     // =================================
     // BLOG SWIPER
     // =================================
 
-    const blogSwiper =
-    new Swiper('.blogSwiper', {
-
-        loop:true,
-
-        autoplay:{
-            delay:4500
-        },
-
-        spaceBetween:25,
-
-        breakpoints:{
-
-            320:{
-                slidesPerView:1
-            },
-
-            768:{
-                slidesPerView:2
-            },
-
-            1200:{
-                slidesPerView:3
-            }
-        }
-    });
+    if (!document.querySelector('.blog-carousel')?.classList.contains('swiper')) {
+        // Non-swiper layout - blogs are displayed as a grid already in CSS
+        // No additional initialization needed
+    }
 
 </script>
 

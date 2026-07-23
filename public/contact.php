@@ -59,10 +59,14 @@ try {
 
 } catch (Exception $e) {
 
-    logSecurityEvent(
-        'CONTACT_PAGE_FETCH_FAILED',
-        $e->getMessage()
-    );
+    if (function_exists('logSecurityEvent')) {
+        logSecurityEvent(
+            null,
+            'contact_page_fetch_failed',
+            'error',
+            $e->getMessage()
+        );
+    }
 
     $contact = [];
 }
@@ -90,10 +94,14 @@ try {
 
 } catch (Exception $e) {
 
-    logSecurityEvent(
-        'CONTACT_FEATURES_FETCH_FAILED',
-        $e->getMessage()
-    );
+    if (function_exists('logSecurityEvent')) {
+        logSecurityEvent(
+            null,
+            'contact_features_fetch_failed',
+            'error',
+            $e->getMessage()
+        );
+    }
 
     $features = [];
 }
@@ -110,10 +118,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!checkRateLimit('contact_form', 5, 3600)) {
 
-        logSecurityEvent(
-            'CONTACT_RATE_LIMIT_EXCEEDED',
-            'Contact form abuse attempt'
-        );
+        if (function_exists('logSecurityEvent')) {
+            logSecurityEvent(
+                null,
+                'contact_rate_limit_exceeded',
+                'warning',
+                'Contact form abuse attempt'
+            );
+        }
 
         $error =
         "Too many requests. Please try again later.";
@@ -128,10 +140,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!validateCsrf($_POST['csrf_token'] ?? '')) {
 
-            logSecurityEvent(
-                'INVALID_CONTACT_CSRF',
-                'Invalid CSRF token on contact form'
-            );
+            if (function_exists('logSecurityEvent')) {
+                logSecurityEvent(
+                    null,
+                    'invalid_contact_csrf',
+                    'critical',
+                    'Invalid CSRF token on contact form'
+                );
+            }
 
             $error =
             "Invalid request token. Please refresh the page.";
@@ -144,10 +160,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!empty($_POST['website'])) {
 
-                logSecurityEvent(
-                    'CONTACT_SPAM_BLOCKED',
-                    'Honeypot triggered'
-                );
+                if (function_exists('logSecurityEvent')) {
+                    logSecurityEvent(
+                        null,
+                        'contact_spam_blocked',
+                        'warning',
+                        'Honeypot triggered'
+                    );
+                }
 
                 $error =
                 "Spam detected.";
@@ -225,18 +245,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $_FILES['attachment']['error'] !== UPLOAD_ERR_NO_FILE
                     ) {
 
-                        $uploadResult = secureUpload(
+                        $uploadResult = uploadDocument(
                             $_FILES['attachment'],
-                            ROOT_PATH . '/storage/uploads/contact/',
-                            [
-                                'jpg',
-                                'jpeg',
-                                'png',
-                                'pdf',
-                                'doc',
-                                'docx'
-                            ],
-                            5 * 1024 * 1024
+                            'contact'
                         );
 
                         if (!$uploadResult['success']) {
@@ -322,12 +333,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             $success = true;
 
-                            logSecurityEvent(
-                                'CONTACT_FORM_SUBMITTED',
-                                'New contact inquiry submitted'
-                            );
+                            if (function_exists('logSecurityEvent')) {
+                                logSecurityEvent(
+                                    null,
+                                    'contact_form_submitted',
+                                    'info',
+                                    'New contact inquiry submitted'
+                                );
+                            }
 
-                            refreshCsrf();
+                            regenerateCsrfToken();
 
                             // CLEAR FORM
 
@@ -343,10 +358,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         } catch (Exception $e) {
 
-                            logSecurityEvent(
-                                'CONTACT_FORM_DB_ERROR',
-                                $e->getMessage()
-                            );
+                            if (function_exists('logSecurityEvent')) {
+                                logSecurityEvent(
+                                    null,
+                                    'contact_form_db_error',
+                                    'error',
+                                    $e->getMessage()
+                                );
+                            }
 
                             $error =
                             "Something went wrong. Please try again.";
@@ -420,6 +439,7 @@ include '../app/views/layouts/header.php';
                     src="<?php echo base_url('assets/images/contact/contact-hero.jpg'); ?>"
                     class="img-fluid rounded-4 shadow"
                     alt="KVN Construction"
+                    onerror="this.src='<?php echo base_url('assets/images/favicon.png'); ?>'"
                 >
 
             </div>

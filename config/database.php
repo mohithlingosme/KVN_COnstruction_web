@@ -6,12 +6,20 @@ class Database
     // DATABASE CONFIGURATION
     // =====================================
 
-     private $host     = 'localhost';
-     private $db_name  = 'kvnc_platform';
-     private $username = 'root';
-     private $password = '';
+     private $host;
+     private $db_name;
+     private $username;
+     private $password;
      private $charset  = 'utf8mb4';
      private $conn;
+
+    public function __construct()
+    {
+        $this->host = DB_HOST;
+        $this->db_name = DB_NAME;
+        $this->username = DB_USER;
+        $this->password = DB_PASS;
+    }
 
 
     // =====================================
@@ -32,7 +40,7 @@ class Database
             // DSN
 
             $dsn =
-            "mysql:host={$this->host};
+            "mysql:host={$this->host};port=" . DB_PORT . ";
             dbname={$this->db_name};
             charset={$this->charset}";
 
@@ -82,27 +90,9 @@ class Database
             $this->conn->exec("SET time_zone = '+05:30'");
 
         } catch (PDOException $e) {
-
-            // HIDE SENSITIVE ERRORS IN PRODUCTION
-
-            if($this->isLocalhost()){
-
-                die(
-
-                    "Database Connection Failed: " .
-
-                    $e->getMessage()
-                );
-
-            } else {
-
-                error_log($e->getMessage());
-
-                die(
-
-                    "Database connection error."
-                );
-            }
+            // Let the application bootstrap decide how to present failures.
+            // This prevents connection details leaking in a browser response.
+            throw new RuntimeException('Database connection unavailable', 0, $e);
         }
 
         return $this->conn;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once '../../config/app.php';
 require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/session.php';
-require_once ROOT_PATH . '/app/controllers/AdminAuthController.php';
+require_once ROOT_PATH . '/app/controllers/auth/AdminAuthController.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('admin/login.php');

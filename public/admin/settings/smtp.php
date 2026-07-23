@@ -2,797 +2,286 @@
 
 declare(strict_types=1);
 
-session_start();
-
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| KVN CONSTRUCTION PLATFORM
+|--------------------------------------------------------------------------
+| SMTP SETTINGS MANAGEMENT
+|--------------------------------------------------------------------------
+| File: /public/admin/settings/smtp.php
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
+require_once '../../../config/app.php';
+require_once '../../../middleware/admin.php';
+require_once '../../../helpers/security.php';
+require_once '../../../helpers/csrf.php';
 
 /*
 |--------------------------------------------------------------------------
-| CREATE SMTP TABLE
+| PAGE TITLE
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS smtp_settings (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        smtp_host VARCHAR(255) NOT NULL,
-
-        smtp_port INT NOT NULL,
-
-        smtp_username VARCHAR(255) NOT NULL,
-
-        smtp_password VARCHAR(255) NOT NULL,
-
-        smtp_encryption ENUM('tls','ssl','none')
-        NOT NULL DEFAULT 'tls',
-
-        from_email VARCHAR(255) NOT NULL,
-
-        from_name VARCHAR(255) NOT NULL,
-
-        reply_to_email VARCHAR(255) NOT NULL,
-
-        mail_driver ENUM('smtp','mail')
-        NOT NULL DEFAULT 'smtp',
-
-        smtp_status ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'enabled',
-
-        updated_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP
-
-    )
-    "
-);
+$pageTitle = 'SMTP Settings | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEFAULT SETTINGS
+| FETCH CURRENT SETTINGS
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM smtp_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO smtp_settings
-            (
-
-                smtp_host,
-                smtp_port,
-
-                smtp_username,
-                smtp_password,
-
-                smtp_encryption,
-
-                from_email,
-                from_name,
-
-                reply_to_email,
-
-                mail_driver,
-                smtp_status
-
-            )
-            VALUES
-            (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            "
-        );
-
-    if ($stmt) {
-
-        $smtpHost =
-            'smtp.gmail.com';
-
-        $smtpPort =
-            587;
-
-        $smtpUsername =
-            'your-email@gmail.com';
-
-        $smtpPassword =
-            'your-app-password';
-
-        $smtpEncryption =
-            'tls';
-
-        $fromEmail =
-            'your-email@gmail.com';
-
-        $fromName =
-            'KVN Construction';
-
-        $replyTo =
-            'support@kvnconstruction.com';
-
-        $mailDriver =
-            'smtp';
-
-        $smtpStatus =
-            'enabled';
-
-        $stmt->bind_param(
-            'sissssssss',
-            $smtpHost,
-            $smtpPort,
-            $smtpUsername,
-            $smtpPassword,
-            $smtpEncryption,
-            $fromEmail,
-            $fromName,
-            $replyTo,
-            $mailDriver,
-            $smtpStatus
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+$settings = [];
+try {
+    $query = "SELECT * FROM settings WHERE `group` = 'smtp' ORDER BY `key` ASC";
+    $stmt = $conn->prepare($query);
+    $stmt->execute();
+    $rows = $stmt->fetchAll();
+    
+    foreach ($rows as $row) {
+        $settings[$row['key']] = $row['value'];
     }
+} catch (Exception $e) {
+    error_log('SMTP settings fetch error: ' . $e->getMessage());
 }
 
 /*
 |--------------------------------------------------------------------------
-| VARIABLES
-|--------------------------------------------------------------------------
-*/
-
-$success = '';
-$error   = '';
-
-/*
-|--------------------------------------------------------------------------
-| UPDATE SETTINGS
+| HANDLE FORM SUBMISSION
 |--------------------------------------------------------------------------
 */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $smtpHost =
-        trim($_POST['smtp_host'] ?? '');
-
-    $smtpPort =
-        (int) ($_POST['smtp_port'] ?? 587);
-
-    $smtpUsername =
-        trim($_POST['smtp_username'] ?? '');
-
-    $smtpPassword =
-        trim($_POST['smtp_password'] ?? '');
-
-    $smtpEncryption =
-        trim($_POST['smtp_encryption'] ?? 'tls');
-
-    $fromEmail =
-        trim($_POST['from_email'] ?? '');
-
-    $fromName =
-        trim($_POST['from_name'] ?? '');
-
-    $replyTo =
-        trim($_POST['reply_to_email'] ?? '');
-
-    $mailDriver =
-        trim($_POST['mail_driver'] ?? 'smtp');
-
-    $smtpStatus =
-        trim($_POST['smtp_status'] ?? 'enabled');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $smtpHost === '' ||
-        $smtpPort <= 0 ||
-        $smtpUsername === '' ||
-        $smtpPassword === '' ||
-        $fromEmail === '' ||
-        $fromName === '' ||
-        $replyTo === ''
-
-    ) {
-
-        $error =
-            'Please fill all required fields.';
+    if (!validateCsrf($_POST['csrf_token'] ?? '')) {
+        $_SESSION['error'] = 'Invalid security token.';
+        redirect('admin/settings/smtp.php');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DATABASE
-    |--------------------------------------------------------------------------
-    */
+    $smtpHost = trim(sanitize($_POST['smtp_host'] ?? ''));
+    $smtpPort = (int) ($_POST['smtp_port'] ?? 587);
+    $smtpEncryption = trim(sanitize($_POST['smtp_encryption'] ?? 'tls'));
+    $smtpUsername = trim(sanitize($_POST['smtp_username'] ?? ''));
+    $smtpPassword = trim($_POST['smtp_password'] ?? '');
+    $smtpFromEmail = trim(sanitize($_POST['smtp_from_email'] ?? ''));
+    $smtpFromName = trim(sanitize($_POST['smtp_from_name'] ?? ''));
 
-    if ($error === '') {
+    try {
+        $conn->beginTransaction();
 
-        try {
+        $settingsData = [
+            'smtp_host' => $smtpHost,
+            'smtp_port' => (string) $smtpPort,
+            'smtp_encryption' => $smtpEncryption,
+            'smtp_username' => $smtpUsername,
+            'smtp_from_email' => $smtpFromEmail,
+            'smtp_from_name' => $smtpFromName,
+        ];
 
-            $stmt =
-                $conn->prepare(
-                    "
-                    UPDATE smtp_settings
-                    SET
-
-                        smtp_host       = ?,
-                        smtp_port       = ?,
-
-                        smtp_username   = ?,
-                        smtp_password   = ?,
-
-                        smtp_encryption = ?,
-
-                        from_email      = ?,
-                        from_name       = ?,
-
-                        reply_to_email  = ?,
-
-                        mail_driver     = ?,
-                        smtp_status     = ?
-
-                    WHERE id = 1
-                    "
-                );
-
-            if ($stmt) {
-
-                $stmt->bind_param(
-                    'sissssssss',
-                    $smtpHost,
-                    $smtpPort,
-                    $smtpUsername,
-                    $smtpPassword,
-                    $smtpEncryption,
-                    $fromEmail,
-                    $fromName,
-                    $replyTo,
-                    $mailDriver,
-                    $smtpStatus
-                );
-
-                $stmt->execute();
-
-                $stmt->close();
-
-                $success =
-                    'SMTP settings updated successfully.';
-            }
-
-        } catch (Throwable $e) {
-
-            $error =
-                $e->getMessage();
+        // Only update password if provided
+        if (!empty($smtpPassword)) {
+            $settingsData['smtp_password'] = $smtpPassword;
         }
+
+        foreach ($settingsData as $key => $value) {
+            $checkQuery = "SELECT id FROM settings WHERE `group` = 'smtp' AND `key` = :key LIMIT 1";
+            $checkStmt = $conn->prepare($checkQuery);
+            $checkStmt->execute([':key' => $key]);
+            $existing = $checkStmt->fetch();
+
+            if ($existing) {
+                $updateQuery = "UPDATE settings SET `value` = :value, updated_at = NOW() WHERE `group` = 'smtp' AND `key` = :key";
+                $updateStmt = $conn->prepare($updateQuery);
+                $updateStmt->execute([':value' => $value, ':key' => $key]);
+            } else {
+                $insertQuery = "INSERT INTO settings (`group`, `key`, `value`, created_at) VALUES ('smtp', :key, :value, NOW())";
+                $insertStmt = $conn->prepare($insertQuery);
+                $insertStmt->execute([':key' => $key, ':value' => $value]);
+            }
+        }
+
+        $conn->commit();
+        $_SESSION['success'] = 'SMTP settings saved successfully.';
+
+        // Update config constants for current request
+        define('SMTP_HOST', $smtpHost);
+        define('SMTP_PORT', $smtpPort);
+        define('SMTP_ENCRYPTION', $smtpEncryption);
+        define('SMTP_USERNAME', $smtpUsername);
+        define('SMTP_FROM_EMAIL', $smtpFromEmail);
+        define('SMTP_FROM_NAME', $smtpFromName);
+
+    } catch (Exception $e) {
+        $conn->rollBack();
+        $_SESSION['error'] = 'Failed to save settings: ' . $e->getMessage();
     }
+
+    redirect('admin/settings/smtp.php');
 }
 
 /*
 |--------------------------------------------------------------------------
-| FETCH SETTINGS
+| FLASH MESSAGES
 |--------------------------------------------------------------------------
 */
 
-$data = [
-
-    'smtp_host'       => '',
-    'smtp_port'       => 587,
-
-    'smtp_username'   => '',
-    'smtp_password'   => '',
-
-    'smtp_encryption' => 'tls',
-
-    'from_email'      => '',
-    'from_name'       => '',
-
-    'reply_to_email'  => '',
-
-    'mail_driver'     => 'smtp',
-
-    'smtp_status'     => 'enabled'
-
-];
-
-$result =
-    $conn->query(
-        "
-        SELECT *
-        FROM smtp_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $result &&
-    $result->num_rows > 0
-) {
-
-    $data =
-        $result->fetch_assoc();
-}
+$error = $_SESSION['error'] ?? '';
+$success = $_SESSION['success'] ?? '';
+unset($_SESSION['error'], $_SESSION['success']);
 
 ?>
 
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        SMTP Settings
-    </title>
-
-    <style>
-
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
-
-        body{
-
-            font-family:Arial,sans-serif;
-
-            background:#f5f5f5;
-
-            padding:40px;
-        }
-
-        .container{
-
-            max-width:1100px;
-
-            margin:auto;
-
-            background:#fff;
-
-            padding:40px;
-
-            border-radius:20px;
-
-            box-shadow:
-                0 5px 20px rgba(0,0,0,0.08);
-        }
-
-        h1{
-
-            margin-bottom:35px;
-
-            color:#222;
-        }
-
-        h2{
-
-            margin-bottom:20px;
-
-            color:#444;
-        }
-
-        .section{
-
-            margin-bottom:40px;
-        }
-
-        .form-group{
-
-            margin-bottom:20px;
-        }
-
-        label{
-
-            display:block;
-
-            margin-bottom:10px;
-
-            font-weight:bold;
-
-            color:#333;
-        }
-
-        input,
-        select{
-
-            width:100%;
-
-            padding:14px;
-
-            border:1px solid #ddd;
-
-            border-radius:10px;
-
-            font-size:15px;
-        }
-
-        button{
-
-            width:100%;
-
-            padding:16px;
-
-            border:none;
-
-            border-radius:10px;
-
-            background:#f5b400;
-
-            color:#fff;
-
-            font-size:16px;
-
-            font-weight:bold;
-
-            cursor:pointer;
-
-            transition:0.3s;
-        }
-
-        button:hover{
-
-            background:#d99f00;
-        }
-
-        .alert{
-
-            padding:15px 20px;
-
-            border-radius:10px;
-
-            margin-bottom:25px;
-
-            font-weight:bold;
-        }
-
-        .success{
-
-            background:#e7f9ed;
-
-            color:#1e7e34;
-        }
-
-        .error{
-
-            background:#ffe5e5;
-
-            color:#d8000c;
-        }
-
-        .back{
-
-            display:inline-block;
-
-            margin-top:30px;
-
-            text-decoration:none;
-
-            color:#333;
-
-            font-weight:bold;
-        }
-
-    </style>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo escape($pageTitle); ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo base_url('assets/admin/css/admin.css'); ?>">
 </head>
-
 <body>
+<div class="admin-layout">
+    <?php include '../../../app/views/layouts/sidebar.php'; ?>
+    <div class="admin-main">
+        <?php include '../../../app/views/layouts/navbar.php'; ?>
+        <div class="admin-content">
 
-<div class="container">
-
-    <h1>
-        SMTP Settings
-    </h1>
-
-    <?php if ($success !== ''): ?>
-
-        <div class="alert success">
-
-            <?php
-                echo htmlspecialchars($success);
-            ?>
-
-        </div>
-
-    <?php endif; ?>
-
-    <?php if ($error !== ''): ?>
-
-        <div class="alert error">
-
-            <?php
-                echo htmlspecialchars($error);
-            ?>
-
-        </div>
-
-    <?php endif; ?>
-
-    <form method="POST">
-
-        <!-- SMTP -->
-
-        <div class="section">
-
-            <h2>
-                SMTP Configuration
-            </h2>
-
-            <div class="form-group">
-
-                <label>
-                    SMTP Host
-                </label>
-
-                <input
-                    type="text"
-                    name="smtp_host"
-                    value="<?php echo htmlspecialchars((string)$data['smtp_host']); ?>"
-                    required
-                >
-
+            <div class="dashboard-header">
+                <div>
+                    <h1>SMTP Settings</h1>
+                    <p>Configure email server settings for sending emails.</p>
+                </div>
             </div>
 
-            <div class="form-group">
+            <?php if (!empty($error)): ?>
+                <div class="alert alert-danger"><?php echo escape($error); ?></div>
+            <?php endif; ?>
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success"><?php echo escape($success); ?></div>
+            <?php endif; ?>
 
-                <label>
-                    SMTP Port
-                </label>
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-envelope"></i> SMTP Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                <?php echo csrfField(); ?>
 
-                <input
-                    type="number"
-                    name="smtp_port"
-                    value="<?php echo (int)$data['smtp_port']; ?>"
-                    required
-                >
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">SMTP Host *</label>
+                                        <input type="text" name="smtp_host" class="form-control"
+                                               value="<?php echo escape($settings['smtp_host'] ?? 'smtp.gmail.com'); ?>" required>
+                                        <small class="text-muted">e.g., smtp.gmail.com, smtp.sendgrid.net</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Port *</label>
+                                        <input type="number" name="smtp_port" class="form-control"
+                                               value="<?php echo (int)($settings['smtp_port'] ?? 587); ?>" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Encryption</label>
+                                        <select name="smtp_encryption" class="form-select">
+                                            <option value="tls" <?php echo ($settings['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : ''; ?>>TLS</option>
+                                            <option value="ssl" <?php echo ($settings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : ''; ?>>SSL</option>
+                                            <option value="" <?php echo empty($settings['smtp_encryption']) ? 'selected' : ''; ?>>None</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-            </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Username *</label>
+                                        <input type="text" name="smtp_username" class="form-control"
+                                               value="<?php echo escape($settings['smtp_username'] ?? ''); ?>" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Password</label>
+                                        <input type="password" name="smtp_password" class="form-control"
+                                               placeholder="Leave blank to keep current">
+                                        <small class="text-muted">Enter new password only if changing</small>
+                                    </div>
+                                </div>
 
-            <div class="form-group">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">From Email *</label>
+                                        <input type="email" name="smtp_from_email" class="form-control"
+                                               value="<?php echo escape($settings['smtp_from_email'] ?? ''); ?>" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">From Name *</label>
+                                        <input type="text" name="smtp_from_name" class="form-control"
+                                               value="<?php echo escape($settings['smtp_from_name'] ?? APP_NAME); ?>" required>
+                                    </div>
+                                </div>
 
-                <label>
-                    SMTP Username
-                </label>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Save Settings
+                                </button>
 
-                <input
-                    type="text"
-                    name="smtp_username"
-                    value="<?php echo htmlspecialchars((string)$data['smtp_username']); ?>"
-                    required
-                >
+                                <button type="button" class="btn btn-success ms-2" onclick="runSmtpConnectionTest()">
+                                    <i class="bi bi-send"></i> Test Connection
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    SMTP Password
-                </label>
-
-                <input
-                    type="password"
-                    name="smtp_password"
-                    value="<?php echo htmlspecialchars((string)$data['smtp_password']); ?>"
-                    required
-                >
-
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    Encryption
-                </label>
-
-                <select name="smtp_encryption">
-
-                    <option
-                        value="tls"
-                        <?php echo escape($data['smtp_encryption'] === 'tls' ? 'selected' : ''); ?>
-                    >
-                        TLS
-                    </option>
-
-                    <option
-                        value="ssl"
-                        <?php echo escape($data['smtp_encryption'] === 'ssl' ? 'selected' : ''); ?>
-                    >
-                        SSL
-                    </option>
-
-                    <option
-                        value="none"
-                        <?php echo escape($data['smtp_encryption'] === 'none' ? 'selected' : ''); ?>
-                    >
-                        None
-                    </option>
-
-                </select>
-
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-info-circle"></i> SMTP Info</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>Common SMTP Providers</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Gmail</strong></td><td>smtp.gmail.com:587 (TLS)</td></tr>
+                                <tr><td><strong>SendGrid</strong></td><td>smtp.sendgrid.net:587 (TLS)</td></tr>
+                                <tr><td><strong>Mailgun</strong></td><td>smtp.mailgun.org:587 (TLS)</td></tr>
+                                <tr><td><strong>Postmark</strong></td><td>smtp.postmarkapp.com:587 (TLS)</td></tr>
+                                <tr><td><strong>Amazon SES</strong></td><td>email-smtp.us-east-1.amazonaws.com:587 (TLS)</td></tr>
+                            </table>
+                            <hr>
+                            <h6>Security Note</h6>
+                            <p class="small text-muted">SMTP credentials are stored encrypted in the database. Use app-specific passwords for Gmail.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
-
-        <!-- EMAIL -->
-
-        <div class="section">
-
-            <h2>
-                Sender Information
-            </h2>
-
-            <div class="form-group">
-
-                <label>
-                    From Email
-                </label>
-
-                <input
-                    type="email"
-                    name="from_email"
-                    value="<?php echo htmlspecialchars((string)$data['from_email']); ?>"
-                    required
-                >
-
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    From Name
-                </label>
-
-                <input
-                    type="text"
-                    name="from_name"
-                    value="<?php echo htmlspecialchars((string)$data['from_name']); ?>"
-                    required
-                >
-
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    Reply To Email
-                </label>
-
-                <input
-                    type="email"
-                    name="reply_to_email"
-                    value="<?php echo htmlspecialchars((string)$data['reply_to_email']); ?>"
-                    required
-                >
-
-            </div>
-
-        </div>
-
-        <!-- MAIL -->
-
-        <div class="section">
-
-            <h2>
-                Mail Settings
-            </h2>
-
-            <div class="form-group">
-
-                <label>
-                    Mail Driver
-                </label>
-
-                <select name="mail_driver">
-
-                    <option
-                        value="smtp"
-                        <?php echo escape($data['mail_driver'] === 'smtp' ? 'selected' : ''); ?>
-                    >
-                        SMTP
-                    </option>
-
-                    <option
-                        value="mail"
-                        <?php echo escape($data['mail_driver'] === 'mail' ? 'selected' : ''); ?>
-                    >
-                        PHP Mail
-                    </option>
-
-                </select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label>
-                    SMTP Status
-                </label>
-
-                <select name="smtp_status">
-
-                    <option
-                        value="enabled"
-                        <?php echo escape($data['smtp_status'] === 'enabled' ? 'selected' : ''); ?>
-                    >
-                        Enabled
-                    </option>
-
-                    <option
-                        value="disabled"
-                        <?php echo escape($data['smtp_status'] === 'disabled' ? 'selected' : ''); ?>
-                    >
-                        Disabled
-                    </option>
-
-                </select>
-
-            </div>
-
-        </div>
-
-        <button type="submit">
-
-            Save SMTP Settings
-
-        </button>
-
-    </form>
-
-    <a
-        href="<?php echo base_url('admin/dashboard.php'); ?>"
-        class="back"
-    >
-        ← Back to Dashboard
-    </a>
-
+    </div>
 </div>
 
-</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function runSmtpConnectionTest() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Testing...';
 
+    fetch('test-smtp.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'csrf_token=<?php echo csrfToken(); ?>'
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send"></i> Test Connection';
+    })
+    .catch(() => {
+        alert('Connection test failed.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send"></i> Test Connection';
+    });
+}
+</script>
+</body>
 </html>

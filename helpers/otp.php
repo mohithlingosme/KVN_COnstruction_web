@@ -59,3 +59,64 @@ function generateOtp(
 |--------------------------------------------------------------------------
 */
 
+/*
+|--------------------------------------------------------------------------
+| SEND OTP WITH SMS + EMAIL FALLBACK
+|--------------------------------------------------------------------------
+| Attempts to send OTP via SMS first. If SMS fails, falls back to email.
+| Returns array with success status and delivery method used.
+|--------------------------------------------------------------------------
+*/
+
+if (!function_exists('sendOtpWithFallback')) {
+    function sendOtpWithFallback(
+        string $phone,
+        string $email,
+        string $otp,
+        string $name = 'User'
+    ): array {
+        // Attempt SMS first
+        $smsSent = false;
+        if (function_exists('sendOtpSms')) {
+            $smsSent = sendOtpSms($phone, $otp);
+        }
+
+        if ($smsSent) {
+            if (function_exists('logSecurityEvent')) {
+                logSecurityEvent(null, 'otp_sent_sms', 'info', 'OTP sent via SMS to ' . $phone);
+            }
+            return [
+                'success' => true,
+                'method' => 'sms',
+                'message' => 'OTP sent via SMS'
+            ];
+        }
+
+        // Fallback to email
+        if (function_exists('sendOtpEmail') && !empty($email)) {
+            $emailSent = sendOtpEmail($email, $otp, $name);
+            if ($emailSent) {
+                if (function_exists('logSecurityEvent')) {
+                    logSecurityEvent(null, 'otp_sent_email_fallback', 'info', 'OTP sent via Email fallback to ' . $email);
+                }
+                return [
+                    'success' => true,
+                    'method' => 'email',
+                    'message' => 'OTP sent via Email (SMS unavailable)'
+                ];
+            }
+        }
+
+        // Both failed
+        if (function_exists('logSecurityEvent')) {
+            logSecurityEvent(null, 'otp_delivery_failed', 'critical', 'OTP delivery failed for phone: ' . $phone . ' email: ' . $email);
+        }
+
+        return [
+            'success' => false,
+            'method' => 'none',
+            'message' => 'Unable to deliver OTP. Please try again later.'
+        ];
+    }
+}
+

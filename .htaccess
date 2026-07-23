@@ -1,6 +1,10 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Force HTTPS (uncomment when SSL is installed)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
     # Block access to hidden files and directories
     RewriteRule ^\.|/\. - [F]
 
@@ -8,9 +12,47 @@
     RewriteRule ^(app|config|core|database|helpers|middleware|routes|storage)(/.*)?$ - [F]
 
     # Block access to sensitive files
-    RewriteRule ^(README\.md|task\.md|\.env.*|composer\.(json|lock)|audit-report/.*)$ - [F]
+    RewriteRule ^(README\.md|task\.md|\.env.*|composer\.(json|lock)|audit-report/.*|FINAL_TODO\.md|PROJECT_CONTEXT\.md|structure\.txt|tree.*|_(debug|fix|simple)\.php)$ - [F]
+
+    # Security Headers
+    <IfModule mod_headers.c>
+        Header always set X-Frame-Options "SAMEORIGIN"
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set X-XSS-Protection "1; mode=block"
+        Header always set Referrer-Policy "strict-origin-when-cross-origin"
+        Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+        Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+    </IfModule>
 
     # Redirect trailing slashes
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+    # Cache static assets for 1 year
+    <IfModule mod_expires.c>
+        ExpiresActive On
+        ExpiresByType text/css "access plus 1 year"
+        ExpiresByType text/javascript "access plus 1 year"
+        ExpiresByType application/javascript "access plus 1 year"
+        ExpiresByType image/jpeg "access plus 1 year"
+        ExpiresByType image/png "access plus 1 year"
+        ExpiresByType image/webp "access plus 1 year"
+        ExpiresByType image/svg+xml "access plus 1 year"
+        ExpiresByType font/woff2 "access plus 1 year"
+        ExpiresByType application/font-woff2 "access plus 1 year"
+    </IfModule>
+
+    # Compress text files
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+    </IfModule>
 </IfModule>
+
+# Hide Apache server version (ServerTokens must be set in httpd.conf, not here)
+ServerSignature Off
+
+# Prevent directory listing
+Options -Indexes
+
+# Fallback: if no index file in root, forward to public/
+DirectoryIndex index.php

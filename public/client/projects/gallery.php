@@ -50,7 +50,7 @@ $clientId =
 
 $conn->query(
     "
-    CREATE TABLE IF NOT EXISTS client_projects (
+    CREATE TABLE IF NOT EXISTS projects (
 
         id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -114,7 +114,7 @@ $stmt =
     $conn->prepare(
         "
         SELECT *
-        FROM client_projects
+        FROM projects
         WHERE id = ?
         AND client_id = ?
         LIMIT 1

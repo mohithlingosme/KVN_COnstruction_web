@@ -20,7 +20,7 @@ $slug = trim($_GET['slug']);
 try {
     $query = "
         SELECT *
-        FROM portfolio_projects
+FROM portfolio
         WHERE slug = :slug
         AND status = 'active'
         LIMIT 1
@@ -134,7 +134,7 @@ include '../app/views/layouts/header.php';
 
                         <p class="text-muted">
 
-                            <?php echo (int)$project['duration_months']; ?> Months
+                            <?php echo (int)($project['duration_months'] ?? 0); ?> Months
 
                         </p>
 
@@ -344,7 +344,7 @@ include '../app/views/layouts/header.php';
 
                             <span>
 
-                                <?php echo (int)$project['duration_months']; ?>
+                                <?php echo (int)($project['duration_months'] ?? 0); ?>
                                 Months
 
                             </span>
@@ -449,7 +449,7 @@ include '../app/views/layouts/header.php';
             try {
                 $relatedQuery = "
                     SELECT *
-                    FROM portfolio_projects
+                    FROM portfolio
                     WHERE status = 'active'
                     AND id != :id
                     LIMIT 3

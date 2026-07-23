@@ -50,7 +50,8 @@ securityHeaders();
 
 $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
-if (!checkRateLimit('estimator', $clientIp, 20, 3600)) {
+// Rate limiting uses action_type, max_attempts, decay_seconds
+if (!checkRateLimit('estimator', 20, 3600)) {
     http_response_code(429);
     die('Too many estimator requests. Please try again later.');
 }
@@ -86,15 +87,15 @@ $conn->exec(
 
         location VARCHAR(255) NULL,
 
-        plot_size DECIMAL(10,2) NOT NULL,
+        plot_area DECIMAL(12,2) NOT NULL,
 
-        floors INT NOT NULL,
+        floors INT NOT NULL DEFAULT 1,
 
         package_id INT NOT NULL,
 
-        estimated_cost DECIMAL(15,2) NOT NULL,
+        estimated_cost DECIMAL(15,2) NOT NULL DEFAULT 0.00,
 
-        ip_address VARCHAR(100) NULL,
+        ip_address VARCHAR(45) NULL,
 
         created_at TIMESTAMP
         DEFAULT CURRENT_TIMESTAMP
@@ -139,7 +140,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
     if (!empty($_POST['website'] ?? '')) {
         if (function_exists('logSecurityEvent')) {
-            logSecurityEvent('Estimator Spam Attempt', ['ip' => $clientIp]);
+            logSecurityEvent(null, 'estimator_spam_attempt', 'warning', 'Spam detected from IP: ' . $clientIp);
         }
         die('Spam detected.');
     }
@@ -152,7 +153,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
     if (!function_exists('validateCsrf') || !validateCsrf($_POST['csrf_token'] ?? '')) {
         if (function_exists('logSecurityEvent')) {
-            logSecurityEvent('Invalid CSRF Token', ['ip' => $clientIp]);
+            logSecurityEvent(null, 'estimator_csrf_failed', 'critical', 'Invalid CSRF from IP: ' . $clientIp);
         }
         die('Invalid CSRF token.');
     }
@@ -242,7 +243,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         phone,
                         email,
                         location,
-                        plot_size,
+                        plot_area,
                         floors,
                         package_id,
                         estimated_cost,
@@ -268,24 +269,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                 /*
                 |--------------------------------------------------------------------------
-                | RATE LIMIT INCREMENT
-                |--------------------------------------------------------------------------
-                */
-
-                incrementRateLimit('estimator', $clientIp);
-
-                /*
-                |--------------------------------------------------------------------------
                 | LOG SECURITY EVENT
                 |--------------------------------------------------------------------------
                 */
 
                 if (function_exists('logSecurityEvent')) {
-                    logSecurityEvent('Estimator Submitted', [
-                        'ip' => $clientIp,
-                        'phone' => $phone,
-                        'package_id' => $packageId
-                    ]);
+                    logSecurityEvent(null, 'estimator_submitted', 'info', 'Estimate: ' . $phone . ' Package: ' . $packageId . ' Cost: ' . $estimatedCost);
                 }
 
                 $successMessage = 'Estimator generated successfully.';
@@ -385,7 +374,7 @@ include ROOT_PATH . '/app/views/layouts/header.php';
 
                             </div>
 
-                            <button type="submit" class="btn btn-primary btn-lg w-100">Generate Estimate</button>
+                            <button type="submit" class="btn-main w-100" style="padding:16px 32px;font-size:18px;">Generate Estimate</button>
 
                         </form>
 

@@ -44,7 +44,7 @@ $clientName =
 
 $conn->query(
     "
-    CREATE TABLE IF NOT EXISTS client_projects (
+    CREATE TABLE IF NOT EXISTS projects (
 
         id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -134,7 +134,7 @@ $checkProject =
     $conn->query(
         "
         SELECT id
-        FROM client_projects
+        FROM projects
         WHERE client_id = $clientId
         LIMIT 1
         "
@@ -147,7 +147,7 @@ if (
 
     $conn->query(
         "
-        INSERT INTO client_projects
+        INSERT INTO projects
         (
 
             client_id,
@@ -315,7 +315,7 @@ $projects =
     $conn->query(
         "
         SELECT *
-        FROM client_projects
+        FROM projects
         WHERE client_id = $clientId
         ORDER BY id DESC
         "

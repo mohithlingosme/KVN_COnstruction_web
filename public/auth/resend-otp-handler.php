@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once '../../config/app.php';
 require_once ROOT_PATH . '/helpers/security.php';
-require_once ROOT_PATH . '/app/controllers/AuthController.php';
+require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
 
 header('Content-Type: application/json');
 

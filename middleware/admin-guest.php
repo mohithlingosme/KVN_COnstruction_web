@@ -8,10 +8,10 @@ require_once HELPER_PATH . '/security.php';
 
 if (isLoggedIn() && validateSession()) {
     if (isAdmin()) {
-        header('Location: ' . APP_URL . '/admin/dashboard.php');
+        header('Location: ' . base_url('admin/dashboard.php'));
         exit;
     }
 
-    header('Location: ' . APP_URL . '/client/dashboard.php');
+    header('Location: ' . base_url('client/dashboard.php'));
     exit;
 }

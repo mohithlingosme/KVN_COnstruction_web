@@ -2209,6 +2209,26 @@ INSERT INTO `project_updates` (`id`, `project_id`, `client_project_id`, `title`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `project_media`
+--
+
+CREATE TABLE `project_media` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `project_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `client_project_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `original_name` varchar(255) DEFAULT NULL,
+  `file_type` varchar(50) DEFAULT 'image',
+  `file_size` int(11) DEFAULT 0,
+  `uploaded_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `quotations`
 --
 
@@ -3708,6 +3728,15 @@ ALTER TABLE `project_timelines`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `project_media`
+--
+ALTER TABLE `project_media`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_project_media_project` (`project_id`),
+  ADD KEY `fk_project_media_client_project` (`client_project_id`),
+  ADD KEY `fk_project_media_uploaded_by` (`uploaded_by`);
+
+--
 -- Indexes for table `project_updates`
 --
 ALTER TABLE `project_updates`
@@ -4438,6 +4467,13 @@ ALTER TABLE `project_timelines`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+--
+-- AUTO_INCREMENT for table `project_media`
+--
+ALTER TABLE `project_media`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `project_updates`
 --
 ALTER TABLE `project_updates`
@@ -4792,6 +4828,15 @@ ALTER TABLE `project_payments`
 ALTER TABLE `project_tasks`
   ADD CONSTRAINT `fk_project_tasks_assigned_to` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_project_tasks_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+--
+-- Constraints for table `project_media`
+--
+ALTER TABLE `project_media`
+  ADD CONSTRAINT `fk_project_media_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_project_media_client_project` FOREIGN KEY (`client_project_id`) REFERENCES `client_projects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_project_media_uploaded_by` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `project_updates`

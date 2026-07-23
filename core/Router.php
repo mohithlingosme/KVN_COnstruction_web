@@ -2,304 +2,230 @@
 
 class Router
 {
-    // =====================================
-    // DEFAULT CONTROLLER
-    // =====================================
-
-    protected $controller =
-    'HomeController';
-
-    // =====================================
-    // DEFAULT METHOD
-    // =====================================
-
-    protected $method =
-    'index';
-
-    // =====================================
-    // URL PARAMETERS
-    // =====================================
-
+    protected $controller = 'HomeController';
+    protected $method = 'index';
     protected $params = [];
-
-    // =====================================
-    // CONSTRUCTOR
-    // =====================================
+    protected $controllerPath = '';
 
     public function __construct()
     {
-        // GET URL
-
-        $url =
-        $this->parseUrl();
+        $url = $this->parseUrl();
 
         // =====================================
-        // CONTROLLER
+        // CONTROLLER RESOLUTION
+        // Supports nested controllers like admin/LeadController
+        // Returns 404 if no controller found
         // =====================================
 
-        if(
-            isset($url[0]) &&
-            !empty($url[0])
-        ){
+        $controllerFound = false;
 
-            $controllerName =
-            ucfirst($url[0]) .
-            'Controller';
+        if (!empty($url) && isset($url[0]) && !empty($url[0])) {
+            $urlParts = $url;
+            $maxDepth = count($urlParts);
 
-            $controllerPath =
-            '../app/controllers/' .
-            $controllerName .
-            '.php';
+            // Try progressively deeper paths to find nested controllers
+            // e.g., admin/leads -> admin/LeadController
+            for ($depth = $maxDepth; $depth >= 1; $depth--) {
+                $possiblePath = array_slice($urlParts, 0, $depth);
+                $controllerName = ucfirst(end($possiblePath)) . 'Controller';
+                $subDir = ($depth > 1) ? implode('/', array_slice($possiblePath, 0, -1)) . '/' : '';
+                $controllerPath = '../app/controllers/' . $subDir . $controllerName . '.php';
 
-            if(file_exists($controllerPath)){
+                if (file_exists($controllerPath)) {
+                    $this->controller = $controllerName;
+                    $this->controllerPath = $controllerPath;
+                    // Remove controller URL segments
+                    for ($i = 0; $i < $depth; $i++) {
+                        unset($url[$i]);
+                    }
+                    $url = array_values($url);
+                    $controllerFound = true;
+                    break;
+                }
 
-                $this->controller =
-                $controllerName;
+                // Also try with plural directory name (e.g., projects/ProjectController)
+                $pluralSubDir = ($depth > 1) ? implode('/', array_slice($possiblePath, 0, -1)) : $possiblePath[0] ?? '';
+                $altControllerPath = '../app/controllers/' . $pluralSubDir . '/' . $controllerName . '.php';
+                if (file_exists($altControllerPath)) {
+                    $this->controller = $controllerName;
+                    $this->controllerPath = $altControllerPath;
+                    for ($i = 0; $i < $depth; $i++) {
+                        unset($url[$i]);
+                    }
+                    $url = array_values($url);
+                    $controllerFound = true;
+                    break;
+                }
+            }
 
-                unset($url[0]);
+            // Fallback: try single-level controller
+            if (!$controllerFound) {
+                $controllerName = ucfirst($url[0]) . 'Controller';
+                $controllerPath = '../app/controllers/' . $controllerName . '.php';
+
+                if (file_exists($controllerPath)) {
+                    $this->controller = $controllerName;
+                    $this->controllerPath = $controllerPath;
+                    unset($url[0]);
+                    $url = array_values($url);
+                    $controllerFound = true;
+                }
             }
         }
 
+        // If no controller was found, return 404
+        if (!$controllerFound) {
+            self::notFound();
+            return;
+        }
+
         // LOAD CONTROLLER
+        if ($this->controllerPath === '' || !file_exists($this->controllerPath)) {
+            self::notFound();
+            return;
+        }
+        require_once $this->controllerPath;
 
-        require_once
-        '../app/controllers/' .
-        $this->controller .
-        '.php';
+        if (!class_exists($this->controller)) {
+            self::notFound();
+            return;
+        }
 
-        $this->controller =
-        new $this->controller;
+        $this->controller = new $this->controller;
 
         // =====================================
-        // METHOD
+        // METHOD RESOLUTION
         // =====================================
 
-        if(
-            isset($url[1]) &&
-            method_exists(
-                $this->controller,
-                $url[1]
-            )
-        ){
-
-            $this->method =
-            $url[1];
-
-            unset($url[1]);
+        if (isset($url[0]) && method_exists($this->controller, $url[0])) {
+            $this->method = $url[0];
+            unset($url[0]);
+            $url = array_values($url);
         }
 
         // =====================================
         // PARAMETERS
         // =====================================
 
-        $this->params =
-        $url
-        ? array_values($url)
-        : [];
+        $this->params = $url ? array_values($url) : [];
 
         // =====================================
         // EXECUTE METHOD
         // =====================================
 
-        call_user_func_array(
-
-            [
-
-                $this->controller,
-
-                $this->method
-            ],
-
-            $this->params
-        );
+        call_user_func_array([$this->controller, $this->method], $this->params);
     }
-
-    // =====================================
-    // PARSE URL
-    // =====================================
 
     private function parseUrl()
     {
-        if(isset($_GET['url'])){
-
+        if (isset($_GET['url'])) {
             return explode(
-
                 '/',
-
                 filter_var(
-
-                    rtrim(
-                        $_GET['url'],
-                        '/'
-                    ),
-
+                    rtrim($_GET['url'], '/'),
                     FILTER_SANITIZE_URL
                 )
             );
         }
 
+        // Fallback: parse from REQUEST_URI
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        $basePath = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+        
+        // Remove query string
+        $requestUri = strtok($requestUri, '?');
+        
+        // Remove base path
+        if ($basePath !== '/' && strpos($requestUri, $basePath) === 0) {
+            $requestUri = substr($requestUri, strlen($basePath));
+        }
+        
+        // Remove leading/trailing slashes
+        $requestUri = trim($requestUri, '/');
+        
+        if (!empty($requestUri)) {
+            return explode('/', filter_var($requestUri, FILTER_SANITIZE_URL));
+        }
+
         return [];
     }
 
-    // =====================================
-    // REDIRECT HELPER
-    // =====================================
-
-    public static function redirect(
-        $path
-    )
+    public static function redirect($path)
     {
-        header(
-
-            'Location: ' .
-
-            base_url($path)
-        );
-
+        header('Location: ' . base_url($path));
         exit;
     }
-
-    // =====================================
-    // 404 HANDLER
-    // =====================================
 
     public static function notFound()
     {
         http_response_code(404);
-
-        echo "
-
-            <h1>404</h1>
-
-            <p>Page Not Found</p>
-
-        ";
-
+        
+        // Try to load a custom 404 view
+        $viewPath = '../app/views/errors/404.php';
+        if (file_exists($viewPath)) {
+            require_once $viewPath;
+        } else {
+            echo "<h1>404 - Page Not Found</h1><p>The requested URL could not be found on this server.</p>";
+        }
+        
         exit;
     }
 
-    // =====================================
-    // CLEAN URL GENERATOR
-    // =====================================
-
-    public static function url(
-        $path = ''
-    )
+    public static function url($path = '')
     {
         return base_url($path);
     }
 
-    // =====================================
-    // CURRENT URL
-    // =====================================
-
     public static function currentUrl()
     {
-        return $_SERVER['REQUEST_URI']
-        ?? '';
+        return $_SERVER['REQUEST_URI'] ?? '';
     }
 
-    // =====================================
-    // CHECK ACTIVE ROUTE
-    // =====================================
-
-    public static function isActive(
-        $route
-    )
+    public static function isActive($route)
     {
-        return strpos(
-
-            self::currentUrl(),
-
-            $route
-
-        ) !== false;
+        return strpos(self::currentUrl(), $route) !== false;
     }
 
-    // =====================================
-    // ROUTE MIDDLEWARE
-    // =====================================
-
-    public static function middleware(
-        $middleware
-    )
+    public static function middleware($middleware)
     {
-        $middlewarePath =
-        '../middleware/' .
-        $middleware .
-        '.php';
+        $middlewarePath = '../middleware/' . $middleware . '.php';
 
-        if(file_exists($middlewarePath)){
-
-            require_once
-            $middlewarePath;
-
+        if (file_exists($middlewarePath)) {
+            require_once $middlewarePath;
         } else {
-
-            die(
-
-                "Middleware not found: " .
-
-                $middleware
-            );
+            die("Middleware not found: " . $middleware);
         }
     }
 
-    // =====================================
-    // LOAD CONTROLLER MANUALLY
-    // =====================================
-
-    public static function controller(
-        $controller
-    )
+    public static function controller($controller)
     {
-        $controllerName =
-        ucfirst($controller) .
-        'Controller';
+        $controllerName = ucfirst($controller) . 'Controller';
+        $controllerPath = '../app/controllers/' . $controllerName . '.php';
 
-        $controllerPath =
-        '../app/controllers/' .
-        $controllerName .
-        '.php';
-
-        if(file_exists($controllerPath)){
-
-            require_once
-            $controllerPath;
-
+        if (file_exists($controllerPath)) {
+            require_once $controllerPath;
             return new $controllerName;
-
-        } else {
-
-            self::notFound();
         }
+
+        self::notFound();
+        return null;
     }
 
-    // =====================================
-    // ROUTE TO VIEW
-    // =====================================
-
-    public static function view(
-        $view,
-        $data = []
-    )
+    public static function view($view, $data = [])
     {
-        extract($data);
+        // Validate view name to prevent directory traversal
+        if (preg_match('/[\/\\\\]/', $view)) {
+            self::notFound();
+            return;
+        }
 
-        $viewPath =
-        '../app/views/' .
-        $view .
-        '.php';
+        $viewPath = '../app/views/' . $view . '.php';
 
-        if(file_exists($viewPath)){
-
-            require_once
-            $viewPath;
-
+        if (file_exists($viewPath)) {
+            // Use $data directly instead of extract()
+            require_once $viewPath;
         } else {
-
             self::notFound();
         }
     }
 }
-?>

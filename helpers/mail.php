@@ -378,6 +378,7 @@ function buildEmailTemplate(
 |--------------------------------------------------------------------------
 */
 
+if (!function_exists('sendOtpEmail')) {
 function sendOtpEmail(
     string $email,
     string $otp,
@@ -487,6 +488,7 @@ if (
 
         $plainText
     );
+}
 }
 
 /*

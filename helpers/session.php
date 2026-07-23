@@ -661,6 +661,7 @@ function destroyOtherSessions(
 |--------------------------------------------------------------------------
 */
 
+if (!function_exists('destroySession')) {
 function destroySession(): void
 {
     global $conn;
@@ -746,6 +747,7 @@ function destroySession(): void
     */
 
     session_destroy();
+}
 }
 
 /*

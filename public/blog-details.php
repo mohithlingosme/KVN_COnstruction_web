@@ -19,16 +19,13 @@ $slug = trim($_GET['slug']);
 
 $query = "
     SELECT
-        blog_posts.*,
-        blog_categories.category_name
-    FROM blog_posts
-
+        blogs.*,
+        blog_categories.category_name AS category_name
+    FROM blogs
     LEFT JOIN blog_categories
-        ON blog_posts.category_id = blog_categories.id
-
-    WHERE blog_posts.slug = :slug
-    AND blog_posts.status = 'published'
-
+        ON blogs.category_id = blog_categories.id
+    WHERE blogs.slug = :slug
+    AND blogs.status = 'published'
     LIMIT 1
 ";
 
@@ -259,7 +256,7 @@ include '../app/views/layouts/header.php';
 
                     $relatedQuery = "
                         SELECT *
-                        FROM blog_posts
+                        FROM blogs
                         WHERE status = 'published'
                         AND id != :id
                         ORDER BY published_at DESC
@@ -373,7 +370,7 @@ include '../app/views/layouts/header.php';
 
             $moreQuery = "
                 SELECT *
-                FROM blog_posts
+                FROM blogs
                 WHERE status = 'published'
                 AND id != :id
                 ORDER BY published_at DESC

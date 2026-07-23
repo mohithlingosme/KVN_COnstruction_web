@@ -1,14 +1,17 @@
 <?php
 
 require_once ROOT_PATH . '/config/app.php';
+require_once ROOT_PATH . '/app/models/Lead.php';
 
 class LeadController
 {
     private $conn;
+    private $leadModel;
 
     public function __construct($database)
     {
         $this->conn = $database;
+        $this->leadModel = new Lead($this->conn);
     }
 
     // =====================================================
@@ -21,69 +24,54 @@ class LeadController
             return;
         }
 
-        $full_name = trim($_POST['full_name'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $location = trim($_POST['location'] ?? '');
-        $plot_size = trim($_POST['plot_size'] ?? '');
-        $budget = trim($_POST['budget'] ?? '');
-        $service_required = trim($_POST['service_required'] ?? '');
-        $message = trim($_POST['message'] ?? '');
+        $data = [
+            'name' => trim($_POST['name'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'lead_type' => trim($_POST['lead_type'] ?? 'general'),
+            'lead_source' => trim($_POST['lead_source'] ?? 'website'),
+            'budget' => (float) ($_POST['budget'] ?? 0),
+            'status' => trim($_POST['status'] ?? 'new'),
+            'assigned_to' => trim($_POST['assigned_to'] ?? ''),
+            'message' => trim($_POST['message'] ?? '')
+        ];
 
         // VALIDATION
-        if (empty($full_name) || empty($phone)) {
-
+        if (empty($data['name']) || empty($data['phone'])) {
             $_SESSION['error'] = "Name and phone are required.";
+            if (function_exists('redirect')) {
+                redirect('admin/leads/create.php');
+            }
+            return false;
+        }
 
-            return;
+        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = "Invalid email address.";
+            if (function_exists('redirect')) {
+                redirect('admin/leads/create.php');
+            }
+            return false;
         }
 
         try {
-
-            $query = "
-                INSERT INTO leads (
-                    full_name,
-                    phone,
-                    email,
-                    location,
-                    plot_size,
-                    budget,
-                    service_required,
-                    message,
-                    status_id
-                )
-                VALUES (
-                    :full_name,
-                    :phone,
-                    :email,
-                    :location,
-                    :plot_size,
-                    :budget,
-                    :service_required,
-                    :message,
-                    1
-                )
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->bindParam(':full_name', $full_name);
-            $stmt->bindParam(':phone', $phone);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':location', $location);
-            $stmt->bindParam(':plot_size', $plot_size);
-            $stmt->bindParam(':budget', $budget);
-            $stmt->bindParam(':service_required', $service_required);
-            $stmt->bindParam(':message', $message);
-
-            $stmt->execute();
-
-            $_SESSION['success'] = "Lead created successfully.";
-
-        } catch (PDOException $e) {
-
-            $_SESSION['error'] = $e->getMessage();
+            if ($this->leadModel->create($data)) {
+                if (function_exists('logSecurityEvent') && function_exists('currentUserId')) {
+                    logSecurityEvent(currentUserId(), 'lead_created', 'info', 'Lead created: ' . $data['name']);
+                }
+                $_SESSION['success'] = "Lead created successfully.";
+                if (function_exists('redirect')) {
+                    redirect('admin/leads/index.php');
+                }
+                return true;
+            }
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Failed to create lead.";
         }
+
+        if (function_exists('redirect')) {
+            redirect('admin/leads/create.php');
+        }
+        return false;
     }
 
     // =====================================================
@@ -93,29 +81,9 @@ class LeadController
     public function index()
     {
         try {
-
-            $query = "
-                SELECT
-                    leads.*,
-                    lead_statuses.name AS status_name,
-                    users.full_name AS assigned_user
-                FROM leads
-                LEFT JOIN lead_statuses
-                    ON leads.status_id = lead_statuses.id
-                LEFT JOIN users
-                    ON leads.assigned_to = users.id
-                ORDER BY leads.id DESC
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->execute();
-
-            return $stmt->fetchAll();
-
-        } catch (PDOException $e) {
-
-            die($e->getMessage());
+            return $this->leadModel->all();
+        } catch (Exception $e) {
+            return [];
         }
     }
 
@@ -126,25 +94,9 @@ class LeadController
     public function show($id)
     {
         try {
-
-            $query = "
-                SELECT *
-                FROM leads
-                WHERE id = :id
-                LIMIT 1
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->bindParam(':id', $id);
-
-            $stmt->execute();
-
-            return $stmt->fetch();
-
-        } catch (PDOException $e) {
-
-            die($e->getMessage());
+            return $this->leadModel->find((int)$id);
+        } catch (Exception $e) {
+            return false;
         }
     }
 
@@ -158,46 +110,54 @@ class LeadController
             return;
         }
 
-        $full_name = trim($_POST['full_name'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $location = trim($_POST['location'] ?? '');
-        $budget = trim($_POST['budget'] ?? '');
-        $status_id = trim($_POST['status_id'] ?? 1);
+        $data = [
+            'name' => trim($_POST['name'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'lead_type' => trim($_POST['lead_type'] ?? 'general'),
+            'lead_source' => trim($_POST['lead_source'] ?? 'website'),
+            'budget' => (float) ($_POST['budget'] ?? 0),
+            'status' => trim($_POST['status'] ?? 'new'),
+            'assigned_to' => trim($_POST['assigned_to'] ?? ''),
+            'message' => trim($_POST['message'] ?? '')
+        ];
+
+        // VALIDATION
+        if (empty($data['name']) || empty($data['phone'])) {
+            $_SESSION['error'] = "Name and phone are required.";
+            if (function_exists('redirect')) {
+                redirect('admin/leads/edit.php?id=' . $id);
+            }
+            return false;
+        }
+
+        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['error'] = "Invalid email address.";
+            if (function_exists('redirect')) {
+                redirect('admin/leads/edit.php?id=' . $id);
+            }
+            return false;
+        }
 
         try {
-
-            $query = "
-                UPDATE leads
-                SET
-                    full_name = :full_name,
-                    phone = :phone,
-                    email = :email,
-                    location = :location,
-                    budget = :budget,
-                    status_id = :status_id,
-                    updated_at = NOW()
-                WHERE id = :id
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->bindParam(':full_name', $full_name);
-            $stmt->bindParam(':phone', $phone);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':location', $location);
-            $stmt->bindParam(':budget', $budget);
-            $stmt->bindParam(':status_id', $status_id);
-            $stmt->bindParam(':id', $id);
-
-            $stmt->execute();
-
-            $_SESSION['success'] = "Lead updated successfully.";
-
-        } catch (PDOException $e) {
-
-            $_SESSION['error'] = $e->getMessage();
+            if ($this->leadModel->update((int)$id, $data)) {
+                if (function_exists('logSecurityEvent') && function_exists('currentUserId')) {
+                    logSecurityEvent(currentUserId(), 'lead_updated', 'info', 'Lead updated: ' . $data['name']);
+                }
+                $_SESSION['success'] = "Lead updated successfully.";
+                if (function_exists('redirect')) {
+                    redirect('admin/leads/index.php');
+                }
+                return true;
+            }
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Failed to update lead.";
         }
+
+        if (function_exists('redirect')) {
+            redirect('admin/leads/edit.php?id=' . $id);
+        }
+        return false;
     }
 
     // =====================================================
@@ -207,24 +167,17 @@ class LeadController
     public function delete($id)
     {
         try {
-
-            $query = "
-                DELETE FROM leads
-                WHERE id = :id
-            ";
-
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->bindParam(':id', $id);
-
-            $stmt->execute();
-
-            $_SESSION['success'] = "Lead deleted successfully.";
-
-        } catch (PDOException $e) {
-
-            $_SESSION['error'] = $e->getMessage();
+            if ($this->leadModel->delete((int)$id)) {
+                if (function_exists('logSecurityEvent') && function_exists('currentUserId')) {
+                    logSecurityEvent(currentUserId(), 'lead_deleted', 'warning', 'Lead ID deleted: ' . $id);
+                }
+                $_SESSION['success'] = "Lead deleted successfully.";
+                return true;
+            }
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Failed to delete lead.";
         }
+        return false;
     }
 }
 ?>

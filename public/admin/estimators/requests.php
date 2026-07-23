@@ -579,7 +579,7 @@ foreach($pipelineStages as $stage){
 
                                             echo escape(
 
-                                                $item['name']
+                                                $item['full_name']
                                                 ??
                                                 'N/A'
                                             );
@@ -674,7 +674,7 @@ foreach($pipelineStages as $stage){
 
                                                 echo number_format(
 
-                                                    $item['area']
+                                                    $item['plot_area']
                                                     ??
                                                     0
                                                 );

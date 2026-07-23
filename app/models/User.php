@@ -515,11 +515,10 @@ class User
         if ((int)$row['attempts'] >= 5) {
 
             logSecurityEvent(
-                'OTP_LIMIT_EXCEEDED',
-                'OTP attempts exceeded',
-                [
-                    'user_id' => $userId
-                ]
+                $userId,
+                'otp_limit_exceeded',
+                'warning',
+                'OTP attempts exceeded for user_id: ' . $userId
             );
 
             return false;

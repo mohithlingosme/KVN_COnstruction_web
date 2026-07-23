@@ -29,7 +29,11 @@ $conn->prepare($aboutQuery);
 $aboutStmt->execute();
 
 $about =
-$aboutStmt->fetch();
+$aboutStmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$about) {
+    $about = [];
+}
 
 // =====================================
 // ADVANTAGES
@@ -108,13 +112,13 @@ include '../app/views/layouts/header.php';
 
                 <h1>
 
-                    <?php echo escape($about['hero_title']); ?>
+                    <?php echo escape($about['hero_title'] ?? 'About KVN Construction'); ?>
 
                 </h1>
 
                 <p class="lead mt-4">
 
-                    <?php echo nl2br($about['hero_description']); ?>
+                    <?php echo nl2br($about['hero_description'] ?? ''); ?>
 
                 </p>
 
@@ -125,7 +129,7 @@ include '../app/views/layouts/header.php';
             <div class="col-lg-6">
 
                 <img
-                    src="<?php echo base_url($about['hero_image']); ?>"
+                    src="<?php echo base_url($about['hero_image'] ?? ''); ?>"
                     class="img-fluid rounded-4 shadow"
                     alt="About KVN Construction"
                 >
@@ -150,13 +154,13 @@ include '../app/views/layouts/header.php';
 
             <h2 class="mb-4">
 
-                <?php echo e($about['vision_title']); ?>
+                <?php echo e($about['vision_title'] ?? 'Our Vision'); ?>
 
             </h2>
 
             <p>
 
-                <?php echo nl2br($about['vision_description']); ?>
+                <?php echo nl2br($about['vision_description'] ?? ''); ?>
 
             </p>
 
@@ -323,21 +327,21 @@ include '../app/views/layouts/header.php';
 
             <h2>
 
-                <?php echo e($about['cta_title']); ?>
+                <?php echo e($about['cta_title'] ?? 'Let\'s Build Together'); ?>
 
             </h2>
 
             <p>
 
-                <?php echo e($about['cta_description']); ?>
+                <?php echo e($about['cta_description'] ?? 'Contact us today to start your construction journey.'); ?>
 
             </p>
 
             <a
-                href="<?php echo escapeAttr($about['cta_button_link']); ?>"
+                href="<?php echo escapeAttr($about['cta_button_link'] ?? '#'); ?>"
             >
 
-                <?php echo e($about['cta_button_text']); ?>
+                <?php echo e($about['cta_button_text'] ?? 'Contact Us'); ?>
 
             </a>
 

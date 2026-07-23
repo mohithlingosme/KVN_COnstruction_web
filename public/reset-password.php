@@ -35,9 +35,13 @@ require_once ROOT_PATH . '/helpers/rateLimiter.php';
 
 require_once ROOT_PATH . '/app/models/User.php';
 
-require_once ROOT_PATH . '/app/controllers/AuthController.php';
+require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
 
 require_once ROOT_PATH . '/middleware/guest.php';
+
+require_once ROOT_PATH . '/app/security/SessionManager.php';
+
+use App\Security\SessionManager;
 
 /*
 |--------------------------------------------------------------------------
@@ -223,8 +227,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
+    $userModel = new \App\Models\User($GLOBALS['conn']);
+
     $updated =
-    User::updatePassword(
+    $userModel->updatePassword(
 
         $userId,
 
@@ -241,19 +247,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /*
     |--------------------------------------------------------------------------
-    | INVALIDATE OLD SESSIONS
-    |--------------------------------------------------------------------------
-    */
-
-    User::invalidateUserSessions($userId);
-
-    /*
-    |--------------------------------------------------------------------------
     | CLEAR RESET OTP
     |--------------------------------------------------------------------------
     */
 
-    User::clearPasswordResetOtp($userId);
+    $userModel->expireOtp($userId, 'password_reset');
 
     /*
     |--------------------------------------------------------------------------
@@ -261,49 +259,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    logSecurityEvent(
-
-        'PASSWORD_RESET_SUCCESS',
-
-        [
-
-            'user_id' =>
+    if (function_exists('logSecurityEvent')) {
+        logSecurityEvent(
             $userId,
-
-            'ip' =>
-            $_SERVER['REMOTE_ADDR'] ?? ''
-        ]
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | DESTROY RESET SESSION
-    |--------------------------------------------------------------------------
-    */
-
-    unset($_SESSION['password_reset_user_id']);
-
-    unset($_SESSION['password_reset_email']);
-
-    unset($_SESSION['password_reset_verified']);
-
-    unset($_SESSION['password_reset_created_at']);
+            'password_reset_success',
+            'info',
+            'Password reset completed for user ID: ' . $userId
+        );
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | REGENERATE SESSION
+    | COMPLETELY DESTROY ALL ACTIVE SESSIONS
+    |--------------------------------------------------------------------------
+    | Uses SessionManager to delete ALL sessions for this user from database
+    | AND force-destroy the current PHP session entirely.
+    | This forces the user to re-authenticate on all devices.
     |--------------------------------------------------------------------------
     */
 
-    session_regenerate_id(true);
+    $sessionManager = new SessionManager($GLOBALS['conn']);
+    $sessionManager->destroyAllUserSessions($userId);
 
     /*
     |--------------------------------------------------------------------------
     | SUCCESS
     |--------------------------------------------------------------------------
     */
-
-    incrementRateLimit($rateKey);
 
     $_SESSION['success'] =
     'Password reset successful. Please login.';

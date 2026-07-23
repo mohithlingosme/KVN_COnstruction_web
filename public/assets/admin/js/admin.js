@@ -1,697 +1,158 @@
-/* =========================================================
-   KVN CONSTRUCTION PLATFORM
-   COMPLETE ADMIN PANEL SCRIPT
-========================================================= */
+/**
+ * KVN Construction - Admin Panel JavaScript
+ * Includes: dashboard widgets, table interactions, form validation
+ */
 
-document.addEventListener('DOMContentLoaded', function(){
+(function() {
+    'use strict';
 
-    initializeSidebar();
-
-    initializeDropdowns();
-
-    initializeAlerts();
-
-    initializeDeleteConfirm();
-
-    initializeTooltips();
-
-    initializeImagePreview();
-
-    initializeTableSearch();
-
-    initializeAutoDismissAlerts();
-
-    initializeCharacterCounter();
-
-    initializeSelectAll();
-
-    initializeFormValidation();
-
-    initializeModalClose();
-
-    initializeMobileSidebarClose();
-});
-
-/* =========================================================
-   SIDEBAR TOGGLE
-========================================================= */
-
-function initializeSidebar()
-{
-    const sidebar =
-    document.querySelector('.admin-sidebar');
-
-    const toggleBtn =
-    document.getElementById('sidebarToggle');
-
-    if(!sidebar || !toggleBtn){
-
-        return;
+    // =============================================
+    // SIDEBAR TOGGLE
+    // =============================================
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            if (window.matchMedia('(max-width: 991px)').matches) {
+                sidebar.classList.toggle('active');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                document.body.classList.toggle('sidebar-collapsed');
+            }
+        });
     }
 
-    toggleBtn.addEventListener('click', function(){
-
-        sidebar.classList.toggle('active');
-    });
-}
-
-/* =========================================================
-   MOBILE SIDEBAR CLOSE
-========================================================= */
-
-function initializeMobileSidebarClose()
-{
-    document.addEventListener('click', function(e){
-
-        const sidebar =
-        document.querySelector('.admin-sidebar');
-
-        const toggle =
-        document.getElementById('sidebarToggle');
-
-        if(
-
-            window.innerWidth < 992
-
-            &&
-
-            sidebar
-
-            &&
-
-            sidebar.classList.contains('active')
-
-            &&
-
-            !sidebar.contains(e.target)
-
-            &&
-
-            !toggle.contains(e.target)
-        ){
-
-            sidebar.classList.remove('active');
-        }
-    });
-}
-
-/* =========================================================
-   DROPDOWNS
-========================================================= */
-
-function initializeDropdowns()
-{
-    const dropdowns =
-    document.querySelectorAll('.dropdown-toggle');
-
-    dropdowns.forEach(function(dropdown){
-
-        dropdown.addEventListener('click', function(e){
-
-            e.preventDefault();
-
-            e.stopPropagation();
-
-            const parent =
-            this.parentElement;
-
-            closeAllDropdowns();
-
-            parent.classList.toggle('show');
+    // =============================================
+    // TABLE CHECKBOX SELECTALL
+    // =============================================
+    document.querySelectorAll('.table-select-all').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const table = this.closest('table');
+            if (table) {
+                const checkboxes = table.querySelectorAll('.table-row-select');
+                checkboxes.forEach(cb => cb.checked = this.checked);
+            }
         });
     });
 
-    document.addEventListener('click', function(){
-
-        closeAllDropdowns();
-    });
-}
-
-function closeAllDropdowns()
-{
-    document.querySelectorAll('.dropdown')
-
-    .forEach(function(dropdown){
-
-        dropdown.classList.remove('show');
-    });
-}
-
-/* =========================================================
-   ALERT CLOSE
-========================================================= */
-
-function initializeAlerts()
-{
-    document.addEventListener('click', function(e){
-
-        if(e.target.classList.contains('alert-close')){
-
-            const alert =
-            e.target.closest('.alert');
-
-            dismissElement(alert);
-        }
-    });
-}
-
-/* =========================================================
-   AUTO DISMISS ALERTS
-========================================================= */
-
-function initializeAutoDismissAlerts()
-{
-    const alerts =
-    document.querySelectorAll('.alert-auto-dismiss');
-
-    alerts.forEach(function(alert){
-
-        setTimeout(function(){
-
-            dismissElement(alert);
-
-        },4000);
-    });
-}
-
-/* =========================================================
-   DISMISS ELEMENT
-========================================================= */
-
-function dismissElement(element)
-{
-    if(!element){
-
-        return;
-    }
-
-    element.style.opacity = '0';
-
-    element.style.transition = '0.3s';
-
-    setTimeout(function(){
-
-        element.remove();
-
-    },300);
-}
-
-/* =========================================================
-   DELETE CONFIRMATION
-========================================================= */
-
-function initializeDeleteConfirm()
-{
-    document.addEventListener('click', function(e){
-
-        const button =
-        e.target.closest('.btn-delete');
-
-        if(button){
-
-            const message =
-            button.dataset.message
-            ||
-            'Are you sure you want to delete this item?';
-
-            const confirmed =
-            confirm(message);
-
-            if(!confirmed){
-
+    // =============================================
+    // CONFIRM DIALOGS
+    // =============================================
+    document.querySelectorAll('[data-confirm]').forEach(el => {
+        el.addEventListener('click', function(e) {
+            const message = this.dataset.confirm || 'Are you sure?';
+            if (!confirm(message)) {
                 e.preventDefault();
-            }
-        }
-    });
-}
-
-/* =========================================================
-   TOOLTIPS
-========================================================= */
-
-function initializeTooltips()
-{
-    if(typeof bootstrap === 'undefined'){
-
-        return;
-    }
-
-    const tooltipTriggerList =
-    [].slice.call(
-
-        document.querySelectorAll(
-
-            '[data-bs-toggle="tooltip"]'
-        )
-    );
-
-    tooltipTriggerList.map(function(element){
-
-        return new bootstrap.Tooltip(element);
-    });
-}
-
-/* =========================================================
-   IMAGE PREVIEW
-========================================================= */
-
-function initializeImagePreview()
-{
-    const imageInputs =
-    document.querySelectorAll('.image-input');
-
-    imageInputs.forEach(function(input){
-
-        input.addEventListener('change', function(e){
-
-            const file =
-            e.target.files[0];
-
-            if(!file){
-
-                return;
-            }
-
-            if(!file.type.startsWith('image/')){
-
-                showToast(
-
-                    'Invalid image file.',
-
-                    'danger'
-                );
-
-                return;
-            }
-
-            const reader =
-            new FileReader();
-
-            reader.onload = function(event){
-
-                const preview =
-                input.parentElement.querySelector(
-                    '.image-preview'
-                );
-
-                if(preview){
-
-                    preview.src =
-                    event.target.result;
-
-                    preview.style.display =
-                    'block';
-                }
-            };
-
-            reader.readAsDataURL(file);
-        });
-    });
-}
-
-/* =========================================================
-   TABLE SEARCH
-========================================================= */
-
-function initializeTableSearch()
-{
-    const searchInputs =
-    document.querySelectorAll('.table-search');
-
-    searchInputs.forEach(function(input){
-
-        input.addEventListener(
-
-            'keyup',
-
-            debounce(function(){
-
-                const value =
-                input.value.toLowerCase();
-
-                const table =
-                document.querySelector(
-                    input.dataset.table
-                );
-
-                if(!table){
-
-                    return;
-                }
-
-                const rows =
-                table.querySelectorAll('tbody tr');
-
-                rows.forEach(function(row){
-
-                    const text =
-                    row.innerText.toLowerCase();
-
-                    row.style.display =
-
-                    text.includes(value)
-
-                    ? ''
-
-                    : 'none';
-                });
-
-            },300)
-        );
-    });
-}
-
-/* =========================================================
-   DEBOUNCE
-========================================================= */
-
-function debounce(callback, delay)
-{
-    let timeout;
-
-    return function(){
-
-        clearTimeout(timeout);
-
-        timeout = setTimeout(
-
-            callback,
-
-            delay
-        );
-    };
-}
-
-/* =========================================================
-   AJAX HELPER
-========================================================= */
-
-async function ajaxRequest(
-
-    url,
-
-    method = 'GET',
-
-    data = null
-)
-{
-    showLoader();
-
-    const csrfToken =
-    document.querySelector(
-
-        'meta[name="csrf-token"]'
-    )?.content;
-
-    const options = {
-
-        method: method,
-
-        headers: {
-
-            'X-Requested-With':
-            'XMLHttpRequest',
-
-            'Accept':
-            'application/json'
-        }
-    };
-
-    if(csrfToken){
-
-        options.headers['X-CSRF-TOKEN'] =
-        csrfToken;
-    }
-
-    if(data){
-
-        options.headers['Content-Type'] =
-        'application/json';
-
-        options.body =
-        JSON.stringify(data);
-    }
-
-    try {
-
-        const response =
-        await fetch(url, options);
-
-        const result =
-        await response.json();
-
-        hideLoader();
-
-        return result;
-
-    } catch(error){
-
-        hideLoader();
-
-        console.error(error);
-
-        return {
-
-            success:false,
-
-            message:'Request failed.'
-        };
-    }
-}
-
-/* =========================================================
-   LOADER
-========================================================= */
-
-function showLoader()
-{
-    const loader =
-    document.getElementById('globalLoader');
-
-    if(loader){
-
-        loader.style.display = 'flex';
-    }
-}
-
-function hideLoader()
-{
-    const loader =
-    document.getElementById('globalLoader');
-
-    if(loader){
-
-        loader.style.display = 'none';
-    }
-}
-
-/* =========================================================
-   TOAST
-========================================================= */
-
-function showToast(message, type = 'success')
-{
-    const toast =
-    document.createElement('div');
-
-    toast.className =
-    `admin-toast ${type}`;
-
-    toast.innerHTML = `
-        <div class="toast-content">
-            ${message}
-        </div>
-    `;
-
-    document.body.appendChild(toast);
-
-    setTimeout(function(){
-
-        toast.classList.add('show');
-
-    },100);
-
-    setTimeout(function(){
-
-        toast.classList.remove('show');
-
-        setTimeout(function(){
-
-            toast.remove();
-
-        },300);
-
-    },4000);
-}
-
-/* =========================================================
-   PASSWORD TOGGLE
-========================================================= */
-
-function togglePassword(inputId, iconId)
-{
-    const input =
-    document.getElementById(inputId);
-
-    const icon =
-    document.getElementById(iconId);
-
-    if(!input){
-
-        return;
-    }
-
-    if(input.type === 'password'){
-
-        input.type = 'text';
-
-        if(icon){
-
-            icon.classList.remove('bi-eye');
-
-            icon.classList.add('bi-eye-slash');
-        }
-
-    }else{
-
-        input.type = 'password';
-
-        if(icon){
-
-            icon.classList.remove('bi-eye-slash');
-
-            icon.classList.add('bi-eye');
-        }
-    }
-}
-
-/* =========================================================
-   CHARACTER COUNTER
-========================================================= */
-
-function initializeCharacterCounter()
-{
-    const inputs =
-    document.querySelectorAll('[data-counter]');
-
-    inputs.forEach(function(input){
-
-        const counter =
-        document.querySelector(
-            input.dataset.counter
-        );
-
-        if(counter){
-
-            counter.innerText =
-            input.value.length;
-        }
-
-        input.addEventListener('input', function(){
-
-            if(counter){
-
-                counter.innerText =
-                input.value.length;
+                return false;
             }
         });
     });
-}
 
-/* =========================================================
-   SLUG GENERATOR
-========================================================= */
+    // =============================================
+    // AUTO-HIDE ALERTS
+    // =============================================
+    document.querySelectorAll('.alert-auto-hide').forEach(alert => {
+        const duration = parseInt(alert.dataset.duration) || 5000;
+        setTimeout(() => {
+            alert.style.transition = 'opacity 0.5s ease';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        }, duration);
+    });
 
-function generateSlug(input, targetId)
-{
-    const slug =
-    input.value
-
-    .toLowerCase()
-
-    .trim()
-
-    .replace(/[^\w ]+/g,'')
-
-    .replace(/\s+/g,'-');
-
-    const target =
-    document.getElementById(targetId);
-
-    if(target){
-
-        target.value = slug;
-    }
-}
-
-/* =========================================================
-   SELECT ALL
-========================================================= */
-
-function initializeSelectAll()
-{
-    const selectAll =
-    document.querySelector('.select-all');
-
-    if(!selectAll){
-
-        return;
-    }
-
-    selectAll.addEventListener('change', function(){
-
-        document.querySelectorAll('.row-checkbox')
-
-        .forEach(function(checkbox){
-
-            checkbox.checked =
-            selectAll.checked;
+    // =============================================
+    // SEARCH TABLE FILTER
+    // =============================================
+    document.querySelectorAll('[data-table-search]').forEach(input => {
+        input.addEventListener('keyup', function() {
+            const tableId = this.dataset.tableSearch;
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            
+            const filter = this.value.toLowerCase();
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
         });
     });
-}
 
-/* =========================================================
-   FORM VALIDATION
-========================================================= */
+    // =============================================
+    // PASSWORD STRENGTH INDICATOR
+    // =============================================
+    document.querySelectorAll('[data-password-strength]').forEach(input => {
+        const meter = document.getElementById(input.dataset.passwordStrength);
+        if (!meter) return;
+        
+        input.addEventListener('keyup', function() {
+            const val = this.value;
+            let strength = 0;
+            
+            if (val.length >= 8) strength += 25;
+            if (val.length >= 12) strength += 15;
+            if (/[A-Z]/.test(val)) strength += 20;
+            if (/[a-z]/.test(val)) strength += 10;
+            if (/[0-9]/.test(val)) strength += 15;
+            if (/[^A-Za-z0-9]/.test(val)) strength += 15;
+            
+            meter.value = Math.min(strength, 100);
+            
+            const label = meter.nextElementSibling;
+            if (label && label.classList.contains('strength-label')) {
+                if (strength < 40) label.textContent = 'Weak';
+                else if (strength < 70) label.textContent = 'Medium';
+                else label.textContent = 'Strong';
+                
+                label.style.color = strength < 40 ? '#dc2626' : strength < 70 ? '#f59e0b' : '#16a34a';
+            }
+        });
+    });
 
-function initializeFormValidation()
-{
-    const forms =
-    document.querySelectorAll('.needs-validation');
-
-    forms.forEach(function(form){
-
-        form.addEventListener('submit', function(e){
-
-            if(!form.checkValidity()){
-
+    // =============================================
+    // FORM VALIDATION HELPERS
+    // =============================================
+    document.querySelectorAll('form.needs-validation').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            if (!this.checkValidity()) {
                 e.preventDefault();
-
                 e.stopPropagation();
             }
-
-            form.classList.add('was-validated');
+            this.classList.add('was-validated');
         });
     });
-}
 
-/* =========================================================
-   MODAL CLOSE
-========================================================= */
-
-function initializeModalClose()
-{
-    document.addEventListener('click', function(e){
-
-        if(e.target.classList.contains('modal-close')){
-
-            const modal =
-            e.target.closest('.modal');
-
-            if(modal){
-
-                modal.style.display = 'none';
+    // =============================================
+    // CHART.JS FALLBACK (simple stats display)
+    // =============================================
+    function initSimpleStats() {
+        document.querySelectorAll('.stat-card').forEach(card => {
+            const value = card.querySelector('.stat-value');
+            if (value && value.dataset.count) {
+                animateCount(value, parseInt(value.dataset.count));
             }
-        }
-    });
-}
+        });
+    }
+
+    function animateCount(el, target) {
+        let current = 0;
+        const increment = Math.ceil(target / 30);
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                clearInterval(timer);
+            }
+            el.textContent = current.toLocaleString('en-IN');
+        }, 50);
+    }
+
+    if (document.readyState === 'complete') {
+        initSimpleStats();
+    } else {
+        window.addEventListener('load', initSimpleStats);
+    }
+
+})();

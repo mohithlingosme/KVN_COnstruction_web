@@ -27,13 +27,8 @@ class Lead extends Model
         $query = "
             SELECT
                 leads.*,
-                leads.full_name AS name,
-                lead_statuses.name AS status,
-                lead_statuses.name AS status_name,
                 users.full_name AS assigned_user
             FROM leads
-            LEFT JOIN lead_statuses
-                ON leads.status_id = lead_statuses.id
             LEFT JOIN users
                 ON leads.assigned_to = users.id
             ORDER BY leads.id DESC
@@ -56,13 +51,8 @@ class Lead extends Model
         $query = "
             SELECT
                 leads.*,
-                leads.full_name AS name,
-                COALESCE(lead_statuses.name, 'new') AS status,
-                lead_statuses.name AS status_name,
                 users.full_name AS assigned_user
             FROM leads
-            LEFT JOIN lead_statuses
-                ON leads.status_id = lead_statuses.id
             LEFT JOIN users
                 ON leads.assigned_to = users.id
             ORDER BY leads.id DESC
@@ -100,28 +90,28 @@ class Lead extends Model
     {
         $query = "
             INSERT INTO {$this->table} (
-                full_name,
+                name,
                 phone,
                 email,
-                location,
-                plot_size,
+                lead_type,
+                lead_source,
                 budget,
-                service_required,
-                source,
+                status,
+                assigned_to,
                 message,
-                status_id
+                created_at
             )
             VALUES (
-                :full_name,
+                :name,
                 :phone,
                 :email,
-                :location,
-                :plot_size,
+                :lead_type,
+                :lead_source,
                 :budget,
-                :service_required,
-                :source,
+                :status,
+                :assigned_to,
                 :message,
-                :status_id
+                NOW()
             )
         ";
 
@@ -130,25 +120,23 @@ class Lead extends Model
 
         return $this->execute($stmt, [
 
-            ':full_name' => $data['full_name'] ?? '',
+            ':name' => $data['name'] ?? '',
 
             ':phone' => $data['phone'] ?? '',
 
             ':email' => $data['email'] ?? '',
 
-            ':location' => $data['location'] ?? '',
+            ':lead_type' => $data['lead_type'] ?? 'general',
 
-            ':plot_size' => $data['plot_size'] ?? '',
+            ':lead_source' => $data['lead_source'] ?? 'website',
 
-            ':budget' => $data['budget'] ?? '',
+            ':budget' => $data['budget'] ?? 0,
 
-            ':service_required' => $data['service_required'] ?? '',
+            ':status' => $data['status'] ?? 'new',
 
-            ':source' => $data['source'] ?? '',
+            ':assigned_to' => !empty($data['assigned_to']) ? $data['assigned_to'] : null,
 
-            ':message' => $data['message'] ?? '',
-
-            ':status_id' => $data['status_id'] ?? 1
+            ':message' => $data['message'] ?? ''
         ]);
     }
 
@@ -161,15 +149,15 @@ class Lead extends Model
         $query = "
             UPDATE {$this->table}
             SET
-                full_name = :full_name,
+                name = :name,
                 phone = :phone,
                 email = :email,
-                location = :location,
+                lead_type = :lead_type,
+                lead_source = :lead_source,
                 budget = :budget,
-                service_required = :service_required,
-                status_id = :status_id,
+                status = :status,
                 assigned_to = :assigned_to,
-                updated_at = NOW()
+                message = :message
             WHERE id = :id
         ";
 
@@ -178,21 +166,23 @@ class Lead extends Model
 
         return $this->execute($stmt, [
 
-            ':full_name' => $data['full_name'] ?? '',
+            ':name' => $data['name'] ?? '',
 
             ':phone' => $data['phone'] ?? '',
 
             ':email' => $data['email'] ?? '',
 
-            ':location' => $data['location'] ?? '',
+            ':lead_type' => $data['lead_type'] ?? 'general',
 
-            ':budget' => $data['budget'] ?? '',
+            ':lead_source' => $data['lead_source'] ?? 'website',
 
-            ':service_required' => $data['service_required'] ?? '',
+            ':budget' => $data['budget'] ?? 0,
 
-            ':status_id' => $data['status_id'] ?? 1,
+            ':status' => $data['status'] ?? 'new',
 
-            ':assigned_to' => $data['assigned_to'] ?? null,
+            ':assigned_to' => !empty($data['assigned_to']) ? $data['assigned_to'] : null,
+
+            ':message' => $data['message'] ?? '',
 
             ':id' => $id
         ]);
@@ -220,12 +210,12 @@ class Lead extends Model
     // GET LEADS BY STATUS
     // =====================================================
 
-    public function getByStatus($statusId)
+    public function getByStatus($status)
     {
         $query = "
             SELECT *
             FROM {$this->table}
-            WHERE status_id = :status_id
+            WHERE status = :status
             ORDER BY id DESC
         ";
 
@@ -234,7 +224,7 @@ class Lead extends Model
 
         $this->execute($stmt, [
 
-            ':status_id' => $statusId
+            ':status' => $status
         ]);
 
         return $this->fetchAll($stmt);

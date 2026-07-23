@@ -34,41 +34,16 @@ $pageTitle =
 |--------------------------------------------------------------------------
 */
 
+require_once '../../../app/controllers/admin/LeadController.php';
+
+$controller = new LeadController($conn);
+
 $leads = [];
 
 try {
-
-    $query = "
-
-        SELECT
-            id,
-            name,
-            email,
-            phone,
-            lead_source,
-            lead_type,
-            status,
-            budget,
-            assigned_to,
-            created_at
-
-        FROM leads
-
-        ORDER BY id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
-    $leads =
-    $stmt->fetchAll();
-
+    $leads = $controller->index();
 } catch(Exception $e){
-
-    $_SESSION['error'] =
-    'Failed to fetch leads.';
+    $_SESSION['error'] = 'Failed to fetch leads.';
 }
 
 /*

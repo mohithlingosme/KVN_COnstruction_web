@@ -97,7 +97,12 @@ class View
         $data = []
     )
     {
-        extract($data);
+        // Validate partial name to prevent directory traversal
+        if (preg_match('/[\/\\\\]/', $partial)) {
+            throw new InvalidArgumentException(
+                "Invalid partial name: {$partial}"
+            );
+        }
 
         $partialPath =
         '../app/views/' .
@@ -106,6 +111,7 @@ class View
 
         if(file_exists($partialPath)){
 
+            // Use $data directly instead of extract()
             require $partialPath;
 
         } else {

@@ -4,66 +4,15 @@ require_once '../config/app.php';
 
 $pageTitle = "Construction Services | " . APP_NAME;
 
+$metaDescription = "Complete construction solutions in Bengaluru - residential villas, commercial projects, interior design, renovation, and turnkey construction by KVN Construction.";
+
+include '../app/views/layouts/header.php';
+
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        <?php echo e($pageTitle); ?>
-    </title>
-
-    <!-- GOOGLE FONT -->
-
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-    >
-
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    >
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
-
-    <!-- BOOTSTRAP -->
-
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
-
-    <!-- ICONS -->
-
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-    >
-
-    <!-- CUSTOM CSS -->
-    <link rel="stylesheet" href="<?php echo base_url('assets/css/style.css'); ?>">
-
-</head>
-
-<body>
-
-<?php include '../app/views/layouts/navbar.php'; ?>
-
+<!-- ================================= -->
 <!-- HERO -->
+<!-- ================================= -->
 
 <section class="hero">
 
@@ -72,7 +21,7 @@ $pageTitle = "Construction Services | " . APP_NAME;
         <h1>
 
             Complete
-            <span>Construction Solutions</span>
+            <span class="text-gradient">Construction Solutions</span>
             For Modern Bengaluru
 
         </h1>
@@ -91,7 +40,9 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
 </section>
 
+<!-- ================================= -->
 <!-- SERVICES -->
+<!-- ================================= -->
 
 <section>
 
@@ -315,10 +266,6 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
             </div>
 
-            <!-- SERVICE 4 ends -->
-
-            </div><!-- /.col-lg-6#renovation -->
-
             <!-- SERVICE 5 -->
 
             <div class="col-lg-6" id="turnkey">
@@ -371,7 +318,13 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
         </div>
 
+    </div>
+
+</section>
+
+<!-- ================================= -->
 <!-- WHY US -->
+<!-- ================================= -->
 
 <section class="why-us">
 
@@ -473,7 +426,9 @@ $pageTitle = "Construction Services | " . APP_NAME;
 
 </section>
 
+<!-- ================================= -->
 <!-- CTA -->
+<!-- ================================= -->
 
 <section>
 
@@ -510,11 +465,3 @@ $pageTitle = "Construction Services | " . APP_NAME;
 </section>
 
 <?php include '../app/views/layouts/footer.php'; ?>
-
-<!-- BOOTSTRAP -->
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-
-</html>

@@ -2,908 +2,417 @@
 
 declare(strict_types=1);
 
-session_start();
-
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| KVN CONSTRUCTION PLATFORM
+|--------------------------------------------------------------------------
+| CLIENT PROJECT TIMELINE & PROGRESS
+|--------------------------------------------------------------------------
+| File: /public/client/timeline/progress.php
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['client_id'])) {
+require_once '../../../config/app.php';
+require_once '../../../middleware/client.php';
+require_once '../../../helpers/security.php';
+require_once '../../../helpers/formatter.php';
 
-    header('Location: ../login.php');
-    exit();
+/*
+|--------------------------------------------------------------------------
+| PAGE TITLE
+|--------------------------------------------------------------------------
+*/
+
+$pageTitle = 'Project Progress | ' . APP_NAME;
+
+/*
+|--------------------------------------------------------------------------
+| CLIENT INFO
+|--------------------------------------------------------------------------
+*/
+
+$clientId = (int) ($_SESSION['user_id'] ?? 0);
+$clientName = $_SESSION['user_name'] ?? 'Client';
+
+/*
+|--------------------------------------------------------------------------
+| PROJECT ID
+|--------------------------------------------------------------------------
+*/
+
+$projectId = (int) ($_GET['project_id'] ?? 0);
+
+if ($projectId <= 0) {
+    $_SESSION['error'] = 'Invalid project ID.';
+    redirect('client/dashboard.php');
 }
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| FETCH PROJECT
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS clients (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        full_name VARCHAR(255) NOT NULL,
-
-        email VARCHAR(255) NOT NULL UNIQUE,
-
-        phone VARCHAR(20) DEFAULT NULL,
-
-        company_name VARCHAR(255) DEFAULT NULL,
-
-        address TEXT DEFAULT NULL,
-
-        city VARCHAR(100) DEFAULT NULL,
-
-        state VARCHAR(100) DEFAULT NULL,
-
-        pincode VARCHAR(20) DEFAULT NULL,
-
-        profile_image VARCHAR(255) DEFAULT NULL,
-
-        password VARCHAR(255) DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| CLIENT DETAILS
-|--------------------------------------------------------------------------
-*/
-
-$clientId =
-    (int) $_SESSION['client_id'];
-
-$clientName =
-    $_SESSION['client_name'] ?? 'Client';
-
-/*
-|--------------------------------------------------------------------------
-| UPLOAD DIRECTORY
-|--------------------------------------------------------------------------
-*/
-
-$uploadDir =
-    '../../uploads/profile/';
-
-if (!is_dir($uploadDir)) {
-
-    mkdir(
-        $uploadDir,
-        0777,
-        true
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH CLIENT
-|--------------------------------------------------------------------------
-*/
-
-$stmt =
-    $conn->prepare(
-        "
-        SELECT *
-        FROM clients
-        WHERE id = ?
+$project = null;
+try {
+    $query = "
+        SELECT p.*, 
+               (SELECT COUNT(*) FROM project_milestones WHERE project_id = p.id AND status = 'completed') as completed_milestones,
+               (SELECT COUNT(*) FROM project_milestones WHERE project_id = p.id) as total_milestones
+        FROM projects p
+        WHERE p.id = :project_id AND p.client_id = :client_id
         LIMIT 1
-        "
-    );
+    ";
+    $stmt = $conn->prepare($query);
+    $stmt->execute([':project_id' => $projectId, ':client_id' => $clientId]);
+    $project = $stmt->fetch();
 
-$stmt->bind_param(
-    'i',
-    $clientId
-);
-
-$stmt->execute();
-
-$result =
-    $stmt->get_result();
-
-$client =
-    $result->fetch_assoc();
+    if (!$project) {
+        $_SESSION['error'] = 'Project not found or access denied.';
+        redirect('client/dashboard.php');
+    }
+} catch (Exception $e) {
+    $_SESSION['error'] = 'Failed to load project.';
+    redirect('client/dashboard.php');
+}
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE UPDATE
+| FETCH MILESTONES
 |--------------------------------------------------------------------------
 */
 
-$successMessage = '';
-$errorMessage = '';
+$milestones = [];
+try {
+    $query = "
+        SELECT *
+        FROM project_milestones
+        WHERE project_id = :project_id
+        ORDER BY due_date ASC, id ASC
+    ";
+    $stmt = $conn->prepare($query);
+    $stmt->execute([':project_id' => $projectId]);
+    $milestones = $stmt->fetchAll();
+} catch (Exception $e) {
+    error_log('Milestone fetch error: ' . $e->getMessage());
+}
 
-if (
-    $_SERVER['REQUEST_METHOD']
-    === 'POST'
-) {
+/*
+|--------------------------------------------------------------------------
+| CALCULATE PROGRESS
+|--------------------------------------------------------------------------
+*/
 
-    $fullName =
-        trim($_POST['full_name'] ?? '');
+$totalMilestones = count($milestones);
+$completedMilestones = 0;
+$totalProgress = 0;
 
-    $email =
-        trim($_POST['email'] ?? '');
-
-    $phone =
-        trim($_POST['phone'] ?? '');
-
-    $companyName =
-        trim($_POST['company_name'] ?? '');
-
-    $address =
-        trim($_POST['address'] ?? '');
-
-    $city =
-        trim($_POST['city'] ?? '');
-
-    $state =
-        trim($_POST['state'] ?? '');
-
-    $pincode =
-        trim($_POST['pincode'] ?? '');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        empty($fullName) ||
-        empty($email)
-    ) {
-
-        $errorMessage =
-            'Full Name and Email are required.';
-    }
-    else {
-
-        /*
-        |--------------------------------------------------------------------------
-        | PROFILE IMAGE
-        |--------------------------------------------------------------------------
-        */
-
-        $profileImage =
-            $client['profile_image'] ?? null;
-
-        if (
-            isset($_FILES['profile_image']) &&
-            $_FILES['profile_image']['error'] === 0
-        ) {
-
-            $fileName =
-                time() .
-                '_' .
-                basename(
-                    $_FILES['profile_image']['name']
-                );
-
-            $targetPath =
-                $uploadDir .
-                $fileName;
-
-            move_uploaded_file(
-                $_FILES['profile_image']['tmp_name'],
-                $targetPath
-            );
-
-            $profileImage =
-                $fileName;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE QUERY
-        |--------------------------------------------------------------------------
-        */
-
-        $stmt =
-            $conn->prepare(
-                "
-                UPDATE clients
-                SET
-
-                    full_name = ?,
-                    email = ?,
-                    phone = ?,
-                    company_name = ?,
-                    address = ?,
-                    city = ?,
-                    state = ?,
-                    pincode = ?,
-                    profile_image = ?
-
-                WHERE id = ?
-                "
-            );
-
-        $stmt->bind_param(
-            'sssssssssi',
-            $fullName,
-            $email,
-            $phone,
-            $companyName,
-            $address,
-            $city,
-            $state,
-            $pincode,
-            $profileImage,
-            $clientId
-        );
-
-        if ($stmt->execute()) {
-
-            $_SESSION['client_name'] =
-                $fullName;
-
-            $successMessage =
-                'Profile updated successfully.';
-
-            /*
-            |--------------------------------------------------------------------------
-            | REFRESH CLIENT DATA
-            |--------------------------------------------------------------------------
-            */
-
-            $stmt =
-                $conn->prepare(
-                    "
-                    SELECT *
-                    FROM clients
-                    WHERE id = ?
-                    LIMIT 1
-                    "
-                );
-
-            $stmt->bind_param(
-                'i',
-                $clientId
-            );
-
-            $stmt->execute();
-
-            $result =
-                $stmt->get_result();
-
-            $client =
-                $result->fetch_assoc();
-        }
-        else {
-
-            $errorMessage =
-                'Failed to update profile.';
-        }
+foreach ($milestones as $ms) {
+    if ($ms['status'] === 'completed') {
+        $completedMilestones++;
     }
 }
+
+if ($totalMilestones > 0) {
+    $totalProgress = round(($completedMilestones / $totalMilestones) * 100);
+}
+
+// Also check if project has a manual progress percentage
+$projectProgress = !empty($project['progress_percentage']) ? (int) $project['progress_percentage'] : $totalProgress;
+
+/*
+|--------------------------------------------------------------------------
+| FETCH RECENT UPDATES
+|--------------------------------------------------------------------------
+*/
+
+$updates = [];
+try {
+    $query = "
+        SELECT * FROM project_updates
+        WHERE project_id = :project_id
+        ORDER BY created_at DESC
+        LIMIT 20
+    ";
+    $stmt = $conn->prepare($query);
+    $stmt->execute([':project_id' => $projectId]);
+    $updates = $stmt->fetchAll();
+} catch (Exception $e) {
+    error_log('Updates fetch error: ' . $e->getMessage());
+}
+
+/*
+|--------------------------------------------------------------------------
+| FETCH MEDIA
+|--------------------------------------------------------------------------
+*/
+
+$mediaItems = [];
+try {
+    $query = "
+        SELECT * FROM project_media
+        WHERE project_id = :project_id
+        ORDER BY created_at DESC
+        LIMIT 12
+    ";
+    $stmt = $conn->prepare($query);
+    $stmt->execute([':project_id' => $projectId]);
+    $mediaItems = $stmt->fetchAll();
+} catch (Exception $e) {
+    error_log('Media fetch error: ' . $e->getMessage());
+}
+
+/*
+|--------------------------------------------------------------------------
+| FLASH MESSAGES
+|--------------------------------------------------------------------------
+*/
+
+$error = $_SESSION['error'] ?? '';
+$success = $_SESSION['success'] ?? '';
+unset($_SESSION['error'], $_SESSION['success']);
 
 ?>
 
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Edit Profile
-    </title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo escape($pageTitle); ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo base_url('assets/client/css/client.css'); ?>">
     <style>
-
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
-
-        body{
-
-            font-family:Arial,sans-serif;
-
-            background:#f3f4f6;
-
-            color:#222;
-        }
-
-        .sidebar{
-
-            width:260px;
-
-            height:100vh;
-
-            background:#111827;
-
-            position:fixed;
-
-            top:0;
-
-            left:0;
-
-            padding:30px 20px;
-
-            overflow:auto;
-        }
-
-        .sidebar h2{
-
-            color:#f5b400;
-
-            margin-bottom:35px;
-        }
-
-        .sidebar a{
-
-            display:block;
-
-            text-decoration:none;
-
-            color:#fff;
-
-            padding:14px 16px;
-
-            border-radius:10px;
-
-            margin-bottom:10px;
-
-            transition:0.3s;
-        }
-
-        .sidebar a:hover,
-        .sidebar .active{
-
-            background:#f5b400;
-
-            color:#111;
-        }
-
-        .main{
-
-            margin-left:260px;
-
-            padding:40px;
-        }
-
-        .topbar{
-
-            display:flex;
-
-            justify-content:space-between;
-
-            align-items:center;
-
-            flex-wrap:wrap;
-
-            margin-bottom:35px;
-        }
-
-        .logout-btn{
-
-            text-decoration:none;
-
-            background:#dc3545;
-
-            color:#fff;
-
-            padding:12px 18px;
-
-            border-radius:10px;
-
-            font-weight:bold;
-        }
-
-        .profile-container{
-
-            background:#fff;
-
-            padding:35px;
-
-            border-radius:20px;
-
-            box-shadow:
-                0 5px 20px rgba(0,0,0,0.08);
-
-            max-width:1000px;
-        }
-
-        .profile-header{
-
-            display:flex;
-
-            align-items:center;
-
-            gap:25px;
-
-            margin-bottom:35px;
-
-            flex-wrap:wrap;
-        }
-
-        .profile-image{
-
-            width:120px;
-
-            height:120px;
-
-            border-radius:50%;
-
-            object-fit:cover;
-
-            border:5px solid #f5b400;
-        }
-
-        .avatar{
-
-            width:120px;
-
-            height:120px;
-
-            border-radius:50%;
-
-            background:#111827;
-
-            color:#fff;
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:center;
-
-            font-size:40px;
-
-            font-weight:bold;
-        }
-
-        .form-grid{
-
-            display:grid;
-
-            grid-template-columns:
-                repeat(auto-fit,minmax(280px,1fr));
-
-            gap:20px;
-        }
-
-        .form-group{
-
-            display:flex;
-
-            flex-direction:column;
-        }
-
-        .form-group label{
-
-            margin-bottom:8px;
-
-            font-weight:bold;
-        }
-
-        .form-group input,
-        .form-group textarea{
-
-            padding:14px;
-
-            border:1px solid #ddd;
-
-            border-radius:10px;
-
-            font-size:15px;
-        }
-
-        textarea{
-
-            min-height:120px;
-
-            resize:vertical;
-        }
-
-        .full-width{
-
-            grid-column:1 / -1;
-        }
-
-        .submit-btn{
-
-            background:#111827;
-
-            color:#fff;
-
-            border:none;
-
-            padding:15px 25px;
-
-            border-radius:10px;
-
-            font-size:16px;
-
-            font-weight:bold;
-
-            cursor:pointer;
-        }
-
-        .success{
-
-            background:#d4edda;
-
-            color:#155724;
-
-            padding:15px;
-
-            border-radius:10px;
-
-            margin-bottom:20px;
-        }
-
-        .error{
-
-            background:#f8d7da;
-
-            color:#721c24;
-
-            padding:15px;
-
-            border-radius:10px;
-
-            margin-bottom:20px;
-        }
-
-        @media(max-width:992px){
-
-            .sidebar{
-
-                width:100%;
-
-                height:auto;
-
-                position:relative;
-            }
-
-            .main{
-
-                margin-left:0;
-            }
-        }
-
+        .progress-ring { width: 180px; height: 180px; margin: 0 auto; position: relative; }
+        .progress-ring .percent { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 36px; font-weight: 700; }
+        .timeline-item { position: relative; padding-left: 40px; padding-bottom: 30px; }
+        .timeline-item::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: #e5e7eb; }
+        .timeline-item:last-child::before { display: none; }
+        .timeline-dot { position: absolute; left: 8px; top: 4px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid; }
+        .timeline-dot.completed { background: #10b981; border-color: #10b981; }
+        .timeline-dot.in-progress { background: #3b82f6; border-color: #3b82f6; animation: pulse 2s infinite; }
+        .timeline-dot.pending { background: #fff; border-color: #d1d5db; }
+        .timeline-dot.delayed { background: #ef4444; border-color: #ef4444; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); } 70% { box-shadow: 0 0 0 10px rgba(59,130,246,0); } 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); } }
+        .gallery-img { height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .gallery-img:hover { transform: scale(1.05); }
     </style>
-
 </head>
-
 <body>
+<div class="client-layout">
+    <?php include '../../../app/views/layouts/client-sidebar.php'; ?>
+    <div class="client-main">
+        <?php include '../../../app/views/layouts/client-navbar.php'; ?>
+        <div class="client-content">
 
-<!-- SIDEBAR -->
-
-<div class="sidebar">
-
-    <h2>
-        KVN Client
-    </h2>
-
-    <a href="<?php echo base_url('admin/dashboard.php'); ?>">
-        Dashboard
-    </a>
-
-    <a
-        href="edit.php"
-        class="active"
-    >
-        Edit Profile
-    </a>
-
-    <a href="<?php echo base_url('admin/projects/index.php'); ?>">
-        Projects
-    </a>
-
-    <a href="<?php echo base_url('admin/payments/index.php'); ?>">
-        Payments
-    </a>
-
-    <a href="<?php echo base_url('admin/support/tickets.php'); ?>">
-        Support
-    </a>
-
-    <a href="<?php echo base_url('logout.php'); ?>">
-        Logout
-    </a>
-
-</div>
-
-<!-- MAIN -->
-
-<div class="main">
-
-    <!-- TOPBAR -->
-
-    <div class="topbar">
-
-        <div>
-
-            <h1>
-                Edit Profile
-            </h1>
-
-            <p>
-
-                Welcome,
-                <?php
-                    echo htmlspecialchars(
-                        (string)$clientName
-                    );
-                ?>
-
-            </p>
-
-        </div>
-
-        <a
-            href="<?php echo base_url('logout.php'); ?>"
-            class="logout-btn"
-        >
-            Logout
-        </a>
-
-    </div>
-
-    <!-- PROFILE -->
-
-    <div class="profile-container">
-
-        <div class="profile-header">
-
-            <?php if (!empty($client['profile_image'])): ?>
-
-                <img
-                    src="../../uploads/profile/<?php echo htmlspecialchars((string)$client['profile_image']); ?>"
-                    class="profile-image"
-                    alt="Profile Image"
-                >
-
-            <?php else: ?>
-
-                <div class="avatar">
-
-                    <?php
-                        echo strtoupper(
-                            substr(
-                                htmlspecialchars(
-                                    (string)$client['full_name']
-                                ),
-                                0,
-                                1
-                            )
-                        );
-                    ?>
-
+            <!-- PAGE HEADER -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1"><?php echo escape($project['title'] ?? 'Project Progress'); ?></h1>
+                    <p class="text-muted mb-0">Track your project milestones and progress</p>
                 </div>
+                <a href="../dashboard.php" class="btn btn-outline-dark">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
 
+            <?php if (!empty($error)): ?>
+                <div class="alert alert-danger"><?php echo escape($error); ?></div>
+            <?php endif; ?>
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success"><?php echo escape($success); ?></div>
             <?php endif; ?>
 
-            <div>
+            <!-- PROJECT OVERVIEW -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="progress-ring">
+                                <svg width="180" height="180" viewBox="0 0 180 180">
+                                    <circle cx="90" cy="90" r="80" fill="none" stroke="#e5e7eb" stroke-width="12"/>
+                                    <circle cx="90" cy="90" r="80" fill="none" stroke="#f5b400" stroke-width="12"
+                                            stroke-dasharray="<?php echo 2 * pi() * 80; ?>"
+                                            stroke-dashoffset="<?php echo 2 * pi() * 80 * (1 - $projectProgress / 100); ?>"
+                                            stroke-linecap="round" transform="rotate(-90 90 90)"/>
+                                </svg>
+                                <div class="percent"><?php echo escape($projectProgress); ?>%</div>
+                            </div>
+                            <h5 class="mt-3">Overall Progress</h5>
+                            <p class="text-muted small">
+                                <?php echo escape($completedMilestones); ?>/<?php echo escape($totalMilestones); ?> milestones completed
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
-                <h2>
-
-                    <?php
-                        echo htmlspecialchars(
-                            (string)$client['full_name']
-                        );
-                    ?>
-
-                </h2>
-
-                <p>
-
-                    <?php
-                        echo htmlspecialchars(
-                            (string)$client['email']
-                        );
-                    ?>
-
-                </p>
-
+                <div class="col-lg-8">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="mb-0">Project Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td class="text-muted">Project ID</td>
+                                            <td><strong>#<?php echo (int)$project['id']; ?></strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Status</td>
+                                            <td>
+                                                <span class="badge bg-<?php 
+                                                    echo match($project['status'] ?? '') {
+                                                        'completed' => 'success',
+                                                        'in_progress' => 'primary',
+                                                        'on_hold' => 'warning',
+                                                        default => 'secondary'
+                                                    };
+                                                ?>">
+                                                    <?php echo ucfirst(str_replace('_', ' ', $project['status'] ?? 'pending')); ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Start Date</td>
+                                            <td><?php echo !empty($project['start_date']) ? date('d M Y', strtotime($project['start_date'])) : 'N/A'; ?></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td class="text-muted">Expected Completion</td>
+                                            <td><?php echo !empty($project['expected_completion']) ? date('d M Y', strtotime($project['expected_completion'])) : 'N/A'; ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Budget</td>
+                                            <td><strong>₹<?php echo number_format($project['budget'] ?? 0); ?></strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Location</td>
+                                            <td><?php echo escape($project['location'] ?? 'N/A'); ?></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <?php if (!empty($project['description'])): ?>
+                                <p class="mt-2"><?php echo nl2br(escape($project['description'])); ?></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- MILESTONES TIMELINE -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-flag"></i> Project Milestones</h5>
+                    <span class="badge bg-dark"><?php echo escape($totalMilestones); ?> milestones</span>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($milestones)): ?>
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-flag" style="font-size: 48px;"></i>
+                            <p class="mt-3">No milestones defined yet. Check back later for updates.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="timeline">
+                            <?php foreach ($milestones as $milestone): 
+                                $dotClass = match($milestone['status']) {
+                                    'completed' => 'completed',
+                                    'in_progress' => 'in-progress',
+                                    'delayed' => 'delayed',
+                                    default => 'pending'
+                                };
+                                $statusBadge = match($milestone['status']) {
+                                    'completed' => 'bg-success',
+                                    'in_progress' => 'bg-primary',
+                                    'delayed' => 'bg-danger',
+                                    default => 'bg-secondary'
+                                };
+                            ?>
+                                <div class="timeline-item">
+                                    <div class="timeline-dot <?php echo escape($dotClass); ?>"></div>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1"><?php echo escape($milestone['title']); ?></h6>
+                                            <?php if (!empty($milestone['description'])): ?>
+                                                <p class="mb-1 text-muted small"><?php echo escape($milestone['description']); ?></p>
+                                            <?php endif; ?>
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar"></i> 
+                                                <?php echo date('d M Y', strtotime($milestone['due_date'])); ?>
+                                                <?php if ($milestone['amount'] > 0): ?>
+                                                    | ₹<?php echo number_format($milestone['amount']); ?>
+                                                <?php endif; ?>
+                                            </small>
+                                        </div>
+                                        <span class="badge <?php echo escape($statusBadge); ?>">
+                                            <?php echo ucfirst(str_replace('_', ' ', $milestone['status'])); ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- RECENT UPDATES -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-megaphone"></i> Recent Updates</h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($updates)): ?>
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-chat-dots" style="font-size: 36px;"></i>
+                            <p class="mt-2">No updates yet.</p>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($updates as $update): ?>
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong><?php echo escape($update['title'] ?? 'Update'); ?></strong>
+                                    <small class="text-muted"><?php echo date('d M Y h:i A', strtotime($update['created_at'])); ?></small>
+                                </div>
+                                <p class="mb-0 mt-1"><?php echo nl2br(escape($update['message'] ?? '')); ?></p>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- GALLERY -->
+            <?php if (!empty($mediaItems)): ?>
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-images"></i> Project Gallery</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <?php foreach ($mediaItems as $media): ?>
+                                <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+                                    <a href="<?php echo base_url($media['file_path']); ?>" target="_blank">
+                                        <img src="<?php echo base_url($media['file_path']); ?>" 
+                                             alt="<?php echo escape($media['original_name']); ?>"
+                                             class="gallery-img w-100">
+                                    </a>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
         </div>
-
-        <!-- ALERTS -->
-
-        <?php if (!empty($successMessage)): ?>
-
-            <div class="success">
-                <?php echo (int)$successMessage; ?>
-            </div>
-
-        <?php endif; ?>
-
-        <?php if (!empty($errorMessage)): ?>
-
-            <div class="error">
-                <?php echo escape($errorMessage); ?>
-            </div>
-
-        <?php endif; ?>
-
-        <!-- FORM -->
-
-        <form
-            method="POST"
-            enctype="multipart/form-data"
-        >
-
-            <div class="form-grid">
-
-                <div class="form-group">
-
-                    <label>
-                        Full Name
-                    </label>
-
-                    <input
-                        type="text"
-                        name="full_name"
-                        value="<?php echo htmlspecialchars((string)$client['full_name']); ?>"
-                        required
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Email
-                    </label>
-
-                    <input
-                        type="email"
-                        name="email"
-                        value="<?php echo htmlspecialchars((string)$client['email']); ?>"
-                        required
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Phone
-                    </label>
-
-                    <input
-                        type="text"
-                        name="phone"
-                        value="<?php echo htmlspecialchars((string)$client['phone']); ?>"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Company Name
-                    </label>
-
-                    <input
-                        type="text"
-                        name="company_name"
-                        value="<?php echo htmlspecialchars((string)$client['company_name']); ?>"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        City
-                    </label>
-
-                    <input
-                        type="text"
-                        name="city"
-                        value="<?php echo htmlspecialchars((string)$client['city']); ?>"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        State
-                    </label>
-
-                    <input
-                        type="text"
-                        name="state"
-                        value="<?php echo htmlspecialchars((string)$client['state']); ?>"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Pincode
-                    </label>
-
-                    <input
-                        type="text"
-                        name="pincode"
-                        value="<?php echo htmlspecialchars((string)$client['pincode']); ?>"
-                    >
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Profile Image
-                    </label>
-
-                    <input
-                        type="file"
-                        name="profile_image"
-                    >
-
-                </div>
-
-                <div class="form-group full-width">
-
-                    <label>
-                        Address
-                    </label>
-
-                    <textarea
-                        name="address"
-                    ><?php echo htmlspecialchars((string)$client['address']); ?></textarea>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label>
-                        Save Changes
-                    </label>
-
-                    <button
-                        type="submit"
-                        class="submit-btn"
-                    >
-                        Update Profile
-                    </button>
-
-                </div>
-
-            </div>
-
-        </form>
-
     </div>
-
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?php echo base_url('assets/client/js/client.js'); ?>"></script>
 </body>
-
 </html>

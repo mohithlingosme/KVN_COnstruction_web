@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 function asset(string $path): string
 {
-    // Centralized asset helper for public web root
-    return '/KVN_Construction/public/' . ltrim($path, '/');
+    // Centralized asset helper using APP_URL
+    return base_url($path);
 }
 
 function base_url_public(string $path = ''): string
@@ -13,6 +13,8 @@ function base_url_public(string $path = ''): string
     return asset($path);
 }
 
+// escapeCssClass is defined in helpers/functions_security.php (more complete version)
+// Do NOT redefine here to avoid conflicts
 function projectImageFallback(): string
 {
     // Image placeholder for missing project/blog images

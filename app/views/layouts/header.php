@@ -83,6 +83,36 @@ basename($_SERVER['PHP_SELF']);
     <meta name="twitter:image" content="<?php echo escapeAttr($metaImage ?? ''); ?>">
 
     <!-- ================================= -->
+    <!-- SCHEMA.ORG -->
+    <!-- ================================= -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "KVN Construction",
+      "image": "<?php echo escapeAttr($metaImage ?? ''); ?>",
+      "description": "Premium construction company in Bengaluru delivering residential villas, commercial projects, interiors, and turnkey solutions.",
+      "@id": "<?php echo escapeAttr(APP_URL); ?>",
+      "url": "<?php echo escapeAttr(APP_URL); ?>",
+      "telephone": "+919876543210",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Bengaluru",
+        "addressLocality": "Bengaluru",
+        "addressRegion": "KA",
+        "postalCode": "560001",
+        "addressCountry": "IN"
+      },
+      "sameAs": [
+        "https://www.facebook.com/kvnconstruction",
+        "https://www.instagram.com/kvnconstruction",
+        "https://www.youtube.com/@kvnconstruction",
+        "https://www.linkedin.com/company/kvnconstruction"
+      ]
+    }
+    </script>
+
+    <!-- ================================= -->
     <!-- FAVICON -->
     <!-- ================================= -->
 
@@ -247,7 +277,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'about-us.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('about-us.php'); ?>"
+                            href="public\about-us.php"
                         >
 
                             About
@@ -260,7 +290,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'services.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('services.php'); ?>"
+                            href="public\services.php"
                         >
 
                             Services
@@ -273,7 +303,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'projects.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('projects.php'); ?>"
+                            href="public\projects.php"
                         >
 
                             Projects
@@ -286,7 +316,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'blogs.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('blogs.php'); ?>"
+                            href="public\blogs.php"
                         >
 
                             Blogs
@@ -299,7 +329,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'careers.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('careers.php'); ?>"
+                            href="public\careers.php"
                         >
 
                             Careers
@@ -312,7 +342,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'contact.php') ? 'active' : ''; ?>"
-                            href="<?php echo base_url('contact.php'); ?>"
+                            href="public\contact.php"
                         >
 
                             Contact

@@ -153,7 +153,7 @@ $_SESSION['user_role'] ?? 'admin';
 
                 <a
                     class="dropdown-item"
-                    href="<?php echo base_url('admin/settings/index.php'); ?>"
+                    href="<?php echo base_url('admin/settings/smtp.php'); ?>"
                 >
 
                     <i class="bi bi-gear-fill"></i>
@@ -464,21 +464,3 @@ $_SESSION['user_role'] ?? 'admin';
 
 </style>
 
-<!-- ================================= -->
-<!-- NAVBAR SCRIPT -->
-<!-- ================================= -->
-
-<script>
-
-document
-.getElementById('sidebarToggle')
-.addEventListener('click', function(){
-
-    document
-    .querySelector('.admin-sidebar')
-    .classList
-    .toggle('active');
-
-});
-
-</script>
