@@ -213,14 +213,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    $passwordHash =
-    password_hash(
-
-        $password,
-
-        PASSWORD_DEFAULT
-    );
-
     /*
     |--------------------------------------------------------------------------
     | UPDATE PASSWORD
@@ -234,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $userId,
 
-        $passwordHash
+        $password
     );
 
     if (!$updated) {
@@ -280,6 +272,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $sessionManager = new SessionManager($GLOBALS['conn']);
     $sessionManager->destroyAllUserSessions($userId);
+
+    unset(
+        $_SESSION['password_reset_user_id'],
+        $_SESSION['password_reset_email'],
+        $_SESSION['password_reset_created_at'],
+        $_SESSION['password_reset_attempts'],
+        $_SESSION['password_reset_verified']
+    );
 
     /*
     |--------------------------------------------------------------------------

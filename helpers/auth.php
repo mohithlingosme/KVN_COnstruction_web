@@ -29,10 +29,12 @@ if(session_status() === PHP_SESSION_NONE){
 }
 
 // =====================================
-// SESSION TIMEOUT
+// SESSION TIMEOUT (overridden by config/app.php SESSION_TIMEOUT=3600)
 // =====================================
 
-define('SESSION_TIMEOUT', 1800); // 30 MINUTES
+if (!defined('SESSION_TIMEOUT')) {
+    define('SESSION_TIMEOUT', 1800); // 30 MINUTES
+}
 
 // =====================================
 // LOGIN USER

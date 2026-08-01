@@ -82,7 +82,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $stmt =
@@ -320,7 +320,7 @@ $result =
 
 if (
     $result &&
-    $result->num_rows > 0
+    $result->num_rows() > 0
 ) {
 
     $data =

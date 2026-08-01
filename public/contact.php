@@ -10,6 +10,7 @@ require_once ROOT_PATH . '/helpers/csrf.php';
 require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/rateLimiter.php';
 require_once ROOT_PATH . '/helpers/upload.php';
+require_once __DIR__ . '/includes/repositories.php';
 
 securityHeaders();
 
@@ -40,71 +41,20 @@ $formData = [
 ];
 
 // =====================================
-// FETCH CONTACT PAGE SETTINGS
+// FETCH CONTACT PAGE SETTINGS (via CmsRepository)
 // =====================================
 
-try {
-
-    $contactQuery = "
-        SELECT *
-        FROM contact_page
-        LIMIT 1
-    ";
-
-    $contactStmt = $conn->prepare($contactQuery);
-
-    $contactStmt->execute();
-
-    $contact = $contactStmt->fetch(PDO::FETCH_ASSOC);
-
-} catch (Exception $e) {
-
-    if (function_exists('logSecurityEvent')) {
-        logSecurityEvent(
-            null,
-            'contact_page_fetch_failed',
-            'error',
-            $e->getMessage()
-        );
-    }
-
+$cmsRepo = repo('Cms');
+$contact = $cmsRepo ? $cmsRepo->getContactPage() : [];
+if (!$contact) {
     $contact = [];
 }
 
 // =====================================
-// FETCH FEATURES
+// FETCH FEATURES (via CmsRepository)
 // =====================================
 
-try {
-
-    $featureQuery = "
-        SELECT *
-        FROM contact_page_features
-        WHERE status = :status
-        ORDER BY sort_order ASC
-    ";
-
-    $featureStmt = $conn->prepare($featureQuery);
-
-    $featureStmt->execute([
-        ':status' => 'active'
-    ]);
-
-    $features = $featureStmt->fetchAll(PDO::FETCH_ASSOC);
-
-} catch (Exception $e) {
-
-    if (function_exists('logSecurityEvent')) {
-        logSecurityEvent(
-            null,
-            'contact_features_fetch_failed',
-            'error',
-            $e->getMessage()
-        );
-    }
-
-    $features = [];
-}
+$features = $cmsRepo ? $cmsRepo->getContactFeatures() : [];
 
 // =====================================
 // FORM SUBMISSION
@@ -263,69 +213,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     // =====================================
-                    // INSERT LEAD
+                    // INSERT LEAD (via ContentRepository)
                     // =====================================
 
                     if (empty($error)) {
 
-                        try {
+                        $contentRepo = repo('Content');
+                        $leadId = 0;
 
-                            $insertQuery = "
-                                INSERT INTO leads (
+                        if ($contentRepo) {
+                            $leadId = $contentRepo->createLead($formData);
+                        }
 
-                                    full_name,
-                                    phone,
-                                    email,
-                                    project_location,
-                                    project_type,
-                                    budget,
-                                    message,
-                                    lead_source,
-                                    created_at
-
-                                ) VALUES (
-
-                                    :full_name,
-                                    :phone,
-                                    :email,
-                                    :project_location,
-                                    :project_type,
-                                    :budget,
-                                    :message,
-                                    :lead_source,
-                                    NOW()
-                                )
-                            ";
-
-                            $insertStmt =
-                            $conn->prepare($insertQuery);
-
-                            $insertStmt->execute([
-
-                                ':full_name' =>
-                                $formData['full_name'],
-
-                                ':phone' =>
-                                $formData['phone'],
-
-                                ':email' =>
-                                $formData['email'],
-
-                                ':project_location' =>
-                                $formData['location'],
-
-                                ':project_type' =>
-                                $formData['project_type'],
-
-                                ':budget' =>
-                                $formData['budget_range'],
-
-                                ':message' =>
-                                $formData['message'],
-
-                                ':lead_source' =>
-                                'Website'
-                            ]);
+                        if ($leadId > 0) {
 
                             // =====================================
                             // SUCCESS
@@ -356,14 +256,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 'message'      => ''
                             ];
 
-                        } catch (Exception $e) {
+                        } else {
 
                             if (function_exists('logSecurityEvent')) {
                                 logSecurityEvent(
                                     null,
                                     'contact_form_db_error',
                                     'error',
-                                    $e->getMessage()
+                                    'Failed to save contact inquiry'
                                 );
                             }
 

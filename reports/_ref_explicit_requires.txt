@@ -1,0 +1,17 @@
+﻿
+app\controllers\AuthController.php:3:require_once __DIR__ . 
+'/../Core/SessionManager.php';
+app\Core\index.php:10:require_once __DIR__ . '/Database.php';
+app\Core\index.php:11:require_once __DIR__ . '/SessionManager.php';
+app\Core\index.php:12:require_once __DIR__ . '/Router.php';
+app\models\Lead.php:3:require_once __DIR__ . '/../../core/Model.php';
+app\security\SessionManager.php:3:require_once __DIR__ . '/Database.php';
+bootstrap\providers\ServiceProvider.php:22:            require_once 
+__DIR__ . '/../../config/database.php';
+core\Model.php:3:require_once __DIR__ . '/../config/database.php';
+public\reset-password.php:42:require_once ROOT_PATH . 
+'/app/security/SessionManager.php';
+_runtime_test.php:140:require_once CONFIG_PATH . '/database.php';
+_runtime_test.php:274:    require_once ROOT_PATH . '/core/Router.php';
+
+

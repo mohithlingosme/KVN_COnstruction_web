@@ -19,6 +19,8 @@ require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE CONFIG
@@ -38,32 +40,10 @@ $clients = [];
 
 try {
 
-    $query = "
-
-        SELECT
-            id,
-            full_name,
-            email,
-            phone,
-            status,
-            phone_verified,
-            created_at,
-            last_login
-
-        FROM users
-
-        WHERE role = 'client'
-
-        ORDER BY id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
-    $clients =
-    $stmt->fetchAll();
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $clients = $userRepo->getClients();
+    }
 
 } catch(Exception $e){
 

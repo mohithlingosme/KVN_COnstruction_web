@@ -45,7 +45,7 @@ class Model
         new Database();
 
         $this->conn =
-        $this->db->connect();
+        $this->db->getConnection();
     }
 
     // =====================================

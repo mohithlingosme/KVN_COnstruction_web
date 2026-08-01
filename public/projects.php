@@ -4,25 +4,14 @@ require_once '../config/app.php';
 
 $pageTitle = "Projects Portfolio | " . APP_NAME;
 
-try {
-    $query = "
-        SELECT *
-FROM portfolio
-        WHERE status = 'active'
-        ORDER BY id DESC
-    ";
-
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-    $projects = $stmt->fetchAll();
-} catch (PDOException $e) {
-    error_log("Projects query failed: " . $e->getMessage());
-    $projects = [];
-}
+$publicController = new \App\Controllers\PublicController();
+$data = $publicController->projects();
+$projects = $data['projects'] ?? [];
 
 include '../app/views/layouts/header.php';
 
 ?>
+
 
 <section class="hero">
 

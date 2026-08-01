@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,158 +30,14 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE TRANSACTIONS TABLE
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS payment_transactions (
+require_once '../../../config/app.php';
+require_once __DIR__ . '/../../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        transaction_code VARCHAR(100) NOT NULL,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        invoice_number VARCHAR(100) NOT NULL,
-
-        payment_method VARCHAR(100) NOT NULL,
-
-        bank_name VARCHAR(255) DEFAULT NULL,
-
-        account_holder VARCHAR(255) DEFAULT NULL,
-
-        transaction_reference VARCHAR(255) DEFAULT NULL,
-
-        amount DECIMAL(12,2) NOT NULL,
-
-        transaction_status ENUM(
-            'Success',
-            'Pending',
-            'Failed',
-            'Refunded'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        transaction_date DATETIME NOT NULL,
-
-        remarks TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM payment_transactions
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO payment_transactions
-        (
-
-            client_id,
-            transaction_code,
-            project_name,
-            invoice_number,
-            payment_method,
-            bank_name,
-            account_holder,
-            transaction_reference,
-            amount,
-            transaction_status,
-            transaction_date,
-            remarks
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'TXN-10001',
-            'Luxury Villa',
-            'INV-2026-001',
-            'Bank Transfer',
-            'HDFC Bank',
-            'Mohith Kumar',
-            'REF987654321',
-            1770000,
-            'Success',
-            '2026-01-25 11:30:00',
-            'Foundation stage payment completed successfully.'
-        ),
-
-        (
-            $clientId,
-            'TXN-10002',
-            'Luxury Villa',
-            'INV-2026-002',
-            'UPI Payment',
-            'Google Pay',
-            'Mohith Kumar',
-            'UPI123456789',
-            1500000,
-            'Success',
-            '2026-04-10 14:20:00',
-            'Partial structural work payment.'
-        ),
-
-        (
-            $clientId,
-            'TXN-10003',
-            'Farm House',
-            'INV-2026-003',
-            'Cheque',
-            'ICICI Bank',
-            'Mohith Kumar',
-            'CHQ908070',
-            500000,
-            'Pending',
-            '2026-05-12 10:00:00',
-            'Cheque under bank verification.'
-        ),
-
-        (
-            $clientId,
-            'TXN-10004',
-            'Commercial Complex',
-            'INV-2026-004',
-            'NEFT',
-            'Axis Bank',
-            'Mohith Kumar',
-            'NEFT998877',
-            2500000,
-            'Failed',
-            '2026-06-01 16:40:00',
-            'Transaction failed due to bank timeout.'
-        )
-        "
-    );
-}
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
@@ -197,15 +45,7 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$transactions =
-    $conn->query(
-        "
-        SELECT *
-        FROM payment_transactions
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
+$transactions = $clientService->getPaymentTransactions($clientId);
 
 /*
 |--------------------------------------------------------------------------
@@ -213,38 +53,19 @@ $transactions =
 |--------------------------------------------------------------------------
 */
 
-$totalTransactions = 0;
-$totalAmount = 0;
+$totalTransactions = count($transactions);
+$totalAmount = 0.0;
 $successCount = 0;
 $pendingCount = 0;
 
-if ($transactions && $transactions->num_rows > 0) {
-
-    while ($calc = $transactions->fetch_assoc()) {
-
-        $totalTransactions++;
-
-        $totalAmount +=
-            (float)$calc['amount'];
-
-        if (
-            $calc['transaction_status']
-            === 'Success'
-        ) {
-
-            $successCount++;
-        }
-
-        if (
-            $calc['transaction_status']
-            === 'Pending'
-        ) {
-
-            $pendingCount++;
-        }
+foreach ($transactions as $row) {
+    $totalAmount += (float)($row['amount'] ?? 0);
+    if (($row['transaction_status'] ?? '') === 'Success') {
+        $successCount++;
     }
-
-    $transactions->data_seek(0);
+    if (($row['transaction_status'] ?? '') === 'Pending') {
+        $pendingCount++;
+    }
 }
 
 ?>
@@ -695,7 +516,7 @@ if ($transactions && $transactions->num_rows > 0) {
 
     <div class="table-wrapper">
 
-        <?php if ($transactions && $transactions->num_rows > 0): ?>
+        <?php if (!empty($transactions)): ?>
 
             <table>
 
@@ -745,7 +566,7 @@ if ($transactions && $transactions->num_rows > 0) {
 
                 <tbody>
 
-                    <?php while ($row = $transactions->fetch_assoc()): ?>
+                    <?php foreach ($transactions as $row): ?>
 
                         <tr>
 
@@ -852,7 +673,7 @@ if ($transactions && $transactions->num_rows > 0) {
 
                         </tr>
 
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
 
                 </tbody>
 

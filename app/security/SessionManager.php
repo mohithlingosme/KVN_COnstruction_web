@@ -1,121 +1,66 @@
 <?php
 
-declare(strict_types=1);
+require_once __DIR__ . '/Database.php';
 
-/*
-|--------------------------------------------------------------------------
-| KVN CONSTRUCTION PLATFORM
-|--------------------------------------------------------------------------
-| SESSION MANAGER - Enterprise Session Handler
-|--------------------------------------------------------------------------
-| File: /app/security/SessionManager.php
-|--------------------------------------------------------------------------
-*/
+class SessionManager {
+    private $db;
 
-namespace App\Security;
-
-use PDO;
-use Exception;
-
-class SessionManager
-{
-    private PDO $conn;
-
-    public function __construct(PDO $conn)
-    {
-        $this->conn = $conn;
+    public function __construct() {
+        $this->db = Database::getInstance()->getConnection();
     }
 
-    /**
-     * Get current session user ID
-     */
-    public function getCurrentUserId(): ?int
-    {
-        return $_SESSION['user_id'] ?? null;
-    }
-
-    /**
-     * Completely destroy all active sessions for a user
-     * Used after password reset to force re-login everywhere
-     */
-    public function destroyAllUserSessions(int $userId): bool
-    {
+    public function createSession($userId, $ipAddress, $userAgent) {
+        // Ensure standard PHP session is started securely
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Prevent session fixation attacks by generating a fresh ID
+        session_regenerate_id(true);
+        $sessionId = session_id();
+        
         try {
-            $this->conn->beginTransaction();
-
-            // Delete all session records from database
-            $query = "
-                DELETE FROM user_sessions
-                WHERE user_id = :user_id
-            ";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute([':user_id' => $userId]);
-
-            // Invalidate all remember-me tokens
-            $query = "
-                DELETE FROM remember_tokens
-                WHERE user_id = :user_id
-            ";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute([':user_id' => $userId]);
-
-            $this->conn->commit();
-
-            // Completely destroy current session
-            $this->forceSessionDestroy();
-
-            return true;
-
-        } catch (Exception $e) {
-            $this->conn->rollBack();
-            error_log('SessionManager::destroyAllUserSessions - ' . $e->getMessage());
+            $stmt = $this->db->prepare("
+                INSERT INTO sessions (id, user_id, ip_address, user_agent, last_activity) 
+                VALUES (:id, :user_id, :ip_address, :user_agent, NOW())
+            ");
+            
+            $stmt->execute([
+                ':id' => $sessionId,
+                ':user_id' => $userId,
+                ':ip_address' => $ipAddress,
+                ':user_agent' => $userAgent
+            ]);
+            
+            // Set basic session variables
+            $_SESSION['user_id'] = $userId;
+            $_SESSION['session_token'] = $sessionId;
+            
+            return $sessionId;
+            
+        } catch (PDOException $e) {
+            error_log("Session Creation Failed: " . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Force complete session destruction
-     */
-    public function forceSessionDestroy(): void
-    {
-        // Clear all session variables
-        $_SESSION = [];
-
-        // Delete session cookie
-        if (ini_get('session.use_cookies')) {
-            $params = session_get_cookie_params();
-            setcookie(
-                session_name(),
-                '',
-                time() - 42000,
-                $params['path'],
-                $params['domain'],
-                $params['secure'],
-                $params['httponly']
-            );
-        }
-
-        // Destroy the session
-        session_destroy();
-    }
-
-    /**
-     * Clean expired sessions from database
-     */
-    public function cleanExpiredSessions(): int
-    {
+    public function destroySession($sessionId) {
         try {
-            $query = "
-                DELETE FROM user_sessions
-                WHERE expires_at < NOW()
-                OR last_activity < DATE_SUB(NOW(), INTERVAL 1 DAY)
-            ";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute();
-            return $stmt->rowCount();
-        } catch (Exception $e) {
-            error_log('SessionManager::cleanExpiredSessions - ' . $e->getMessage());
-            return 0;
+            // Remove from the database
+            $stmt = $this->db->prepare("DELETE FROM sessions WHERE id = :id");
+            $stmt->execute([':id' => $sessionId]);
+            
+            // Destroy the actual PHP session
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_unset();
+                session_destroy();
+                // Clear the session cookie from the browser
+                setcookie(session_name(), '', time() - 3600, '/');
+            }
+            return true;
+        } catch (PDOException $e) {
+            error_log("Session Destruction Failed: " . $e->getMessage());
+            return false;
         }
     }
 }

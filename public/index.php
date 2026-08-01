@@ -1,92 +1,10 @@
 <?php
-
 require_once __DIR__ . '/../config/app.php';
-
 require_once __DIR__ . '/../helpers/functions.php';
-
-// Ensure DB connection exists to avoid warnings/parse-time failures
-$conn = $conn ?? null;
-
-$pageTitle = "KVN Construction | Premium Construction Company";
-
-// =============================================
-// FETCH PROJECTS
-// =============================================
-
-$projects = [];
-if ($conn) {
-    $projectsQuery = "
-        SELECT *
-        FROM portfolio
-        WHERE status = 'active'
-        ORDER BY created_at DESC
-        LIMIT 6
-    ";
-
-    $projectsStmt = $conn->prepare($projectsQuery);
-    $projectsStmt->execute();
-    $projects = $projectsStmt->fetchAll();
-}
-
-// =============================================
-// FETCH BLOGS
-// =============================================
-
-$blogs = [];
-if ($conn) {
-    $blogsQuery = "
-        SELECT *
-        FROM blogs
-        WHERE status = 'published'
-        ORDER BY published_at DESC
-        LIMIT 6
-    ";
-
-    $blogsStmt = $conn->prepare($blogsQuery);
-    $blogsStmt->execute();
-    $blogs = $blogsStmt->fetchAll();
-}
-
-// =============================================
-// FETCH TESTIMONIALS
-// =============================================
-
-$testimonials = [];
-if ($conn) {
-    $testimonialQuery = "
-        SELECT *
-        FROM testimonials
-        WHERE status = 'active'
-        ORDER BY sort_order ASC, created_at DESC
-        LIMIT 6
-    ";
-
-    $testimonialStmt = $conn->prepare($testimonialQuery);
-    $testimonialStmt->execute();
-    $testimonials = $testimonialStmt->fetchAll();
-}
-
-// =============================================
-// FETCH ESTIMATOR PACKAGES
-// =============================================
-
-$packages = [];
-if ($conn) {
-    $packageQuery = "
-        SELECT *
-        FROM construction_packages
-        WHERE status = 'active'
-        ORDER BY sort_order ASC
-    ";
-
-    $packageStmt = $conn->prepare($packageQuery);
-    $packageStmt->execute();
-    $packages = $packageStmt->fetchAll();
-}
-
-include '../app/views/layouts/header.php';
-
+require_once __DIR__ . '/../app/Core/routes.php';
+\App\Core\Router::dispatch();
 ?>
+
 
 <!-- ================================= -->
 <!-- HERO SECTION -->
@@ -255,7 +173,7 @@ include '../app/views/layouts/header.php';
                                 <?php echo limitText($project['description'] ?? '', 120); ?>
                             </p>
 
-                            <a href="project-details.php?slug=<?= urlencode((string)($project['slug'] ?? '')) ?>" class="btn-main">
+                            <a href="<?php echo base_url('project-details.php?slug=' . urlencode((string) ($project['slug'] ?? ''))); ?>" class="btn-main">
                                 View Project
                             </a>
 
@@ -468,7 +386,7 @@ include '../app/views/layouts/header.php';
                         </span>
                         <h3><?php echo escape((string)($blog['title'] ?? '')); ?></h3>
                         <p><?php echo limitText((string)($blog['excerpt'] ?? ''), 120); ?></p>
-                        <a href="blog-details.php?slug=<?php echo urlencode((string)($blog['slug'] ?? '')); ?>" class="btn-main">Read More</a>
+                        <a href="<?php echo base_url('blog-details.php?slug=' . urlencode((string) ($blog['slug'] ?? ''))); ?>" class="btn-main">Read More</a>
                     </div>
 
                 </div>
@@ -478,7 +396,7 @@ include '../app/views/layouts/header.php';
         </div>
 
         <div class="text-center mt-5">
-            <a href="blogs.php" class="btn-main">View All Blogs</a>
+            <a href="<?php echo base_url('blogs.php'); ?>" class="btn-main">View All Blogs</a>
         </div>
 
     </div>
@@ -542,7 +460,7 @@ include '../app/views/layouts/header.php';
 
         </div>
 
-        <form class="contact-form" action="contact.php" method="POST">
+        <form class="contact-form" action="<?php echo base_url('contact.php'); ?>" method="POST">
             <?php echo csrfField(); ?>
 
             <input type="text" name="name" placeholder="Full Name" required>
@@ -571,7 +489,7 @@ include '../app/views/layouts/header.php';
         <h2>Welcome Back</h2>
         <p>Login to access your dashboard</p>
 
-        <form action="login.php" method="POST">
+        <form action="<?php echo base_url('login.php'); ?>" method="POST">
             <?php echo csrfField(); ?>
 
             <input type="email" name="email" placeholder="Email Address" required>

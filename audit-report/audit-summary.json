@@ -1,0 +1,1055 @@
+﻿{
+    "scores":  {
+                   "Documentation":  70,
+                   "Performance":  80,
+                   "Security":  0,
+                   "Maintainability":  0,
+                   "Database":  70,
+                   "Architecture":  85,
+                   "CodeQuality":  100,
+                   "Testing":  80
+               },
+    "issues":  {
+                   "Low":  null,
+                   "Critical":  0,
+                   "Medium":  170,
+                   "total":  171,
+                   "High":  0
+               },
+    "audit":  {
+                  "version":  "1.0.0",
+                  "duration":  "0h 0m 29s",
+                  "projectRoot":  "C:\\xampp\\htdocs\\KVN_Construction",
+                  "date":  "2026-07-23 18:41:19",
+                  "overallScore":  57.8,
+                  "grade":  "D"
+              },
+    "items":  [
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "app\\controllers\\admin\\ProjectController.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "config\\app.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "core\\Controller.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "helpers\\rateLimiter.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "helpers\\security_audit.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "helpers\\upload.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\about-us.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\blog-details.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\blogs.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\contact.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\estimator.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\project-details.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\projects.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\dashboard.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\blogs\\categories.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\blogs\\comments.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\blogs\\edit.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\blogs\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\blogs\\tags.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\clients\\feedback.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\clients\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: split",
+                      "File":  "public\\admin\\clients\\payments.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\clients\\payments.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\clients\\projects.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\clients\\view.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\cms\\faq.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\cms\\seo.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\estimators\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\estimators\\materials.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\estimators\\packages.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\estimators\\pricing.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\estimators\\requests.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\leads\\edit.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: split",
+                      "File":  "public\\admin\\leads\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\leads\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: split",
+                      "File":  "public\\admin\\leads\\pipeline.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\leads\\pipeline.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\leads\\view.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\media\\documents.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\media\\images.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\media\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\media\\videos.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\portfolio\\featured.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\portfolio\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\projects\\create.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\projects\\edit.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\projects\\gallery.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: split",
+                      "File":  "public\\admin\\projects\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\projects\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\projects\\milestones.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\projects\\view.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\quotations\\approvals.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\quotations\\create.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\quotations\\edit.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\quotations\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\quotations\\pdf.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\settings\\smtp.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\testimonials\\approvals.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\testimonials\\featured.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\testimonials\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\testimonials\\videos.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\users\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\users\\view.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\videos\\categories.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\admin\\videos\\index.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "public\\client\\timeline\\progress.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "routes\\api_estimator.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "tests\\ApiEstimatorTest.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "tests\\debug_fixture_rows.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "tests\\debug_otp_select.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "tests\\run.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Deprecated function usage: each",
+                      "File":  "tests\\run_minimal_test.php",
+                      "Type":  "DEPRECATED_FUNCTION",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "_debug.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: file_get_contents with user input",
+                      "File":  "_fix.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "app\\controllers\\admin\\AdminController.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "app\\models\\Lead.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "config\\app.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "config\\database.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "core\\Controller.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: extract() usage",
+                      "File":  "core\\Controller.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "core\\Model.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "core\\Router.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: extract() usage",
+                      "File":  "core\\Router.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "core\\View.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: extract() usage",
+                      "File":  "core\\View.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "helpers\\functions.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "helpers\\security_audit.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "helpers\\security_audit.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: extract() usage",
+                      "File":  "helpers\\security_audit.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "public\\estimator.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "public\\admin\\blogs\\categories.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "public\\admin\\blogs\\comments.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "public\\admin\\blogs\\tags.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\cms\\about.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\cms\\contact.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\cms\\faq.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\cms\\homepage.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\cms\\seo.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "public\\admin\\estimators\\packages.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "public\\admin\\estimators\\pricing.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\media\\documents.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\media\\images.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\media\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\media\\videos.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\portfolio\\featured.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\portfolio\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "public\\admin\\quotations\\pdf.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\reports\\estimators.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\reports\\leads.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\reports\\projects.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\reports\\quotations.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\reports\\revenue.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\security\\audit-logs.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\security\\blocked-users.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\security\\login-attempts.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\security\\logs.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\security\\sessions.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\settings\\general.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\settings\\integrations.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\settings\\security.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\settings\\seo.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\settings\\sms.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\testimonials\\approvals.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\testimonials\\featured.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\testimonials\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\testimonials\\videos.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\videos\\categories.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\admin\\videos\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\dashboard.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\documents\\agreements.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\documents\\downloads.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\documents\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\documents\\permits.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\payments\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\payments\\invoices.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\payments\\receipts.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\payments\\transactions.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\profile\\edit.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\profile\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\profile\\notifications.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\profile\\password.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\projects\\gallery.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\projects\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\projects\\milestones.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\projects\\updates.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\projects\\view.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\quotations\\approvals.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\quotations\\downloads.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\quotations\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\support\\create-ticket.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\support\\messages.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\support\\tickets.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\timeline\\index.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\timeline\\schedules.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\uploads\\feedback.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\uploads\\images.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\uploads\\testimonials.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "public\\client\\uploads\\videos.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "tests\\AdminTest.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "tests\\AuthOtpTest.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "tests\\AuthOtpTest.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "tests\\debug_fixture_rows.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "tests\\debug_otp_select.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: include/require with variable",
+                      "File":  "tests\\run.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "tests\\run_api.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "tests\\run_minimal_test.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "tests\\run_minimal_test.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: exec/system/shell_exec/passthru",
+                      "File":  "tests\\fixtures\\otp_sqlite_fixture.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Heuristic match: Possible SQL injection (direct query)",
+                      "File":  "tests\\fixtures\\otp_sqlite_fixture.php",
+                      "Type":  "SECURITY_HEURISTIC",
+                      "Severity":  "Medium"
+                  },
+                  {
+                      "Message":  "Missing favicon.ico",
+                      "File":  "public/favicon.ico",
+                      "Type":  "MISSING_FAVICON",
+                      "Severity":  "Low"
+                  }
+              ]
+}

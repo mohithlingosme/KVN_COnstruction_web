@@ -1,103 +1,91 @@
 <?php
 
-require_once ROOT_PATH . '/config/app.php';
-require_once ROOT_PATH . '/app/models/Lead.php';
+declare(strict_types=1);
 
+require_once ROOT_PATH . '/config/app.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
+
+/**
+ * AdminController - Thin controller
+ * Provides dashboard data by delegating to services and repositories
+ * No SQL, no business logic - pure orchestration
+ */
 class AdminController
 {
-    private $conn;
+    private PDO $conn;
+    private UserRepository $userRepo;
 
-    /**
-     * Whitelist of allowed table names for dashboard queries.
-     * Prevents SQL injection via table name interpolation.
-     */
-    private const ALLOWED_TABLES = [
-        'users',
-        'projects',
-        'blogs',
-        'testimonials',
-        'quotations',
-        'estimators',
-    ];
-
-    public function __construct($database)
+    public function __construct(?PDO $database = null)
     {
-        $this->conn = $database;
+        if ($database instanceof PDO) {
+            $this->conn = $database;
+        } else {
+            $this->conn = ServiceProvider::getDatabase();
+        }
+        $this->userRepo = new UserRepository($this->conn);
     }
 
-    public function dashboard()
+    /**
+     * GET /admin/dashboard - Dashboard with counts and recent data
+     */
+    public function dashboard(): array
     {
         $data = [];
 
-        // Totals - using cached/optimized single query instead of N separate queries
         try {
-            $countQuery = "
-                SELECT
-                    (SELECT COUNT(*) FROM users) AS total_users,
-                    (SELECT COUNT(*) FROM projects WHERE deleted_at IS NULL) AS total_projects,
-                    (SELECT COUNT(*) FROM blogs WHERE status = 'published') AS total_blogs,
-                    (SELECT COUNT(*) FROM testimonials WHERE status = 'approved') AS total_testimonials,
-                    (SELECT COUNT(*) FROM quotations) AS total_quotations,
-                    (SELECT COUNT(*) FROM estimator_leads) AS total_estimator_requests
-            ";
-            $stmt = $this->conn->query($countQuery);
-            $counts = $stmt->fetch(PDO::FETCH_ASSOC);
-
+            $counts = $this->userRepo->getDashboardCounts();
             $data['totalUsers'] = (int) ($counts['total_users'] ?? 0);
             $data['totalProjects'] = (int) ($counts['total_projects'] ?? 0);
             $data['totalBlogs'] = (int) ($counts['total_blogs'] ?? 0);
             $data['totalTestimonials'] = (int) ($counts['total_testimonials'] ?? 0);
             $data['totalQuotations'] = (int) ($counts['total_quotations'] ?? 0);
             $data['totalEstimatorRequests'] = (int) ($counts['total_estimator_requests'] ?? 0);
-        } catch (PDOException $e) {
+        } catch (\Throwable $e) {
             error_log('Dashboard count query failed: ' . $e->getMessage());
-            $data['totalUsers'] = 0;
-            $data['totalProjects'] = 0;
-            $data['totalBlogs'] = 0;
-            $data['totalTestimonials'] = 0;
-            $data['totalQuotations'] = 0;
-            $data['totalEstimatorRequests'] = 0;
+            $data = array_merge($data, [
+                'totalUsers' => 0, 'totalProjects' => 0, 'totalBlogs' => 0,
+                'totalTestimonials' => 0, 'totalQuotations' => 0, 'totalEstimatorRequests' => 0,
+            ]);
         }
 
-        // Reuse the controller connection. Creating Lead without this argument
-        // opens a second production database connection and breaks isolated tests.
-        $leadModel = new Lead($this->conn);
-        $data['totalLeads'] = $leadModel->count();
+        try {
+            $leadRepo = new LeadRepository($this->conn);
+            $data['totalLeads'] = $leadRepo->count();
+            $data['recentLeads'] = $leadRepo->findLatest(5);
+        } catch (\Throwable $e) {
+            $data['totalLeads'] = 0;
+            $data['recentLeads'] = [];
+        }
 
-        // Recent Data - single query per table with column selection to reduce data transfer
-        $data['recentLeads'] = $leadModel->latest(5);
-        $data['recentProjects'] = $this->getLatest('projects', 5);
-        $data['recentBlogs'] = $this->getLatest('blogs', 5);
+        try {
+            $projectRepo = new ProjectRepository($this->conn);
+            $data['recentProjects'] = $projectRepo->findAllWithClient('projects.id DESC', 5);
+        } catch (\Throwable $e) {
+            $data['recentProjects'] = [];
+        }
+
+        try {
+            $blogRepo = new BlogRepository($this->conn);
+            $data['recentBlogs'] = $blogRepo->findAll('id DESC', 5);
+        } catch (\Throwable $e) {
+            $data['recentBlogs'] = [];
+        }
 
         return $data;
     }
 
     /**
-     * Safely get latest records from a whitelisted table.
-     * Uses indexed column (id) with LIMIT pushdown for fast execution.
+     * Get recent records from any whitelisted table via DashboardRepository.
+     * No SQL in controller - delegates to repository.
      */
     private function getLatest(string $table, int $limit = 5): array
     {
-        // Whitelist check to prevent SQL injection
-        if (!in_array($table, self::ALLOWED_TABLES, true)) {
-            error_log("AdminController: Unauthorized table access attempt: {$table}");
-            return [];
-        }
-
         try {
-            $stmt = $this->conn->prepare(
-                "SELECT id, title, name, status, created_at, updated_at
-                 FROM {$table}
-                 ORDER BY id DESC
-                 LIMIT :limit"
-            );
-            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
+            $dashboardRepo = new \App\Repositories\DashboardRepository($this->conn);
+            return $dashboardRepo->getRecent($table, $limit);
+        } catch (\Throwable $e) {
             error_log("AdminController getLatest({$table}) failed: " . $e->getMessage());
             return [];
         }
     }
 }
-?>

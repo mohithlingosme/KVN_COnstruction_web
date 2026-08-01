@@ -275,14 +275,13 @@ basename($_SERVER['PHP_SELF']);
 
                     <li class="nav-item">
 
-                        <a
-                            class="nav-link <?php echo ($currentPage == 'about-us.php') ? 'active' : ''; ?>"
-                            href="public\about-us.php"
-                        >
+                    <a
+                        class="nav-link <?php echo ($currentPage == 'about-us.php') ? 'active' : ''; ?>"
+                        href="<?php echo base_url('about-us.php'); ?>">
 
-                            About
+                        About Us
 
-                        </a>
+                    </a>
 
                     </li>
 
@@ -290,7 +289,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'services.php') ? 'active' : ''; ?>"
-                            href="public\services.php"
+                            href="<?php echo base_url('services.php'); ?>"
                         >
 
                             Services
@@ -303,7 +302,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'projects.php') ? 'active' : ''; ?>"
-                            href="public\projects.php"
+                            href="<?php echo base_url('projects.php'); ?>"
                         >
 
                             Projects
@@ -316,7 +315,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'blogs.php') ? 'active' : ''; ?>"
-                            href="public\blogs.php"
+                            href="<?php echo base_url('blogs.php'); ?>"
                         >
 
                             Blogs
@@ -329,7 +328,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'careers.php') ? 'active' : ''; ?>"
-                            href="public\careers.php"
+                            href="<?php echo base_url('careers.php'); ?>"
                         >
 
                             Careers
@@ -342,7 +341,7 @@ basename($_SERVER['PHP_SELF']);
 
                         <a
                             class="nav-link <?php echo ($currentPage == 'contact.php') ? 'active' : ''; ?>"
-                            href="public\contact.php"
+                            href="<?php echo base_url('contact.php'); ?>"
                         >
 
                             Contact
@@ -358,7 +357,7 @@ basename($_SERVER['PHP_SELF']);
                         <?php if(is_logged_in()): ?>
 
                             <a
-                                href="<?php echo base_url('admin/dashboard.php'); ?>"
+                                href="<?php echo base_url(is_admin() ? 'admin/dashboard.php' : 'client/dashboard.php'); ?>"
                                 class="btn-main"
                             >
 

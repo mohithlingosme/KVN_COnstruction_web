@@ -19,6 +19,8 @@ require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
 
+require_once '../../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -34,17 +36,24 @@ $pageTitle =
 |--------------------------------------------------------------------------
 */
 
-require_once '../../../app/controllers/admin/ProjectController.php';
+$projects = [];
+$stats = [];
 
-$controller = new ProjectController($conn);
+try {
+    $projectRepo = repo('Project');
+    if ($projectRepo) {
+        $projects = $projectRepo->findAllWithClient();
+        $stats = $projectRepo->getStats();
+    }
+} catch (Exception $e) {
+    $projects = [];
+    $stats = [];
+}
 
-$projects = $controller->index();
-$stats = $controller->getStats($projects);
-
-$totalProjects = $stats['total'];
-$ongoingProjects = $stats['ongoing'];
-$completedProjects = $stats['completed'];
-$pendingProjects = $stats['pending'];
+$totalProjects = $stats['total'] ?? count($projects);
+$ongoingProjects = $stats['ongoing'] ?? 0;
+$completedProjects = $stats['completed'] ?? 0;
+$pendingProjects = $stats['pending'] ?? 0;
 
 ?>
 

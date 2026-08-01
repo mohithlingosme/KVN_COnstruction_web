@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | CREATE USER
 |--------------------------------------------------------------------------
-| File:
-| /public/admin/users/create.php
+| File: /public/admin/users/create.php
 |--------------------------------------------------------------------------
 */
 
@@ -24,6 +25,8 @@ require_once '../../../helpers/session.php';
 require_once '../../../helpers/rateLimiter.php';
 
 require_once '../../../helpers/upload.php';
+
+require_once '../../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -94,74 +97,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /*
     |--------------------------------------------------------------------------
-    | VALIDATION
+    | VALIDATE VIA SERVICE
     |--------------------------------------------------------------------------
     */
 
-    if (
+    $userService = new \App\Services\AdminUserService();
 
-        empty($full_name)
-
-        ||
-
-        empty($email)
-
-        ||
-
-        empty($password)
-    ) {
-
-        $_SESSION['error'] =
-        'Please fill all required fields.';
-
-        redirect('admin/users/create.php');
-    }
-
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-
-        $_SESSION['error'] =
-        'Invalid email address.';
-
-        redirect('admin/users/create.php');
-    }
-
-    if (strlen($password) < 8) {
-
-        $_SESSION['error'] =
-        'Password must be minimum 8 characters.';
-
-        redirect('admin/users/create.php');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK EMAIL EXISTS
-    |--------------------------------------------------------------------------
-    */
-
-    $checkQuery = "
-
-        SELECT id
-
-        FROM users
-
-        WHERE email = :email
-
-        LIMIT 1
-    ";
-
-    $checkStmt =
-    $conn->prepare($checkQuery);
-
-    $checkStmt->execute([
-
-        ':email' => $email
+    $validation = $userService->validateUserData([
+        'full_name' => $full_name,
+        'email'     => $email,
+        'password'  => $password,
     ]);
 
-    if ($checkStmt->fetch()) {
+    if (!$validation['valid']) {
 
         $_SESSION['error'] =
-        'Email already exists.';
+        implode(' ', $validation['errors']);
 
         redirect('admin/users/create.php');
     }
@@ -207,96 +158,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /*
     |--------------------------------------------------------------------------
-    | INSERT USER
+    | CREATE USER VIA SERVICE
     |--------------------------------------------------------------------------
     */
 
-    try {
+    $result = $userService->createUser([
+        'full_name'     => $full_name,
+        'email'         => $email,
+        'phone'         => $phone,
+        'password'      => $password,
+        'role'          => $role,
+        'status'        => $status,
+        'profile_image' => $profile_image,
+        '_admin_id'     => currentUserId(),
+    ]);
 
-        $query = "
-
-            INSERT INTO users (
-
-                full_name,
-                email,
-                phone,
-                password,
-                role,
-                status,
-                profile_image,
-                created_at
-
-            ) VALUES (
-
-                :full_name,
-                :email,
-                :phone,
-                :password,
-                :role,
-                :status,
-                :profile_image,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':full_name' =>
-            $full_name,
-
-            ':email' =>
-            $email,
-
-            ':phone' =>
-            $phone,
-
-            ':password' =>
-            password_hash(
-
-                $password,
-
-                PASSWORD_BCRYPT
-            ),
-
-            ':role' =>
-            $role,
-
-            ':status' =>
-            $status,
-
-            ':profile_image' =>
-            $profile_image
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | SECURITY LOG
-        |--------------------------------------------------------------------------
-        */
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'user_created',
-
-            'info',
-
-            'Created user: ' . $email
-        );
+    if ($result['success']) {
 
         $_SESSION['success'] =
-        'User created successfully.';
+        $result['message'];
 
         redirect('admin/users/index.php');
 
-    } catch(Exception $e) {
+    } else {
 
         $_SESSION['error'] =
-        'Failed to create user.';
+        $result['message'];
 
         redirect('admin/users/create.php');
     }

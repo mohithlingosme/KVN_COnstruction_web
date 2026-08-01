@@ -72,7 +72,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -461,7 +461,7 @@ $logs =
 
         <tbody>
 
-        <?php if ($logs && $logs->num_rows > 0): ?>
+        <?php if ($logs && $logs->num_rows() > 0): ?>
 
             <?php while ($row = $logs->fetch_assoc()): ?>
 

@@ -1,6 +1,8 @@
 <?php
 
 require_once '../config/app.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/repositories.php';
 
 // =====================================
 // SEO
@@ -12,85 +14,34 @@ $pageTitle =
 $metaDescription =
 "Learn about KVN Construction, our vision, process, engineering excellence, and premium construction services in Bengaluru.";
 
-
 // =====================================
-// FETCH ABOUT PAGE
+// FETCH ABOUT PAGE (via CmsRepository)
 // =====================================
 
-$aboutQuery = "
-    SELECT *
-    FROM about_page
-    LIMIT 1
-";
+$cmsRepo = repo('Cms');
 
-$aboutStmt =
-$conn->prepare($aboutQuery);
-
-$aboutStmt->execute();
-
-$about =
-$aboutStmt->fetch(PDO::FETCH_ASSOC);
-
+$about = $cmsRepo ? $cmsRepo->getAboutPage() : null;
 if (!$about) {
     $about = [];
 }
 
 // =====================================
-// ADVANTAGES
+// ADVANTAGES (via CmsRepository)
 // =====================================
 
-$advantageQuery = "
-    SELECT *
-    FROM about_advantages
-    WHERE status = 'active'
-    ORDER BY sort_order ASC
-";
-
-$advantageStmt =
-$conn->prepare($advantageQuery);
-
-$advantageStmt->execute();
-
-$advantages =
-$advantageStmt->fetchAll();
+$advantages = $cmsRepo ? $cmsRepo->getAboutAdvantages() : [];
 
 // =====================================
-// PROCESS STEPS
+// PROCESS STEPS (via CmsRepository)
 // =====================================
 
-$processQuery = "
-    SELECT *
-    FROM about_process_steps
-    WHERE status = 'active'
-    ORDER BY sort_order ASC
-";
-
-$processStmt =
-$conn->prepare($processQuery);
-
-$processStmt->execute();
-
-$processSteps =
-$processStmt->fetchAll();
+$processSteps = $cmsRepo ? $cmsRepo->getAboutProcessSteps() : [];
 
 // =====================================
-// SPECIFICATIONS
+// SPECIFICATIONS (via CmsRepository)
 // =====================================
 
-$specQuery = "
-    SELECT *
-    FROM about_specifications
-    WHERE status = 'active'
-    ORDER BY sort_order ASC
-";
-
-$specStmt =
-$conn->prepare($specQuery);
-
-$specStmt->execute();
-
-$specifications =
-$specStmt->fetchAll();
+$specifications = $cmsRepo ? $cmsRepo->getAboutSpecifications() : [];
 
 include '../app/views/layouts/header.php';
 

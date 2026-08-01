@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -34,37 +34,16 @@ $images = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            title,
-            file_name,
-            file_path,
-            file_type,
-            created_at
-        FROM media
-        WHERE
-            file_type LIKE 'image/%'
-        ORDER BY id DESC
-    ";
+    $mediaRepo = repo('Media');
 
-    $result =
-        $conn->query($query);
+    if ($mediaRepo) {
 
-    if ($result) {
-
-        while (
-            $row =
-            $result->fetch_assoc()
-        ) {
-
-            $images[] = $row;
-        }
+        $images = $mediaRepo->getByType('image/');
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Images fetch error: ' . $e->getMessage());
 }
 
 /*
@@ -80,37 +59,18 @@ if (isset($_GET['delete'])) {
 
     try {
 
-        /*
-        |--------------------------------------------------------------------------
-        | FETCH IMAGE
-        |--------------------------------------------------------------------------
-        */
+        $mediaRepo = repo('Media');
 
-        $stmt =
-            $conn->prepare(
-                "
-                SELECT file_path
-                FROM media
-                WHERE id = ?
-                "
-            );
+        if ($mediaRepo) {
 
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'i',
-                $id
-            );
-
-            $stmt->execute();
-
-            $result =
-                $stmt->get_result();
+            /*
+            |--------------------------------------------------------------------------
+            | FETCH IMAGE
+            |--------------------------------------------------------------------------
+            */
 
             $image =
-                $result->fetch_assoc();
-
-            $stmt->close();
+                $mediaRepo->findById($id);
 
             /*
             |--------------------------------------------------------------------------
@@ -120,16 +80,11 @@ if (isset($_GET['delete'])) {
 
             if (
                 $image &&
-                file_exists(
-                    '../../' .
-                    $image['file_path']
-                )
+                !empty($image['file_path']) &&
+                file_exists($image['file_path'])
             ) {
 
-                unlink(
-                    '../../' .
-                    $image['file_path']
-                );
+                unlink($image['file_path']);
             }
 
             /*
@@ -138,30 +93,12 @@ if (isset($_GET['delete'])) {
             |--------------------------------------------------------------------------
             */
 
-            $delete =
-                $conn->prepare(
-                    "
-                    DELETE FROM media
-                    WHERE id = ?
-                    "
-                );
-
-            if ($delete) {
-
-                $delete->bind_param(
-                    'i',
-                    $id
-                );
-
-                $delete->execute();
-
-                $delete->close();
-            }
+            $mediaRepo->deleteById($id);
         }
 
     } catch (Throwable $e) {
 
-        die($e->getMessage());
+        error_log('Image delete error: ' . $e->getMessage());
     }
 
     header('Location: images.php');

@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -37,28 +37,16 @@ if (isset($_GET['delete'])) {
 
     try {
 
-        $stmt = $conn->prepare(
-            "
-            DELETE FROM testimonial_videos
-            WHERE id = ?
-            "
-        );
+        $testimonialRepo = repo('Testimonial');
 
-        if ($stmt) {
+        if ($testimonialRepo) {
 
-            $stmt->bind_param(
-                'i',
-                $id
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+            $testimonialRepo->deleteVideo($id);
         }
 
     } catch (Throwable $e) {
 
-        die($e->getMessage());
+        error_log('Testimonial video delete error: ' . $e->getMessage());
     }
 
     header('Location: videos.php');
@@ -75,31 +63,16 @@ $videos = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            client_name,
-            title,
-            video_url,
-            thumbnail,
-            created_at
-        FROM testimonial_videos
-        ORDER BY id DESC
-    ";
+    $testimonialRepo = repo('Testimonial');
 
-    $result = $conn->query($query);
+    if ($testimonialRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $videos[] = $row;
-        }
+        $videos = $testimonialRepo->getAllVideos();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Testimonial videos fetch error: ' . $e->getMessage());
 }
 
 ?>

@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -37,28 +37,16 @@ if (isset($_GET['delete'])) {
 
     try {
 
-        $stmt = $conn->prepare(
-            "
-            DELETE FROM videos
-            WHERE id = ?
-            "
-        );
+        $videoRepo = repo('Video');
 
-        if ($stmt) {
+        if ($videoRepo) {
 
-            $stmt->bind_param(
-                'i',
-                $id
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+            $videoRepo->delete($id);
         }
 
     } catch (Throwable $e) {
 
-        die($e->getMessage());
+        error_log('Video delete error: ' . $e->getMessage());
     }
 
     header('Location: index.php');
@@ -75,32 +63,16 @@ $videos = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            title,
-            category,
-            thumbnail,
-            video_url,
-            description,
-            created_at
-        FROM videos
-        ORDER BY id DESC
-    ";
+    $videoRepo = repo('Video');
 
-    $result = $conn->query($query);
+    if ($videoRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $videos[] = $row;
-        }
+        $videos = $videoRepo->getAll();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Videos fetch error: ' . $e->getMessage());
 }
 
 ?>

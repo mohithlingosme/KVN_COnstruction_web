@@ -81,7 +81,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -325,7 +325,7 @@ $progressProjects  = 0;
 $completedProjects = 0;
 $holdProjects      = 0;
 
-if ($projects && $projects->num_rows > 0) {
+if ($projects && $projects->num_rows() > 0) {
 
     while ($calc = $projects->fetch_assoc()) {
 
@@ -1020,7 +1020,7 @@ if ($projects && $projects->num_rows > 0) {
 
             <tbody>
 
-            <?php if ($projects && $projects->num_rows > 0): ?>
+            <?php if ($projects && $projects->num_rows() > 0): ?>
 
                 <?php while ($row = $projects->fetch_assoc()): ?>
 

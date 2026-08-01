@@ -17,6 +17,7 @@ require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 require_once '../../../helpers/formatter.php';
 require_once '../../../helpers/csrf.php';
+require_once '../../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -45,10 +46,10 @@ $pageTitle = 'Project Milestones | ' . APP_NAME;
 |--------------------------------------------------------------------------
 */
 
+$projectRepo = repo('Project');
+
 try {
-    require_once '../../../app/models/Project.php';
-    $projectModel = new Project($conn);
-    $project = $projectModel->find($projectId);
+    $project = $projectRepo ? $projectRepo->findById($projectId) : null;
 
     if (!$project) {
         $_SESSION['error'] = 'Project not found.';
@@ -68,16 +69,9 @@ try {
 $milestones = [];
 
 try {
-    $query = "
-        SELECT *
-        FROM project_milestones
-        WHERE project_id = :project_id
-        ORDER BY due_date ASC, id ASC
-    ";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([':project_id' => $projectId]);
-    $milestones = $stmt->fetchAll();
-
+    if ($projectRepo) {
+        $milestones = $projectRepo->getMilestones($projectId);
+    }
 } catch (Exception $e) {
     error_log('Milestone fetch error: ' . $e->getMessage());
 }
@@ -109,20 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 }
 
-                $insertQuery = "
-                    INSERT INTO project_milestones
-                        (project_id, title, description, due_date, amount, status, created_at)
-                    VALUES
-                        (:project_id, :title, :description, :due_date, :amount, 'pending', NOW())
-                ";
-                $insertStmt = $conn->prepare($insertQuery);
-                $insertStmt->execute([
-                    ':project_id' => $projectId,
-                    ':title' => $title,
-                    ':description' => $description,
-                    ':due_date' => $dueDate,
-                    ':amount' => $amount
-                ]);
+                $projectRepo->createMilestone($projectId, $title, $description, $dueDate, $amount);
 
                 $_SESSION['success'] = 'Milestone added successfully.';
                 break;
@@ -137,17 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 }
 
-                $updateQuery = "
-                    UPDATE project_milestones
-                    SET status = :status, updated_at = NOW()
-                    WHERE id = :id AND project_id = :project_id
-                ";
-                $updateStmt = $conn->prepare($updateQuery);
-                $updateStmt->execute([
-                    ':status' => $status,
-                    ':id' => $milestoneId,
-                    ':project_id' => $projectId
-                ]);
+                $projectRepo->updateMilestoneStatus($milestoneId, $projectId, $status);
 
                 $_SESSION['success'] = 'Milestone status updated.';
                 break;
@@ -155,15 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'delete':
                 $milestoneId = (int) ($_POST['milestone_id'] ?? 0);
 
-                $deleteQuery = "
-                    DELETE FROM project_milestones
-                    WHERE id = :id AND project_id = :project_id
-                ";
-                $deleteStmt = $conn->prepare($deleteQuery);
-                $deleteStmt->execute([
-                    ':id' => $milestoneId,
-                    ':project_id' => $projectId
-                ]);
+                $projectRepo->deleteMilestone($milestoneId, $projectId);
 
                 $_SESSION['success'] = 'Milestone deleted.';
                 break;

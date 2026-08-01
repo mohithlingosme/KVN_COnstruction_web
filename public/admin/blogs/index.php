@@ -23,6 +23,8 @@ require_once '../../../helpers/csrf.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -76,6 +78,8 @@ if (
     $blogId =
     (int) $_GET['delete'];
 
+    $blogRepo = repo('Blog');
+
     try {
 
         /*
@@ -84,27 +88,8 @@ if (
         |--------------------------------------------------------------------------
         */
 
-        $fetchQuery = "
-
-            SELECT featured_image
-
-            FROM blogs
-
-            WHERE id = :id
-
-            LIMIT 1
-        ";
-
-        $fetchStmt =
-        $conn->prepare($fetchQuery);
-
-        $fetchStmt->execute([
-
-            ':id' => $blogId
-        ]);
-
         $blog =
-        $fetchStmt->fetch();
+        $blogRepo->findByIdAdmin($blogId);
 
         /*
         |--------------------------------------------------------------------------
@@ -140,20 +125,7 @@ if (
         |--------------------------------------------------------------------------
         */
 
-        $deleteQuery = "
-
-            DELETE FROM blogs
-
-            WHERE id = :id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':id' => $blogId
-        ]);
+        $blogRepo->deleteBlog($blogId);
 
         /*
         |--------------------------------------------------------------------------
@@ -192,31 +164,12 @@ if (
 
 $blogs = [];
 
+$blogRepo = repo('Blog');
+
 try {
 
-    $query = "
-
-        SELECT
-
-            b.*,
-
-            u.full_name AS author_name
-
-        FROM blogs b
-
-        LEFT JOIN users u
-        ON b.author_id = u.id
-
-        ORDER BY b.id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
     $blogs =
-    $stmt->fetchAll();
+    $blogRepo->findAllWithAuthor();
 
 } catch(Exception $e){
 

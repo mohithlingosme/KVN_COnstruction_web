@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,204 +30,29 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE INVOICES TABLE
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS client_invoices (
+require_once '../../../config/app.php';
+require_once __DIR__ . '/../../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        invoice_number VARCHAR(100) NOT NULL,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        invoice_title VARCHAR(255) NOT NULL,
-
-        invoice_date DATE NOT NULL,
-
-        due_date DATE NOT NULL,
-
-        amount DECIMAL(12,2) NOT NULL,
-
-        tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-
-        total_amount DECIMAL(12,2) NOT NULL,
-
-        payment_status ENUM(
-            'Paid',
-            'Pending',
-            'Partial',
-            'Overdue'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        pdf_file VARCHAR(500) DEFAULT NULL,
-
-        notes TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEMO DATA
+| FETCH INVOICE DATA
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM client_invoices
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO client_invoices
-        (
-
-            client_id,
-            invoice_number,
-            project_name,
-            invoice_title,
-            invoice_date,
-            due_date,
-            amount,
-            tax_amount,
-            total_amount,
-            payment_status,
-            notes
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'INV-2026-001',
-            'Luxury Villa',
-            'Foundation Stage Invoice',
-            '2026-01-20',
-            '2026-01-30',
-            1500000,
-            270000,
-            1770000,
-            'Paid',
-            'Foundation work completed successfully.'
-        ),
-
-        (
-            $clientId,
-            'INV-2026-002',
-            'Luxury Villa',
-            'Structural Work Invoice',
-            '2026-04-01',
-            '2026-04-15',
-            2500000,
-            450000,
-            2950000,
-            'Partial',
-            'Partial payment received.'
-        ),
-
-        (
-            $clientId,
-            'INV-2026-003',
-            'Farm House',
-            'Interior Design Invoice',
-            '2026-05-05',
-            '2026-05-20',
-            1000000,
-            180000,
-            1180000,
-            'Pending',
-            'Awaiting client confirmation.'
-        )
-        "
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH INVOICES
-|--------------------------------------------------------------------------
-*/
-
-$invoices =
-    $conn->query(
-        "
-        SELECT *
-        FROM client_invoices
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
-
-/*
-|--------------------------------------------------------------------------
-| CALCULATE STATS
-|--------------------------------------------------------------------------
-*/
-
-$totalInvoices = 0;
-$totalValue = 0;
-$paidInvoices = 0;
-$pendingInvoices = 0;
-
-if ($invoices && $invoices->num_rows > 0) {
-
-    while ($calc = $invoices->fetch_assoc()) {
-
-        $totalInvoices++;
-
-        $totalValue +=
-            (float)$calc['total_amount'];
-
-        if (
-            $calc['payment_status']
-            === 'Paid'
-        ) {
-
-            $paidInvoices++;
-        }
-
-        if (
-            $calc['payment_status']
-            === 'Pending'
-            ||
-            $calc['payment_status']
-            === 'Partial'
-            ||
-            $calc['payment_status']
-            === 'Overdue'
-        ) {
-
-            $pendingInvoices++;
-        }
-    }
-
-    $invoices->data_seek(0);
-}
+$data = $clientService->getInvoiceData($clientId);
+$invoices = $data['invoices'];
+$totalInvoices = $data['totalInvoices'];
+$totalValue = $data['totalValue'];
+$paidInvoices = $data['paidInvoices'];
+$pendingInvoices = $data['pendingInvoices'];
 
 ?>
-
 <!DOCTYPE html>
 
 <html lang="en">
@@ -674,7 +491,7 @@ if ($invoices && $invoices->num_rows > 0) {
 
     <div class="table-wrapper">
 
-        <?php if ($invoices && $invoices->num_rows > 0): ?>
+        <?php if (!empty($invoices)): ?>
 
             <table>
 
@@ -720,7 +537,7 @@ if ($invoices && $invoices->num_rows > 0) {
 
                 <tbody>
 
-                    <?php while ($row = $invoices->fetch_assoc()): ?>
+                    <?php foreach ($invoices as $row): ?>
 
                         <tr>
 
@@ -815,7 +632,7 @@ if ($invoices && $invoices->num_rows > 0) {
 
                         </tr>
 
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
 
                 </tbody>
 

@@ -32,10 +32,16 @@ function buildOtpFixture(PDO $pdo, string $mode = 'all'): void
             phone TEXT,
             email TEXT,
             full_name TEXT,
+            name TEXT,
             status TEXT,
             role TEXT,
             password TEXT,
             locked_until TEXT,
+            last_login_ip TEXT,
+            last_login_user_agent TEXT,
+            last_activity_at TEXT,
+            last_ip TEXT,
+            last_user_agent TEXT,
             deleted_at TEXT,
             created_at TEXT,
             updated_at TEXT,
@@ -49,9 +55,13 @@ function buildOtpFixture(PDO $pdo, string $mode = 'all'): void
             user_id INTEGER NOT NULL,
             purpose TEXT NOT NULL,
             otp TEXT NOT NULL,
+            resend_count INTEGER NOT NULL DEFAULT 0,
+            ip_address TEXT,
+            user_agent TEXT,
             expires_at TEXT NOT NULL,
             is_used INTEGER NOT NULL DEFAULT 0,
             attempts INTEGER NOT NULL DEFAULT 0,
+            deleted_at TEXT,
             created_at TEXT,
             updated_at TEXT,
             FOREIGN KEY (user_id) REFERENCES users(id)
@@ -70,11 +80,15 @@ function buildOtpFixture(PDO $pdo, string $mode = 'all'): void
     // Active user
     $stmt = $pdo->prepare(
         'INSERT INTO users (
-            phone, email, full_name, status, role, password,
-            locked_until, created_at, updated_at, last_login
+            phone, email, full_name, name, status, role, password,
+            locked_until, last_login_ip, last_login_user_agent,
+            last_activity_at, last_ip, last_user_agent,
+            deleted_at, created_at, updated_at, last_login
         ) VALUES (
-            :phone, :email, :full_name, :status, :role, :password,
-            :locked_until, :created_at, :updated_at, :last_login
+            :phone, :email, :full_name, :name, :status, :role, :password,
+            :locked_until, :last_login_ip, :last_login_user_agent,
+            :last_activity_at, :last_ip, :last_user_agent,
+            :deleted_at, :created_at, :updated_at, :last_login
         )'
     );
 
@@ -82,10 +96,17 @@ function buildOtpFixture(PDO $pdo, string $mode = 'all'): void
         ':phone' => '9999999999',
         ':email' => 'user@example.com',
         ':full_name' => 'Test User',
+        ':name' => 'Test User',
         ':status' => 'active',
         ':role' => 'client',
         ':password' => password_hash('dummy', PASSWORD_BCRYPT),
         ':locked_until' => null,
+        ':last_login_ip' => null,
+        ':last_login_user_agent' => null,
+        ':last_activity_at' => null,
+        ':last_ip' => null,
+        ':last_user_agent' => null,
+        ':deleted_at' => null,
         ':created_at' => $now,
         ':updated_at' => $now,
         ':last_login' => null,
@@ -100,15 +121,19 @@ function buildOtpFixture(PDO $pdo, string $mode = 'all'): void
     $insertOtp = function (string $plain, string $expiresAt, int $attempts) use ($pdo, $userId, $now): void {
         $hashed = password_hash($plain, PASSWORD_BCRYPT);
         $pdo->prepare(
-            'INSERT INTO user_otps (user_id, purpose, otp, expires_at, is_used, attempts, created_at, updated_at)
-             VALUES (:user_id, :purpose, :otp, :expires_at, :is_used, :attempts, :created_at, :updated_at)'
+            'INSERT INTO user_otps (user_id, purpose, otp, resend_count, ip_address, user_agent, expires_at, is_used, attempts, deleted_at, created_at, updated_at)
+             VALUES (:user_id, :purpose, :otp, :resend_count, :ip_address, :user_agent, :expires_at, :is_used, :attempts, :deleted_at, :created_at, :updated_at)'
         )->execute([
             ':user_id' => $userId,
             ':purpose' => 'login',
             ':otp' => $hashed,
+            ':resend_count' => 0,
+            ':ip_address' => '127.0.0.1',
+            ':user_agent' => 'unit-test',
             ':expires_at' => $expiresAt,
             ':is_used' => 0,
             ':attempts' => $attempts,
+            ':deleted_at' => null,
             ':created_at' => $now,
             ':updated_at' => $now,
         ]);

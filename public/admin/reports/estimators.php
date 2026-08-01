@@ -85,7 +85,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -329,7 +329,7 @@ $pendingCount      = 0;
 $rejectedCount     = 0;
 $totalEstimatedAmt = 0;
 
-if ($estimators && $estimators->num_rows > 0) {
+if ($estimators && $estimators->num_rows() > 0) {
 
     while ($calc = $estimators->fetch_assoc()) {
 
@@ -357,7 +357,12 @@ if ($estimators && $estimators->num_rows > 0) {
     $estimators->data_seek(0);
 }
 
+require_once '../../app/Services/EstimatorService.php';
+
+$service = new \App\Services\EstimatorService();
+$estimators = $service->getAllEstimations();
 ?>
+
 
 <!DOCTYPE html>
 
@@ -990,7 +995,7 @@ if ($estimators && $estimators->num_rows > 0) {
 
             <tbody>
 
-            <?php if ($estimators && $estimators->num_rows > 0): ?>
+            <?php if ($estimators && $estimators->num_rows() > 0): ?>
 
                 <?php while ($row = $estimators->fetch_assoc()): ?>
 
@@ -1107,3 +1112,13 @@ if ($estimators && $estimators->num_rows > 0) {
 </body>
 
 </html>
+<?php foreach ($estimators as $row): ?>
+    <tr>
+        <td><?php echo htmlspecialchars($row['full_name']); ?></td>
+        <!-- ... populate other columns ... -->
+        <td>
+            <a href="../../public/admin/reports/estimators.php?action=delete&id=<?php echo $row['id']; ?>" 
+               onclick="return confirm('Delete?')">Delete</a>
+        </td>
+    </tr>
+<?php endforeach; ?>

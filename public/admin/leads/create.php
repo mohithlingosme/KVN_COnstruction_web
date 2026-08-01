@@ -23,6 +23,10 @@ require_once '../../../helpers/session.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../../includes/repositories.php';
+
+require_once '../../../bootstrap/providers/ServiceProvider.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -47,9 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('admin/leads/create.php');
     }
 
-    require_once '../../../app/controllers/admin/LeadController.php';
-    $controller = new LeadController($conn);
-    $controller->store();
+    $service = ServiceProvider::get('LeadService');
+    $result = $service->create($_POST);
+
+    if ($result['status']) {
+        $_SESSION['success'] = $result['message'];
+        redirect('admin/leads/index.php');
+    } else {
+        $_SESSION['error'] = $result['message'];
+        redirect('admin/leads/create.php');
+    }
 }
 
 ?>

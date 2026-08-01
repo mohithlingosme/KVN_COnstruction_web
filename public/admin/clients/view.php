@@ -19,6 +19,8 @@ require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | VALIDATE CLIENT ID
@@ -42,29 +44,18 @@ if ($clientId <= 0) {
 |--------------------------------------------------------------------------
 */
 
-$query = "
+$client = [];
 
-    SELECT *
+try {
 
-    FROM users
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $client = $userRepo->findClientById($clientId);
+    }
 
-    WHERE id = :id
-
-    AND role = 'client'
-
-    LIMIT 1
-";
-
-$stmt =
-$conn->prepare($query);
-
-$stmt->execute([
-
-    ':id' => $clientId
-]);
-
-$client =
-$stmt->fetch();
+} catch(Exception $e){
+    $client = null;
+}
 
 if (!$client) {
 
@@ -84,32 +75,10 @@ $projects = [];
 
 try {
 
-    $projectQuery = "
-
-        SELECT
-            id,
-            project_name,
-            status,
-            budget,
-            created_at
-
-        FROM projects
-
-        WHERE client_id = :client_id
-
-        ORDER BY id DESC
-    ";
-
-    $projectStmt =
-    $conn->prepare($projectQuery);
-
-    $projectStmt->execute([
-
-        ':client_id' => $clientId
-    ]);
-
-    $projects =
-    $projectStmt->fetchAll();
+    $projectRepo = repo('Project');
+    if ($projectRepo) {
+        $projects = $projectRepo->findByClient($clientId);
+    }
 
 } catch(Exception $e){}
 
@@ -123,33 +92,10 @@ $payments = [];
 
 try {
 
-    $paymentQuery = "
-
-        SELECT
-            id,
-            amount,
-            payment_status,
-            payment_date
-
-        FROM payments
-
-        WHERE client_id = :client_id
-
-        ORDER BY id DESC
-
-        LIMIT 10
-    ";
-
-    $paymentStmt =
-    $conn->prepare($paymentQuery);
-
-    $paymentStmt->execute([
-
-        ':client_id' => $clientId
-    ]);
-
-    $payments =
-    $paymentStmt->fetchAll();
+    $invoiceRepo = repo('Invoice');
+    if ($invoiceRepo) {
+        $payments = $invoiceRepo->getPaymentsByClientId($clientId);
+    }
 
 } catch(Exception $e){}
 
@@ -163,33 +109,10 @@ $logs = [];
 
 try {
 
-    $logQuery = "
-
-        SELECT
-            event,
-            severity,
-            description,
-            created_at
-
-        FROM security_logs
-
-        WHERE user_id = :user_id
-
-        ORDER BY id DESC
-
-        LIMIT 10
-    ";
-
-    $logStmt =
-    $conn->prepare($logQuery);
-
-    $logStmt->execute([
-
-        ':user_id' => $clientId
-    ]);
-
-    $logs =
-    $logStmt->fetchAll();
+    $auditRepo = repo('Audit');
+    if ($auditRepo) {
+        $logs = $auditRepo->getSecurityLogsByUserId($clientId, 10);
+    }
 
 } catch(Exception $e){}
 

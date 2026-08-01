@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,138 +30,14 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE AGREEMENTS TABLE
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS client_agreements (
+require_once '../../../config/app.php';
+require_once __DIR__ . '/../../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        agreement_title VARCHAR(255) NOT NULL,
-
-        agreement_number VARCHAR(100) NOT NULL,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        agreement_type VARCHAR(100) NOT NULL,
-
-        start_date DATE NOT NULL,
-
-        end_date DATE DEFAULT NULL,
-
-        agreement_value DECIMAL(15,2)
-        DEFAULT 0.00,
-
-        status ENUM(
-            'Active',
-            'Completed',
-            'Expired',
-            'Pending'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        file_name VARCHAR(255) DEFAULT NULL,
-
-        remarks TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM client_agreements
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO client_agreements
-        (
-
-            client_id,
-            agreement_title,
-            agreement_number,
-            project_name,
-            agreement_type,
-            start_date,
-            end_date,
-            agreement_value,
-            status,
-            file_name,
-            remarks
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'Luxury Villa Construction Agreement',
-            'AGR-2026-001',
-            'Luxury Villa Project',
-            'Turnkey Construction',
-            '2026-01-10',
-            '2027-01-10',
-            8500000.00,
-            'Active',
-            'villa-agreement.pdf',
-            'Main construction agreement approved and signed.'
-        ),
-
-        (
-            $clientId,
-            'Farm House Interior Agreement',
-            'AGR-2026-002',
-            'Farm House Project',
-            'Interior Design',
-            '2026-03-01',
-            '2026-09-01',
-            2400000.00,
-            'Pending',
-            'farmhouse-interior.pdf',
-            'Pending final signature from client.'
-        ),
-
-        (
-            $clientId,
-            'Commercial Building Contract',
-            'AGR-2025-003',
-            'Commercial Complex',
-            'Commercial Construction',
-            '2025-01-15',
-            '2026-01-15',
-            18500000.00,
-            'Completed',
-            'commercial-contract.pdf',
-            'Project completed successfully.'
-        )
-        "
-    );
-}
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
@@ -177,15 +45,7 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$agreements =
-    $conn->query(
-        "
-        SELECT *
-        FROM client_agreements
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
+$agreements = $clientService->getAgreements($clientId);
 
 /*
 |--------------------------------------------------------------------------
@@ -193,43 +53,21 @@ $agreements =
 |--------------------------------------------------------------------------
 */
 
-$totalAgreements = 0;
+$totalAgreements = count($agreements);
 $activeAgreements = 0;
 $pendingAgreements = 0;
 $completedAgreements = 0;
 
-if ($agreements && $agreements->num_rows > 0) {
-
-    while ($calc = $agreements->fetch_assoc()) {
-
-        $totalAgreements++;
-
-        if (
-            $calc['status']
-            === 'Active'
-        ) {
-
-            $activeAgreements++;
-        }
-
-        if (
-            $calc['status']
-            === 'Pending'
-        ) {
-
-            $pendingAgreements++;
-        }
-
-        if (
-            $calc['status']
-            === 'Completed'
-        ) {
-
-            $completedAgreements++;
-        }
+foreach ($agreements as $row) {
+    if (($row['status'] ?? '') === 'Active') {
+        $activeAgreements++;
     }
-
-    $agreements->data_seek(0);
+    if (($row['status'] ?? '') === 'Pending') {
+        $pendingAgreements++;
+    }
+    if (($row['status'] ?? '') === 'Completed') {
+        $completedAgreements++;
+    }
 }
 
 ?>
@@ -711,11 +549,11 @@ if ($agreements && $agreements->num_rows > 0) {
 
     <!-- AGREEMENTS -->
 
-    <?php if ($agreements && $agreements->num_rows > 0): ?>
+    <?php if (!empty($agreements)): ?>
 
         <div class="agreements-grid">
 
-            <?php while ($row = $agreements->fetch_assoc()): ?>
+            <?php foreach ($agreements as $row): ?>
 
                 <div class="agreement-card">
 
@@ -878,7 +716,7 @@ if ($agreements && $agreements->num_rows > 0) {
 
                 </div>
 
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         </div>
 

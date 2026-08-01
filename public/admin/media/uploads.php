@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -192,48 +192,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     |--------------------------------------------------------------------------
                     */
 
-                    $stmt =
-                        $conn->prepare(
-                            "
-                            INSERT INTO media
-                            (
-                                title,
-                                file_name,
-                                file_path,
-                                file_type
-                            )
-                            VALUES
-                            (
-                                ?, ?, ?, ?
-                            )
-                            "
-                        );
+                    $mediaRepo = repo('Media');
 
-                    if ($stmt) {
+                    if ($mediaRepo) {
 
                         $relativePath =
                             'uploads/media/' .
                             $newFileName;
 
-                        $stmt->bind_param(
-                            'ssss',
-                            $title,
-                            $newFileName,
-                            $relativePath,
-                            $mimeType
-                        );
+                        $ok = $mediaRepo->insert([
+                            'file_name'  => $newFileName,
+                            'file_path'  => $relativePath,
+                            'file_type'  => $mimeType,
+                            'alt_text'   => $title,
+                            'caption'    => $title,
+                        ]);
 
-                        $stmt->execute();
+                        if ($ok) {
 
-                        $stmt->close();
+                            $success =
+                                'File uploaded successfully.';
 
-                        $success =
-                            'File uploaded successfully.';
+                        } else {
+
+                            $error =
+                                'Database query failed.';
+                        }
 
                     } else {
 
                         $error =
-                            'Database query failed.';
+                            'Media repository unavailable.';
                     }
 
                 } else {

@@ -79,7 +79,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -312,7 +312,7 @@ $contactedLeads  = 0;
 $qualifiedLeads  = 0;
 $closedLeads     = 0;
 
-if ($leads && $leads->num_rows > 0) {
+if ($leads && $leads->num_rows() > 0) {
 
     while ($calc = $leads->fetch_assoc()) {
 
@@ -969,7 +969,7 @@ if ($leads && $leads->num_rows > 0) {
 
             <tbody>
 
-            <?php if ($leads && $leads->num_rows > 0): ?>
+            <?php if ($leads && $leads->num_rows() > 0): ?>
 
                 <?php while ($row = $leads->fetch_assoc()): ?>
 

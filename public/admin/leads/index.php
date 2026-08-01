@@ -19,6 +19,10 @@ require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
 
+require_once '../../../includes/repositories.php';
+
+require_once '../../../bootstrap/providers/ServiceProvider.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -30,18 +34,17 @@ $pageTitle =
 
 /*
 |--------------------------------------------------------------------------
-| FETCH LEADS
+| FETCH LEADS VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
-require_once '../../../app/controllers/admin/LeadController.php';
-
-$controller = new LeadController($conn);
+$service = ServiceProvider::get('LeadService');
 
 $leads = [];
 
 try {
-    $leads = $controller->index();
+    $result = $service->getAll();
+    $leads = $result['data'] ?? [];
 } catch(Exception $e){
     $_SESSION['error'] = 'Failed to fetch leads.';
 }
@@ -67,7 +70,7 @@ count(
             return
 
             strtolower(
-                $lead['status']
+                $lead['status'] ?? ''
             )
 
             ===
@@ -89,7 +92,7 @@ count(
             return
 
             strtolower(
-                $lead['status']
+                $lead['status'] ?? ''
             )
 
             ===
@@ -111,7 +114,7 @@ count(
             return
 
             strtolower(
-                $lead['status']
+                $lead['status'] ?? ''
             )
 
             ===

@@ -19,6 +19,8 @@ require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
 
+require_once '../../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | VALIDATE PROJECT ID
@@ -42,34 +44,10 @@ if ($projectId <= 0) {
 |--------------------------------------------------------------------------
 */
 
-$query = "
-
-    SELECT
-        p.*,
-        u.full_name AS client_name,
-        u.email AS client_email,
-        u.phone AS client_phone
-
-    FROM projects p
-
-    LEFT JOIN users u
-    ON p.client_id = u.id
-
-    WHERE p.id = :id
-
-    LIMIT 1
-";
-
-$stmt =
-$conn->prepare($query);
-
-$stmt->execute([
-
-    ':id' => $projectId
-]);
+$projectRepo = repo('Project');
 
 $project =
-$stmt->fetch();
+$projectRepo ? $projectRepo->findByIdWithClient($projectId) : null;
 
 if (!$project) {
 
@@ -89,32 +67,9 @@ $tasks = [];
 
 try {
 
-    $taskQuery = "
-
-        SELECT
-            id,
-            task_name,
-            assigned_to,
-            status,
-            due_date
-
-        FROM project_tasks
-
-        WHERE project_id = :project_id
-
-        ORDER BY id DESC
-    ";
-
-    $taskStmt =
-    $conn->prepare($taskQuery);
-
-    $taskStmt->execute([
-
-        ':project_id' => $projectId
-    ]);
-
-    $tasks =
-    $taskStmt->fetchAll();
+    if ($projectRepo) {
+        $tasks = $projectRepo->getTasks($projectId);
+    }
 
 } catch(Exception $e){}
 
@@ -128,32 +83,9 @@ $payments = [];
 
 try {
 
-    $paymentQuery = "
-
-        SELECT
-            id,
-            amount,
-            payment_status,
-            payment_method,
-            payment_date
-
-        FROM payments
-
-        WHERE project_id = :project_id
-
-        ORDER BY id DESC
-    ";
-
-    $paymentStmt =
-    $conn->prepare($paymentQuery);
-
-    $paymentStmt->execute([
-
-        ':project_id' => $projectId
-    ]);
-
-    $payments =
-    $paymentStmt->fetchAll();
+    if ($projectRepo) {
+        $payments = $projectRepo->getPayments($projectId);
+    }
 
 } catch(Exception $e){}
 
@@ -167,31 +99,9 @@ $files = [];
 
 try {
 
-    $fileQuery = "
-
-        SELECT
-            id,
-            file_name,
-            uploaded_by,
-            created_at
-
-        FROM project_files
-
-        WHERE project_id = :project_id
-
-        ORDER BY id DESC
-    ";
-
-    $fileStmt =
-    $conn->prepare($fileQuery);
-
-    $fileStmt->execute([
-
-        ':project_id' => $projectId
-    ]);
-
-    $files =
-    $fileStmt->fetchAll();
+    if ($projectRepo) {
+        $files = $projectRepo->getFiles($projectId);
+    }
 
 } catch(Exception $e){}
 

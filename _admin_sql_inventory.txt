@@ -1,0 +1,295 @@
+﻿C:\xampp\htdocs\KVN_Construction\public\admin\dashboard.php:41 : $controller = new AdminController($conn);
+C:\xampp\htdocs\KVN_Construction\public\admin\logout.php:10 : $controller = new AuthController($conn);
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:122 : | UPDATE STATUS
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:157 : 'Failed to update comment.';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\comments.php:938 : <!-- UPDATE -->
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:114 : 'Too many update attempts.';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:301 : | UPDATE BLOG
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:368 : 'Failed to update blog.';
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:481 : Update blog content, SEO and publishing settings.
+C:\xampp\htdocs\KVN_Construction\public\admin\blogs\edit.php:959 : Update Blog
+C:\xampp\htdocs\KVN_Construction\public\admin\cms\faq.php:135 : input, textarea, select { width:100%; padding:14px; border:1px solid #ddd; border-radius:10px; font-size:15px; }
+C:\xampp\htdocs\KVN_Construction\public\admin\cms\faq.php:185 : <select name="status">
+C:\xampp\htdocs\KVN_Construction\public\admin\cms\faq.php:190 : <button type="submit"><?php echo $editMode ? 'Update FAQ' : 'Add FAQ'; ?></button>
+C:\xampp\htdocs\KVN_Construction\public\admin\cms\seo.php:40 : | UPDATE SEO
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\materials.php:244 : <select name="floors" class="form-select">
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\materials.php:352 : <p class="text-muted">Enter the area, select a package, and click Calculate to get an instant estimate.</p>
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\packages.php:214 : <select name="status" class="form-select">
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:104 : | UPDATE PACKAGE
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:129 : $_SESSION['error'] = 'Failed to update pricing.';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:133 : $_SESSION['error'] = 'Failed to update pricing.';
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:224 : <select name="status" class="form-select">
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:287 : <select name="status" class="form-select">
+C:\xampp\htdocs\KVN_Construction\public\admin\estimators\pricing.php:299 : <button type="submit" class="btn-admin">Update Pricing</button>
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:178 : Update CRM lead details and status.
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\edit.php:596 : Update Lead
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\update-status.php:9 : | LEAD STATUS UPDATE HANDLER (AJAX)
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\update-status.php:61 : | UPDATE LEAD STATUS VIA SERVICE
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\update-status.php:90 : json_response(['success' => false, 'message' => 'Failed to update lead status.'], 500);
+C:\xampp\htdocs\KVN_Construction\public\admin\leads\update-status.php:94 : error_log('Lead status update error: ' . $e->getMessage());
+C:\xampp\htdocs\KVN_Construction\public\admin\media\uploads.php:82 : 'Please select a valid file.';
+C:\xampp\htdocs\KVN_Construction\public\admin\media\uploads.php:486 : Select File *
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\edit.php:94 : | UPDATE PROJECT
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\edit.php:127 : | UPDATE QUERY
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\edit.php:150 : 'Failed to update portfolio project.';
+C:\xampp\htdocs\KVN_Construction\public\admin\portfolio\edit.php:412 : Update Project
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:408 : Select Client
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:419 : Select Client
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\create.php:493 : Select Type
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:287 : | UPDATE PROJECT
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:309 : throw new Exception('Failed to update project.');
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:337 : 'Failed to update project.';
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:428 : Update project information and progress.
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:492 : Select Client
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:503 : Select Client
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:875 : Update Project Image
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\edit.php:925 : Update Project
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\gallery.php:236 : <label class="form-label">Select Images (JPG, PNG, WebP, GIF - Max 5MB each)</label>
+C:\xampp\htdocs\KVN_Construction\public\admin\projects\milestones.php:285 : <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:63 : $_SESSION['error'] = 'Failed to update quotation status.';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\approvals.php:162 : <select name="status" class="form-select" required>
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:61 : $conn->prepare($clientQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:92 : $conn->prepare($projectQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:290 : $conn->beginTransaction();
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:300 : INSERT INTO quotations (
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:337 : $conn->prepare($quotationQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:382 : $conn->lastInsertId();
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:394 : INSERT INTO quotation_items (
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:417 : $conn->prepare($itemQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:441 : $conn->commit();
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:472 : $conn->rollBack();
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:663 : Select Client
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:675 : Select Client
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\create.php:718 : Select Project
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:53 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:63 : $conn->prepare($query);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:101 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:109 : $conn->prepare($itemQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:146 : $conn->prepare($clientQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:177 : $conn->prepare($projectQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:372 : | UPDATE DATABASE
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:378 : $conn->beginTransaction();
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:382 : | UPDATE QUOTATION
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:388 : UPDATE quotations
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:410 : $conn->prepare($updateQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:462 : DELETE FROM quotation_items
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:468 : $conn->prepare($deleteQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:486 : INSERT INTO quotation_items (
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:509 : $conn->prepare($insertQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:533 : $conn->commit();
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:564 : $conn->rollBack();
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:567 : 'Failed to update quotation.';
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:658 : Update quotation information and pricing.
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:818 : Select Project
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\edit.php:1176 : Update Quotation
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\index.php:66 : $conn->prepare($query);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\pdf.php:43 : SELECT q.*, c.name AS client_name, c.email AS client_email,
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\pdf.php:52 : $stmt = $conn->prepare($query);
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\pdf.php:72 : SELECT * FROM quotation_items
+C:\xampp\htdocs\KVN_Construction\public\admin\quotations\pdf.php:76 : $itemStmt = $conn->prepare($itemQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:78 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:80 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:91 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:93 : INSERT INTO estimators
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:217 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:219 : INSERT INTO estimators
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:279 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:281 : DELETE FROM estimators
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:312 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\estimators.php:314 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:72 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:74 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:85 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:87 : INSERT INTO leads
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:202 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:204 : INSERT INTO leads
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:262 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:264 : DELETE FROM leads
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:295 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\leads.php:297 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:74 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:76 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:87 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:89 : INSERT INTO project_reports
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:213 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:215 : INSERT INTO project_reports
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:275 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:277 : DELETE FROM project_reports
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:308 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\projects.php:310 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:76 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:78 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:89 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:91 : INSERT INTO quotations
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:206 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:208 : INSERT INTO quotations
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:266 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:268 : DELETE FROM quotations
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:299 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\quotations.php:301 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:66 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:68 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:79 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:81 : INSERT INTO revenue_reports
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:172 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:174 : INSERT INTO revenue_reports
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:226 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:228 : DELETE FROM revenue_reports
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:259 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\reports\revenue.php:261 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:65 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:67 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:78 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:80 : INSERT INTO audit_logs
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:145 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:147 : DELETE FROM audit_logs
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:179 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:199 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\audit-logs.php:201 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:62 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:64 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:75 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:77 : INSERT INTO blocked_users
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:142 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:144 : INSERT INTO blocked_users
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:191 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:193 : UPDATE blocked_users
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:230 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:232 : DELETE FROM blocked_users
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:263 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\blocked-users.php:265 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:62 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:64 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:75 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:77 : INSERT INTO login_attempts
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:125 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:127 : DELETE FROM login_attempts
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:159 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:179 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\login-attempts.php:181 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:66 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:68 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:79 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:81 : INSERT INTO security_logs
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:139 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:141 : DELETE FROM security_logs
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:175 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:195 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\logs.php:197 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:58 : ON UPDATE CURRENT_TIMESTAMP,
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:74 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:76 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:88 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:90 : INSERT INTO admin_sessions
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:165 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:167 : UPDATE admin_sessions
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:200 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:202 : UPDATE admin_sessions
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:221 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\security\sessions.php:223 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\services\edit.php:94 : | UPDATE SERVICE
+C:\xampp\htdocs\KVN_Construction\public\admin\services\edit.php:127 : | UPDATE QUERY
+C:\xampp\htdocs\KVN_Construction\public\admin\services\edit.php:149 : 'Failed to update service.';
+C:\xampp\htdocs\KVN_Construction\public\admin\services\edit.php:415 : Update Service
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:72 : ON UPDATE CURRENT_TIMESTAMP
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:85 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:87 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:99 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:101 : INSERT INTO general_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:218 : | UPDATE SETTINGS
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:300 : | UPDATE DATABASE
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:309 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:311 : UPDATE general_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:412 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:414 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\general.php:912 : <select name="maintenance_mode">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:68 : ON UPDATE CURRENT_TIMESTAMP
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:81 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:83 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:95 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:97 : INSERT INTO integration_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:197 : | UPDATE SETTINGS
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:260 : | UPDATE DATABASE
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:269 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:271 : UPDATE integration_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:359 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:361 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:745 : <select name="chatbot_status">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:771 : <select name="recaptcha_status">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\integrations.php:797 : <select name="whatsapp_chat_status">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:57 : ON UPDATE CURRENT_TIMESTAMP
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:70 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:72 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:90 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:92 : INSERT INTO security_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:161 : | UPDATE SECURITY SETTINGS
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:234 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:236 : SELECT admin_password
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:272 : | UPDATE DATABASE
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:281 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:283 : UPDATE security_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:349 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:351 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:701 : <select name="two_factor_auth">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\security.php:727 : <select name="maintenance_lock">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:69 : ON UPDATE CURRENT_TIMESTAMP
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:82 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:84 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:96 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:98 : INSERT INTO seo_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:203 : | UPDATE SETTINGS
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:269 : | UPDATE DATABASE
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:278 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:280 : UPDATE seo_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:371 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:373 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:801 : <select name="sitemap_status">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\seo.php:827 : <select name="seo_status">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:33 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:62 : ON UPDATE CURRENT_TIMESTAMP
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:75 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:77 : SELECT id
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:89 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:91 : INSERT INTO sms_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:173 : | UPDATE SETTINGS
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:229 : | UPDATE DATABASE
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:238 : $conn->prepare(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:240 : UPDATE sms_settings
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:313 : $conn->query(
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:315 : SELECT *
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:659 : <select name="sms_status">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:685 : <select name="notify_contact_form">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\sms.php:711 : <select name="notify_new_lead">
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:36 : $query = "SELECT * FROM settings WHERE `group` = 'smtp' ORDER BY `key` ASC";
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:37 : $stmt = $conn->prepare($query);
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:69 : $conn->beginTransaction();
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:80 : // Only update password if provided
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:86 : $checkQuery = "SELECT id FROM settings WHERE `group` = 'smtp' AND `key` = :key LIMIT 1";
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:87 : $checkStmt = $conn->prepare($checkQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:92 : $updateQuery = "UPDATE settings SET `value` = :value, updated_at = NOW() WHERE `group` = 'smtp' AND `key` = :key";
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:93 : $updateStmt = $conn->prepare($updateQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:96 : $insertQuery = "INSERT INTO settings (`group`, `key`, `value`, created_at) VALUES ('smtp', :key, :value, NOW())";
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:97 : $insertStmt = $conn->prepare($insertQuery);
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:102 : $conn->commit();
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:105 : // Update config constants for current request
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:114 : $conn->rollBack();
+C:\xampp\htdocs\KVN_Construction\public\admin\settings\smtp.php:188 : <select name="smtp_encryption" class="form-select">
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:77 : | UPDATE USER
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:210 : | UPDATE USER VIA SERVICE
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:329 : Update user details and permissions.
+C:\xampp\htdocs\KVN_Construction\public\admin\users\edit.php:604 : Update User
+C:\xampp\htdocs\KVN_Construction\public\admin\videos\create.php:352 : Select Category

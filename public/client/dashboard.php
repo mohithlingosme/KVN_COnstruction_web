@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,204 +30,14 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE TABLES
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS projects (
+require_once '../../config/app.php';
+require_once __DIR__ . '/../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        project_type VARCHAR(255) NOT NULL,
-
-        location VARCHAR(255) NOT NULL,
-
-        progress INT NOT NULL DEFAULT 0,
-
-        status ENUM(
-            'Planning',
-            'In Progress',
-            'Completed',
-            'On Hold'
-        )
-        NOT NULL DEFAULT 'Planning',
-
-        start_date DATE NOT NULL,
-
-        expected_handover DATE NOT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS client_payments (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        amount DECIMAL(12,2) NOT NULL,
-
-        payment_type VARCHAR(255) NOT NULL,
-
-        payment_status ENUM(
-            'Paid',
-            'Pending',
-            'Failed'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        payment_date DATE NOT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS client_messages (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        subject VARCHAR(255) NOT NULL,
-
-        message TEXT NOT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$checkProject =
-    $conn->query(
-        "
-        SELECT id
-        FROM projects
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $checkProject &&
-    $checkProject->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO projects
-        (
-
-            client_id,
-            project_name,
-            project_type,
-            location,
-            progress,
-            status,
-            start_date,
-            expected_handover
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'Luxury Villa',
-            'Residential',
-            'Bangalore',
-            65,
-            'In Progress',
-            '2026-01-10',
-            '2026-12-20'
-        ),
-
-        (
-            $clientId,
-            'Farm House',
-            'Premium Construction',
-            'Mysore',
-            100,
-            'Completed',
-            '2025-02-10',
-            '2025-11-15'
-        )
-        "
-    );
-}
-
-$checkPayment =
-    $conn->query(
-        "
-        SELECT id
-        FROM client_payments
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $checkPayment &&
-    $checkPayment->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO client_payments
-        (
-
-            client_id,
-            amount,
-            payment_type,
-            payment_status,
-            payment_date
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            2500000,
-            'Initial Advance',
-            'Paid',
-            '2026-01-15'
-        ),
-
-        (
-            $clientId,
-            1500000,
-            'Construction Phase',
-            'Pending',
-            '2026-06-15'
-        )
-        "
-    );
-}
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
@@ -268,125 +70,31 @@ if (
 
     if ($error === '') {
 
-        $stmt =
-            $conn->prepare(
-                "
-                INSERT INTO client_messages
-                (
-
-                    client_id,
-                    subject,
-                    message
-
-                )
-
-                VALUES
-
-                (?, ?, ?)
-                "
-            );
-
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'iss',
-                $clientId,
-                $subject,
-                $message
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+        if ($clientService->sendMessage($clientId, $subject, $message)) {
 
             $success =
                 'Message sent successfully.';
+        } else {
+
+            $error =
+                'Failed to send message. Please try again.';
         }
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| FETCH PROJECTS
+| FETCH DASHBOARD DATA
 |--------------------------------------------------------------------------
 */
 
-$projects =
-    $conn->query(
-        "
-        SELECT *
-        FROM projects
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
-
-/*
-|--------------------------------------------------------------------------
-| FETCH PAYMENTS
-|--------------------------------------------------------------------------
-*/
-
-$payments =
-    $conn->query(
-        "
-        SELECT *
-        FROM client_payments
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
-
-/*
-|--------------------------------------------------------------------------
-| STATS
-|--------------------------------------------------------------------------
-*/
-
-$totalProjects = 0;
-$completedProjects = 0;
-$ongoingProjects = 0;
-$totalPaid = 0;
-
-if ($projects && $projects->num_rows > 0) {
-
-    while ($calc = $projects->fetch_assoc()) {
-
-        $totalProjects++;
-
-        if (
-            $calc['status'] === 'Completed'
-        ) {
-
-            $completedProjects++;
-        }
-
-        if (
-            $calc['status'] === 'In Progress'
-        ) {
-
-            $ongoingProjects++;
-        }
-    }
-
-    $projects->data_seek(0);
-}
-
-if ($payments && $payments->num_rows > 0) {
-
-    while ($pay = $payments->fetch_assoc()) {
-
-        if (
-            $pay['payment_status'] === 'Paid'
-        ) {
-
-            $totalPaid +=
-                (float)$pay['amount'];
-        }
-    }
-
-    $payments->data_seek(0);
-}
+$data = $clientService->getDashboardData($clientId);
+$projects = $data['projects'];
+$payments = $data['payments'];
+$totalProjects = $data['totalProjects'];
+$completedProjects = $data['completedProjects'];
+$ongoingProjects = $data['ongoingProjects'];
+$totalPaid = $data['totalPaid'];
 
 ?>
 
@@ -969,9 +677,9 @@ if ($payments && $payments->num_rows > 0) {
 
             <tbody>
 
-            <?php if ($projects && $projects->num_rows > 0): ?>
+            <?php if (!empty($projects)): ?>
 
-                <?php while ($row = $projects->fetch_assoc()): ?>
+                <?php foreach ($projects as $row): ?>
 
                     <tr>
 
@@ -1005,11 +713,10 @@ if ($payments && $payments->num_rows > 0) {
 
                                 <div
                                     class="progress-fill"
-                                    style="width: <?php echo (int)$row['progress']; ?>%;"
-                                >
+                                    style="width: <?php echo (int)($row['progress'] ?? 0); ?>%;">
 
                                     <?php
-                                        echo (int)$row['progress'];
+                                        echo (int)($row['progress'] ?? 0);
                                     ?>%
 
                                 </div>
@@ -1021,12 +728,12 @@ if ($payments && $payments->num_rows > 0) {
                         <td>
 
                             <span
-                                class="badge <?php echo str_replace(' ', '.', htmlspecialchars((string)$row['status'])); ?>"
+                                class="badge <?php echo str_replace(' ', '.', htmlspecialchars((string)($row['status'] ?? ''))); ?>"
                             >
 
                                 <?php
                                     echo htmlspecialchars(
-                                        (string)$row['status']
+                                        (string)($row['status'] ?? '')
                                     );
                                 ?>
 
@@ -1037,14 +744,14 @@ if ($payments && $payments->num_rows > 0) {
                         <td>
                             <?php
                                 echo htmlspecialchars(
-                                    (string)$row['expected_handover']
+                                    (string)($row['expected_handover'] ?? '')
                                 );
                             ?>
                         </td>
 
                     </tr>
 
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             <?php endif; ?>
 
@@ -1093,9 +800,9 @@ if ($payments && $payments->num_rows > 0) {
 
             <tbody>
 
-            <?php if ($payments && $payments->num_rows > 0): ?>
+            <?php if (!empty($payments)): ?>
 
-                <?php while ($pay = $payments->fetch_assoc()): ?>
+                <?php foreach ($payments as $pay): ?>
 
                     <tr>
 
@@ -1142,7 +849,7 @@ if ($payments && $payments->num_rows > 0) {
 
                     </tr>
 
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             <?php endif; ?>
 

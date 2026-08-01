@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | VIEW USER
 |--------------------------------------------------------------------------
-| File:
-| /public/admin/users/view.php
+| File: /public/admin/users/view.php
 |--------------------------------------------------------------------------
 */
 
@@ -18,6 +19,8 @@ require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
+
+require_once '../../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -47,31 +50,13 @@ if ($userId <= 0) {
 
 /*
 |--------------------------------------------------------------------------
-| FETCH USER
+| FETCH USER VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
-$query = "
+$userService = new \App\Services\AdminUserService();
 
-    SELECT *
-
-    FROM users
-
-    WHERE id = :id
-
-    LIMIT 1
-";
-
-$stmt =
-$conn->prepare($query);
-
-$stmt->execute([
-
-    ':id' => $userId
-]);
-
-$user =
-$stmt->fetch();
+$user = $userService->getUserById($userId);
 
 if (!$user) {
 
@@ -83,39 +68,11 @@ if (!$user) {
 
 /*
 |--------------------------------------------------------------------------
-| FETCH USER ACTIVITY
+| FETCH USER ACTIVITY VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
-$activities = [];
-
-try {
-
-    $activityQuery = "
-
-        SELECT *
-
-        FROM security_logs
-
-        WHERE user_id = :user_id
-
-        ORDER BY created_at DESC
-
-        LIMIT 10
-    ";
-
-    $activityStmt =
-    $conn->prepare($activityQuery);
-
-    $activityStmt->execute([
-
-        ':user_id' => $userId
-    ]);
-
-    $activities =
-    $activityStmt->fetchAll();
-
-} catch(Exception $e){}
+$activities = $userService->getUserActivity($userId, 10);
 
 /*
 |--------------------------------------------------------------------------
@@ -636,7 +593,7 @@ base_url(
                                         <?php
 
                                         echo escape(
-                                            $activity['event']
+                                            $activity['event_type']
                                         );
 
                                         ?>
@@ -648,7 +605,7 @@ base_url(
                                         <?php
 
                                         echo escape(
-                                            $activity['description']
+                                            $activity['details']
                                             ??
                                             'No description'
                                         );

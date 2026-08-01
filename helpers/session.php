@@ -7,8 +7,9 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 | ENTERPRISE SESSION SECURITY SYSTEM
 |--------------------------------------------------------------------------
-| File:
-| /helpers/session.php
+| File: /helpers/session.php
+|--------------------------------------------------------------------------
+| REFACTORED: All SQL delegated to App\Repositories\SessionRepository.
 |--------------------------------------------------------------------------
 */
 
@@ -19,69 +20,25 @@ declare(strict_types=1);
 */
 
 if (session_status() === PHP_SESSION_NONE) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | HTTPS DETECTION
-    |--------------------------------------------------------------------------
-    */
-
-    $isHttps =
-
-        (
-            isset($_SERVER['HTTPS'])
-            &&
-            $_SERVER['HTTPS'] !== 'off'
-        )
-
-        ||
-
-        (
-            ($_SERVER['SERVER_PORT'] ?? 80)
-            == 443
-        );
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECURE COOKIE SETTINGS
-    |--------------------------------------------------------------------------
-    */
+    $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? 80) == 443;
 
     session_set_cookie_params([
-
         'lifetime' => 0,
-
         'path' => '/',
-
         'domain' => '',
-
         'secure' => $isHttps,
-
         'httponly' => true,
-
         'samesite' => 'Strict'
     ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | SESSION HARDENING
-    |--------------------------------------------------------------------------
-    */
-
     ini_set('session.use_only_cookies', '1');
-
     ini_set('session.use_strict_mode', '1');
-
     ini_set('session.cookie_httponly', '1');
-
     ini_set('session.cookie_secure', $isHttps ? '1' : '0');
-
     ini_set('session.cookie_samesite', 'Strict');
-
     ini_set('session.gc_maxlifetime', '3600');
 
     session_name('KVNSESSID');
-
     session_start();
 }
 
@@ -92,12 +49,10 @@ if (session_status() === PHP_SESSION_NONE) {
 */
 
 if (!defined('SESSION_TIMEOUT')) {
-
     define('SESSION_TIMEOUT', 3600);
 }
 
 if (!defined('ADMIN_SESSION_TIMEOUT')) {
-
     define('ADMIN_SESSION_TIMEOUT', 1800);
 }
 
@@ -120,20 +75,7 @@ function generateSessionToken(): string
 
 function generateDeviceHash(): string
 {
-    return hash(
-
-        'sha256',
-
-        ($_SERVER['REMOTE_ADDR'] ?? '')
-
-        .
-
-        ($_SERVER['HTTP_USER_AGENT'] ?? '')
-
-        .
-
-        ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')
-    );
+    return hash('sha256', ($_SERVER['REMOTE_ADDR'] ?? '') . ($_SERVER['HTTP_USER_AGENT'] ?? '') . ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
 }
 
 /*
@@ -144,103 +86,32 @@ function generateDeviceHash(): string
 
 function generateSessionFingerprint(): string
 {
-    return hash(
-
-        'sha256',
-
-        ($_SERVER['REMOTE_ADDR'] ?? '')
-
-        .
-
-        ($_SERVER['HTTP_USER_AGENT'] ?? '')
-    );
+    return hash('sha256', ($_SERVER['REMOTE_ADDR'] ?? '') . ($_SERVER['HTTP_USER_AGENT'] ?? ''));
 }
 
 /*
 |--------------------------------------------------------------------------
-| STORE SESSION IN DATABASE
+| STORE SESSION IN DATABASE (delegates to SessionRepository)
 |--------------------------------------------------------------------------
 */
 
-function storeSessionInDatabase(
-    int $userId,
-    string $sessionToken,
-    string $role
-): void {
-
-    global $conn;
-
+function storeSessionInDatabase(int $userId, string $sessionToken, string $role): void
+{
     try {
+        $repo = repo('Session');
+        if (!$repo) return;
 
-        $query = "
-
-            INSERT INTO user_sessions (
-
-                user_id,
-                session_token,
-                fingerprint_hash,
-                device_hash,
-                ip_address,
-                user_agent,
-                is_admin_session,
-                last_activity,
-                created_at
-
-            )
-
-            VALUES (
-
-                :user_id,
-                :session_token,
-                :fingerprint_hash,
-                :device_hash,
-                :ip_address,
-                :user_agent,
-                :is_admin_session,
-                NOW(),
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':user_id' =>
+        $repo->create(
             $userId,
-
-            ':session_token' =>
             $sessionToken,
-
-            ':fingerprint_hash' =>
             generateSessionFingerprint(),
-
-            ':device_hash' =>
             generateDeviceHash(),
-
-            ':ip_address' =>
-            $_SERVER['REMOTE_ADDR']
-            ?? null,
-
-            ':user_agent' =>
-            $_SERVER['HTTP_USER_AGENT']
-            ?? 'Unknown Device',
-
-            ':is_admin_session' =>
-
-                in_array($role, ['admin', 'super_admin'], true)
-                ? 1
-                : 0
-        ]);
-
-    } catch (Exception $e) {
-
-        error_log(
-            'Session DB Error: '
-            .
-            $e->getMessage()
+            $_SERVER['REMOTE_ADDR'] ?? null,
+            $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown Device',
+            in_array($role, ['admin', 'super_admin'], true)
         );
+    } catch (Exception $e) {
+        error_log('Session DB Error: ' . $e->getMessage());
     }
 }
 
@@ -252,95 +123,95 @@ function storeSessionInDatabase(
 
 function initializeSessionSecurity(array $user): void
 {
-    /*
-    |--------------------------------------------------------------------------
-    | REGENERATE SESSION
-    |--------------------------------------------------------------------------
-    */
-
     session_regenerate_id(true);
 
-    /*
-    |--------------------------------------------------------------------------
-    | SESSION TOKEN
-    |--------------------------------------------------------------------------
-    */
-
-    $sessionToken =
-    generateSessionToken();
-
-    /*
-    |--------------------------------------------------------------------------
-    | SESSION DATA
-    |--------------------------------------------------------------------------
-    */
+    $sessionToken = generateSessionToken();
 
     $_SESSION['logged_in'] = true;
+    $_SESSION['user_id'] = (int) $user['id'];
+    $_SESSION['user_name'] = $user['full_name'];
+    $_SESSION['role'] = $user['role'];
+    $_SESSION['session_token'] = $sessionToken;
+    $_SESSION['fingerprint'] = generateSessionFingerprint();
+    $_SESSION['device_hash'] = generateDeviceHash();
+    $_SESSION['last_activity'] = time();
+    $_SESSION['login_time'] = time();
+    $_SESSION['is_admin'] = in_array($user['role'], ['admin', 'super_admin'], true);
 
-    $_SESSION['user_id'] =
-    (int) $user['id'];
-
-    $_SESSION['user_name'] =
-    $user['full_name'];
-
-    $_SESSION['role'] =
-    $user['role'];
-
-    $_SESSION['session_token'] =
-    $sessionToken;
-
-    $_SESSION['fingerprint'] =
-    generateSessionFingerprint();
-
-    $_SESSION['device_hash'] =
-    generateDeviceHash();
-
-    $_SESSION['last_activity'] =
-    time();
-
-    $_SESSION['login_time'] =
-    time();
-
-    $_SESSION['is_admin'] =
-
-        in_array(
-            $user['role'],
-            ['admin', 'super_admin'],
-            true
-        );
-
-    /*
-    |--------------------------------------------------------------------------
-    | STORE SESSION
-    |--------------------------------------------------------------------------
-    */
-
-    storeSessionInDatabase(
-
-        (int) $user['id'],
-
-        $sessionToken,
-
-        $user['role']
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECURITY LOG
-    |--------------------------------------------------------------------------
-    */
+    storeSessionInDatabase((int) $user['id'], $sessionToken, $user['role']);
 
     if (function_exists('logSecurityEvent')) {
+        logSecurityEvent($user['id'], 'session_initialized', 'info', 'Secure session initialized');
+    }
+}
 
-        logSecurityEvent(
+/*
+|--------------------------------------------------------------------------
+| AUTH SESSION WRAPPERS
+|--------------------------------------------------------------------------
+*/
 
-            $user['id'],
+if (!function_exists('createUserSession')) {
+    function createUserSession(array $user): void
+    {
+        initializeSessionSecurity($user);
+        $_SESSION['user_email'] = $user['email'] ?? '';
+        $_SESSION['user_role'] = $user['role'] ?? 'client';
+    }
+}
 
-            'session_initialized',
+if (!function_exists('createAdminSession')) {
+    function createAdminSession(array $admin): void
+    {
+        initializeSessionSecurity($admin);
+    }
+}
 
-            'info',
+/*
+|--------------------------------------------------------------------------
+| OTP SESSION HELPERS
+|--------------------------------------------------------------------------
+*/
 
-            'Secure session initialized'
+if (!function_exists('startOtpSession')) {
+    function startOtpSession(array $user, string $purpose = 'login'): void
+    {
+        $_SESSION['otp_user_id'] = (int) ($user['id'] ?? 0);
+        $_SESSION['otp_phone'] = (string) ($user['phone'] ?? '');
+        $_SESSION['otp_email'] = (string) ($user['email'] ?? '');
+        $_SESSION['otp_purpose'] = $purpose;
+        $_SESSION['otp_created_at'] = time();
+        $_SESSION['otp_attempts'] = 0;
+        $_SESSION['otp_last_resend'] = 0;
+    }
+}
+
+if (!function_exists('isOtpSessionValid')) {
+    function isOtpSessionValid(): bool
+    {
+        if (empty($_SESSION['otp_user_id']) || empty($_SESSION['otp_phone'])) {
+            return false;
+        }
+        $createdAt = (int) ($_SESSION['otp_created_at'] ?? 0);
+        if ($createdAt <= 0) {
+            return false;
+        }
+        $expiryMinutes = defined('OTP_EXPIRY_MINUTES') ? OTP_EXPIRY_MINUTES : 5;
+        return (time() - $createdAt) <= ($expiryMinutes * 60);
+    }
+}
+
+if (!function_exists('destroyOtpSession')) {
+    function destroyOtpSession(): void
+    {
+        unset(
+            $_SESSION['otp_user_id'],
+            $_SESSION['otp_phone'],
+            $_SESSION['otp_email'],
+            $_SESSION['otp_purpose'],
+            $_SESSION['otp_created_at'],
+            $_SESSION['otp_attempts'],
+            $_SESSION['otp_last_resend']
         );
     }
 }
@@ -350,221 +221,57 @@ function initializeSessionSecurity(array $user): void
 | VALIDATE SESSION
 |--------------------------------------------------------------------------
 */
-
 function validateSession(): bool
 {
-    global $conn;
-
-    /*
-    |--------------------------------------------------------------------------
-    | LOGIN CHECK
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        !isset($_SESSION['logged_in'])
-
-        ||
-
-        $_SESSION['logged_in'] !== true
-    ) {
-
+    if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         return false;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | TOKEN CHECK
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        empty($_SESSION['session_token'])
-    ) {
-
+    if (empty($_SESSION['session_token'])) {
         destroySession();
-
         return false;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | FINGERPRINT CHECK
-    |--------------------------------------------------------------------------
-    */
-
-    $currentFingerprint =
-    generateSessionFingerprint();
-
-    if (
-
-        !isset($_SESSION['fingerprint'])
-
-        ||
-
-        $_SESSION['fingerprint']
-        !==
-        $currentFingerprint
-    ) {
-
+    $currentFingerprint = generateSessionFingerprint();
+    if (!isset($_SESSION['fingerprint']) || $_SESSION['fingerprint'] !== $currentFingerprint) {
         if (function_exists('logSecurityEvent')) {
-
-            logSecurityEvent(
-
-                $_SESSION['user_id'] ?? null,
-
-                'session_hijack_attempt',
-
-                'critical',
-
-                'Session fingerprint mismatch'
-            );
+            logSecurityEvent($_SESSION['user_id'] ?? null, 'session_hijack_attempt', 'critical', 'Session fingerprint mismatch');
         }
-
         destroySession();
-
         return false;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | DEVICE HASH CHECK
-    |--------------------------------------------------------------------------
-    */
-
-    $currentDeviceHash =
-    generateDeviceHash();
-
-    if (
-
-        !isset($_SESSION['device_hash'])
-
-        ||
-
-        $_SESSION['device_hash']
-        !==
-        $currentDeviceHash
-    ) {
-
+    $currentDeviceHash = generateDeviceHash();
+    if (!isset($_SESSION['device_hash']) || $_SESSION['device_hash'] !== $currentDeviceHash) {
         destroySession();
-
         return false;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | SESSION TIMEOUT
-    |--------------------------------------------------------------------------
-    */
-
-    $timeout =
-
-        isAdmin()
-
-        ?
-
-        ADMIN_SESSION_TIMEOUT
-
-        :
-
-        SESSION_TIMEOUT;
-
-    if (
-
-        isset($_SESSION['last_activity'])
-
-        &&
-
-        (
-
-            time()
-
-            -
-
-            $_SESSION['last_activity']
-        )
-
-        >
-
-        $timeout
-    ) {
-
+    $timeout = isAdmin() ? ADMIN_SESSION_TIMEOUT : SESSION_TIMEOUT;
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
         if (function_exists('logSecurityEvent')) {
-
-            logSecurityEvent(
-
-                $_SESSION['user_id'] ?? null,
-
-                'session_timeout',
-
-                'warning',
-
-                'Session expired due to inactivity'
-            );
+            logSecurityEvent($_SESSION['user_id'] ?? null, 'session_timeout', 'warning', 'Session expired due to inactivity');
         }
-
         destroySession();
-
         return false;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | DATABASE SESSION VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
+    // Database session validation via SessionRepository
     try {
-
-        $query = "
-
-            SELECT id
-
-            FROM user_sessions
-
-            WHERE session_token = :token
-
-            LIMIT 1
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':token' =>
-            $_SESSION['session_token']
-        ]);
-
-        $session =
-        $stmt->fetch();
-
-        if (!$session) {
-
-            destroySession();
-
-            return false;
+        $repo = repo('Session');
+        if ($repo) {
+            $session = $repo->findByToken($_SESSION['session_token']);
+            if (!$session) {
+                destroySession();
+                return false;
+            }
         }
-
     } catch (Exception $e) {
-
-        error_log(
-            $e->getMessage()
-        );
-
+        error_log($e->getMessage());
         return false;
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE ACTIVITY
-    |--------------------------------------------------------------------------
-    */
 
     refreshSession();
-
     return true;
 }
 
@@ -573,41 +280,20 @@ function validateSession(): bool
 | REFRESH SESSION
 |--------------------------------------------------------------------------
 */
-
 function refreshSession(): void
 {
-    global $conn;
-
-    $_SESSION['last_activity'] =
-    time();
+    $_SESSION['last_activity'] = time();
 
     try {
+        $repo = repo('Session');
+        if (!$repo || empty($_SESSION['session_token'])) return;
 
-        $query = "
-
-            UPDATE user_sessions
-
-            SET
-
-                last_activity = NOW()
-
-            WHERE session_token = :token
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':token' =>
-            $_SESSION['session_token']
-        ]);
-
+        $session = $repo->findByToken($_SESSION['session_token']);
+        if ($session && isset($session['id'])) {
+            $repo->updateActivity((int)$session['id']);
+        }
     } catch (Exception $e) {
-
-        error_log(
-            $e->getMessage()
-        );
+        error_log($e->getMessage());
     }
 }
 
@@ -616,42 +302,20 @@ function refreshSession(): void
 | DESTROY OTHER SESSIONS
 |--------------------------------------------------------------------------
 */
-
-function destroyOtherSessions(
-    int $userId,
-    string $currentToken
-): void {
-
-    global $conn;
-
+function destroyOtherSessions(int $userId, string $currentToken): void
+{
     try {
+        $repo = repo('Session');
+        if (!$repo) return;
 
-        $query = "
-
-            DELETE FROM user_sessions
-
-            WHERE user_id = :user_id
-
-            AND session_token != :token
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':user_id' =>
-            $userId,
-
-            ':token' =>
-            $currentToken
-        ]);
-
+        $sessions = $repo->findByUserId($userId);
+        foreach ($sessions as $s) {
+            if ($s['session_token'] !== $currentToken) {
+                $repo->deleteByToken($s['session_token']);
+            }
+        }
     } catch (Exception $e) {
-
-        error_log(
-            $e->getMessage()
-        );
+        error_log($e->getMessage());
     }
 }
 
@@ -660,94 +324,29 @@ function destroyOtherSessions(
 | DESTROY SESSION
 |--------------------------------------------------------------------------
 */
-
 if (!function_exists('destroySession')) {
-function destroySession(): void
-{
-    global $conn;
-
-    /*
-    |--------------------------------------------------------------------------
-    | REMOVE DATABASE SESSION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        isset($_SESSION['session_token'])
-    ) {
-
-        try {
-
-            $query = "
-
-                DELETE FROM user_sessions
-
-                WHERE session_token = :token
-            ";
-
-            $stmt =
-            $conn->prepare($query);
-
-            $stmt->execute([
-
-                ':token' =>
-                $_SESSION['session_token']
-            ]);
-
-        } catch (Exception $e) {
-
-            error_log(
-                $e->getMessage()
-            );
+    function destroySession(): void
+    {
+        if (isset($_SESSION['session_token'])) {
+            try {
+                $repo = repo('Session');
+                if ($repo) {
+                    $repo->deleteByToken($_SESSION['session_token']);
+                }
+            } catch (Exception $e) {
+                error_log($e->getMessage());
+            }
         }
+
+        $_SESSION = [];
+
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+        }
+
+        session_destroy();
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLEAR SESSION ARRAY
-    |--------------------------------------------------------------------------
-    */
-
-    $_SESSION = [];
-
-    /*
-    |--------------------------------------------------------------------------
-    | DESTROY COOKIE
-    |--------------------------------------------------------------------------
-    */
-
-    if (ini_get('session.use_cookies')) {
-
-        $params =
-        session_get_cookie_params();
-
-        setcookie(
-
-            session_name(),
-
-            '',
-
-            time() - 42000,
-
-            $params['path'],
-
-            $params['domain'],
-
-            $params['secure'],
-
-            $params['httponly']
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | DESTROY SESSION
-    |--------------------------------------------------------------------------
-    */
-
-    session_destroy();
-}
 }
 
 /*
@@ -755,41 +354,15 @@ function destroySession(): void
 | LOGOUT USER
 |--------------------------------------------------------------------------
 */
-
 function logout(): void
 {
-    if (
-
-        function_exists('logSecurityEvent')
-
-        &&
-
-        isset($_SESSION['user_id'])
-    ) {
-
-        logSecurityEvent(
-
-            $_SESSION['user_id'],
-
-            'logout',
-
-            'info',
-
-            'User logged out'
-        );
+    if (function_exists('logSecurityEvent') && isset($_SESSION['user_id'])) {
+        logSecurityEvent($_SESSION['user_id'], 'logout', 'info', 'User logged out');
     }
 
     destroySession();
 
-    header(
-
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
-    );
-
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
@@ -798,17 +371,9 @@ function logout(): void
 | LOGIN CHECK
 |--------------------------------------------------------------------------
 */
-
 function isLoggedIn(): bool
 {
-    return (
-
-        isset($_SESSION['logged_in'])
-
-        &&
-
-        $_SESSION['logged_in'] === true
-    );
+    return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
 }
 
 /*
@@ -816,21 +381,9 @@ function isLoggedIn(): bool
 | ADMIN CHECK
 |--------------------------------------------------------------------------
 */
-
 function isAdmin(): bool
 {
-    return (
-
-        isset($_SESSION['role'])
-
-        &&
-
-        in_array(
-            $_SESSION['role'],
-            ['admin', 'super_admin'],
-            true
-        )
-    );
+    return isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'], true);
 }
 
 /*
@@ -838,17 +391,9 @@ function isAdmin(): bool
 | CLIENT CHECK
 |--------------------------------------------------------------------------
 */
-
 function isClient(): bool
 {
-    return (
-
-        isset($_SESSION['role'])
-
-        &&
-
-        $_SESSION['role'] === 'client'
-    );
+    return isset($_SESSION['role']) && $_SESSION['role'] === 'client';
 }
 
 /*
@@ -856,20 +401,10 @@ function isClient(): bool
 | REQUIRE LOGIN
 |--------------------------------------------------------------------------
 */
-
 function requireLogin(): void
 {
     if (!validateSession()) {
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/login.php'
-        );
-
+        header('Location: ' . APP_URL . '/login.php');
         exit;
     }
 }
@@ -879,27 +414,10 @@ function requireLogin(): void
 | REQUIRE ADMIN
 |--------------------------------------------------------------------------
 */
-
 function requireAdmin(): void
 {
-    if (
-
-        !validateSession()
-
-        ||
-
-        !isAdmin()
-    ) {
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/login.php'
-        );
-
+    if (!validateSession() || !isAdmin()) {
+        header('Location: ' . APP_URL . '/admin/login.php');
         exit;
     }
 }
@@ -909,27 +427,10 @@ function requireAdmin(): void
 | REQUIRE CLIENT
 |--------------------------------------------------------------------------
 */
-
 function requireClient(): void
 {
-    if (
-
-        !validateSession()
-
-        ||
-
-        !isClient()
-    ) {
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/login.php'
-        );
-
+    if (!validateSession() || !isClient()) {
+        header('Location: ' . APP_URL . '/login.php');
         exit;
     }
 }
@@ -939,7 +440,6 @@ function requireClient(): void
 | CURRENT USER ID
 |--------------------------------------------------------------------------
 */
-
 function currentUserId(): ?int
 {
     return $_SESSION['user_id'] ?? null;
@@ -950,7 +450,6 @@ function currentUserId(): ?int
 | CURRENT USER ROLE
 |--------------------------------------------------------------------------
 */
-
 function currentUserRole(): ?string
 {
     return $_SESSION['role'] ?? null;
@@ -961,38 +460,10 @@ function currentUserRole(): ?string
 | SESSION REMAINING TIME
 |--------------------------------------------------------------------------
 */
-
 function sessionRemainingTime(): int
 {
-    $timeout =
-
-        isAdmin()
-
-        ?
-
-        ADMIN_SESSION_TIMEOUT
-
-        :
-
-        SESSION_TIMEOUT;
-
-    return max(
-
-        0,
-
-        $timeout
-
-        -
-
-        (
-
-            time()
-
-            -
-
-            ($_SESSION['last_activity'] ?? 0)
-        )
-    );
+    $timeout = isAdmin() ? ADMIN_SESSION_TIMEOUT : SESSION_TIMEOUT;
+    return max(0, $timeout - (time() - ($_SESSION['last_activity'] ?? 0)));
 }
 
 /*
@@ -1000,39 +471,16 @@ function sessionRemainingTime(): int
 | CLEANUP EXPIRED SESSIONS
 |--------------------------------------------------------------------------
 */
-
 function cleanupExpiredSessions(): void
 {
-    global $conn;
-
     try {
-
-        $query = "
-
-            DELETE FROM user_sessions
-
-            WHERE last_activity
-
-            <
-
-            DATE_SUB(
-
-                NOW(),
-
-                INTERVAL 1 DAY
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute();
-
+        $repo = repo('Session');
+        if ($repo) {
+            $repo->deleteExpired(1);
+        }
     } catch (Exception $e) {
-
-        error_log(
-            $e->getMessage()
-        );
+        error_log($e->getMessage());
     }
 }
-
+</｜DSML｜parameter>
+</create_file>

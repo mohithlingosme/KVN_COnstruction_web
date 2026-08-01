@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -76,57 +76,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
 
-            $stmt = $conn->prepare(
-                "
-                INSERT INTO videos
-                (
-                    title,
-                    category,
-                    description,
-                    thumbnail,
-                    video_url
-                )
-                VALUES
-                (
-                    ?, ?, ?, ?, ?
-                )
-                "
-            );
+            $videoRepo = repo('Video');
 
-            if (!$stmt) {
+            if (!$videoRepo) {
 
                 $error =
                     'Database query failed.';
 
             } else {
 
-                $stmt->bind_param(
-                    'sssss',
-                    $title,
-                    $category,
-                    $description,
-                    $thumbnail,
-                    $video_url
-                );
+                $ok = $videoRepo->insert([
+                    'title'       => $title,
+                    'category'    => $category,
+                    'description' => $description,
+                    'thumbnail'   => $thumbnail,
+                    'video_url'   => $video_url,
+                ]);
 
-                $stmt->execute();
+                if ($ok) {
 
-                $stmt->close();
+                    $success =
+                        'Video added successfully.';
 
-                $success =
-                    'Video added successfully.';
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CLEAR FORM
+                    |--------------------------------------------------------------------------
+                    */
 
-                /*
-                |--------------------------------------------------------------------------
-                | CLEAR FORM
-                |--------------------------------------------------------------------------
-                */
+                    $title = '';
+                    $category = '';
+                    $description = '';
+                    $thumbnail = '';
+                    $video_url = '';
 
-                $title = '';
-                $category = '';
-                $description = '';
-                $thumbnail = '';
-                $video_url = '';
+                } else {
+
+                    $error =
+                        'Database query failed.';
+                }
             }
 
         } catch (Throwable $e) {

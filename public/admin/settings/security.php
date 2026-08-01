@@ -77,7 +77,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $defaultPassword =
@@ -242,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (
         $result &&
-        $result->num_rows > 0
+        $result->num_rows() > 0
     ) {
 
         $row =
@@ -356,7 +356,7 @@ $result =
 
 if (
     $result &&
-    $result->num_rows > 0
+    $result->num_rows() > 0
 ) {
 
     $data =

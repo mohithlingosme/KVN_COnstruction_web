@@ -1,50 +1,22 @@
 <?php
 
 require_once '../config/app.php';
-
-// =====================================
-// VALIDATE BLOG SLUG
-// =====================================
+require_once __DIR__ . '/includes/repositories.php';
 
 if (!isset($_GET['slug'])) {
-
     redirect('blogs.php');
 }
 
-$slug = trim($_GET['slug']);
+$slug = trim((string)$_GET['slug']);
 
-// =====================================
-// FETCH BLOG
-// =====================================
-
-$query = "
-    SELECT
-        blogs.*,
-        blog_categories.category_name AS category_name
-    FROM blogs
-    LEFT JOIN blog_categories
-        ON blogs.category_id = blog_categories.id
-    WHERE blogs.slug = :slug
-    AND blogs.status = 'published'
-    LIMIT 1
-";
-
-$stmt = $conn->prepare($query);
-
-$stmt->bindParam(':slug', $slug);
-
-$stmt->execute();
-
-$blog = $stmt->fetch();
-
-// =====================================
-// BLOG NOT FOUND
-// =====================================
+$publicController = new \App\Controllers\PublicController();
+$data = $publicController->blogDetails($slug);
+$blog = $data['blog'] ?? null;
 
 if (!$blog) {
-
     redirect('blogs.php');
 }
+
 
 // =====================================
 // SEO VARIABLES
@@ -60,6 +32,14 @@ substr(strip_tags($blog['excerpt']),0,160);
 
 $metaImage =
 base_url($blog['featured_image']);
+
+// =====================================
+// RELATED BLOGS (via ContentRepository)
+// =====================================
+
+$contentRepo = repo('Content');
+$relatedBlogs = $contentRepo ? $contentRepo->getRelatedBlogs((int)($blog['id'] ?? 0), 4) : [];
+$moreBlogs = $contentRepo ? $contentRepo->getRelatedBlogs((int)($blog['id'] ?? 0), 3) : [];
 
 include '../app/views/layouts/header.php';
 
@@ -224,7 +204,7 @@ include '../app/views/layouts/header.php';
 
                     <p class="text-muted">
 
-                        Bengaluru’s trusted construction company
+                        Bengaluru's trusted construction company
                         specializing in villas,
                         commercial projects,
                         interiors,
@@ -252,30 +232,7 @@ include '../app/views/layouts/header.php';
                         Related Blogs
                     </h3>
 
-                    <?php
-
-                    $relatedQuery = "
-                        SELECT *
-                        FROM blogs
-                        WHERE status = 'published'
-                        AND id != :id
-                        ORDER BY published_at DESC
-                        LIMIT 4
-                    ";
-
-                    $relatedStmt =
-                    $conn->prepare($relatedQuery);
-
-                    $relatedStmt->bindParam(':id', $blog['id']);
-
-                    $relatedStmt->execute();
-
-                    $relatedBlogs =
-                    $relatedStmt->fetchAll();
-
-                    foreach($relatedBlogs as $related):
-
-                    ?>
+                    <?php foreach($relatedBlogs as $related): ?>
 
                         <div class="related-blog-item">
 
@@ -366,30 +323,7 @@ include '../app/views/layouts/header.php';
 
         <div class="row g-4">
 
-            <?php
-
-            $moreQuery = "
-                SELECT *
-                FROM blogs
-                WHERE status = 'published'
-                AND id != :id
-                ORDER BY published_at DESC
-                LIMIT 3
-            ";
-
-            $moreStmt =
-            $conn->prepare($moreQuery);
-
-            $moreStmt->bindParam(':id', $blog['id']);
-
-            $moreStmt->execute();
-
-            $moreBlogs =
-            $moreStmt->fetchAll();
-
-            foreach($moreBlogs as $more):
-
-            ?>
+            <?php foreach($moreBlogs as $more): ?>
 
                 <div class="col-lg-4">
 

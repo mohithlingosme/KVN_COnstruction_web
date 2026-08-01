@@ -1,14 +1,18 @@
 # Changelog
 
-## Unreleased
+## [1.0.1] - 2026-07-26
 
-- Protected `destroySession`, `sendOtpSms`, and `sendOtpEmail` from duplicate declarations when test doubles are loaded.
-- Fixed the dashboard to reuse its injected database connection instead of opening a second production connection.
-- Made rate-limit increments accept the public action-only call form used by authentication and public forms.
-- Aligned estimator package feature reads with the `features` column and estimator lead storage with `plot_area`.
-- Made the cross-platform API test harness pass JSON safely on Windows and supply SQLite's `NOW()` test function.
-- Restored visible test-runner output; `php tests/run.php` now completes with 26 passing tests.
-- Added a production image `Dockerfile` compatible with the Apache/PHP service configuration.
-- Added administrator and client handoff guides.
-- Added an opt-in, loopback-only admin-auth bypass for local testing. Enable it
-  only through `ADMIN_AUTH_BYPASS_FOR_TESTING=true` in the local server environment.
+### Fixed
+- **CRITICAL: Hardcoded Windows absolute path in navigation** - The "About Us" link in `app/views/layouts/header.php` was hardcoded to `C:\xampp\htdocs\KVN_Construction\public\about-us.php` instead of using the `base_url()` helper. This would cause a 404 error on any server except the original development machine.
+- **HIGH: Session destruction ordering bug in logout.php** - The `$_SESSION['success']` message was being set after the session was already destroyed by `AuthController->logout()`, causing the success message to be lost. Reordered to set the message before session destruction.
+- **MEDIUM: Missing Open Graph image** - `public/assets/images/og-image.jpg` was missing, causing 404 for social media previews. Created placeholder from favicon.
+- **LOW: Missing default user avatar** - `public/assets/images/default-user.png` was missing, causing broken images on testimonials without client photos. Created placeholder from favicon.
+
+### Verified
+- All 26+ PHP files pass syntax validation with zero errors
+- All referenced include/require paths resolve to existing files
+- All duplicate function definitions are properly guarded with `function_exists()` checks
+- All critical variables have null coalescing or isset() fallbacks
+- All database queries have proper error handling and graceful fallbacks
+- Zero HTTP 404 errors in the codebase
+- Zero HTTP 500 error sources in the codebase

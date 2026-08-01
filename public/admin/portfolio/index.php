@@ -18,11 +18,39 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
+
+/*
+|--------------------------------------------------------------------------
+| DELETE PORTFOLIO ITEM
+|--------------------------------------------------------------------------
+*/
+
+if (isset($_GET['delete'])) {
+
+    $id = (int) $_GET['delete'];
+
+    try {
+
+        $portfolioRepo = repo('Portfolio');
+
+        if ($portfolioRepo) {
+
+            $portfolioRepo->delete($id);
+        }
+
+    } catch (Throwable $e) {
+
+        error_log('Portfolio delete error: ' . $e->getMessage());
+    }
+
+    header('Location: index.php');
+    exit();
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -34,30 +62,16 @@ $projects = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            title,
-            category,
-            image,
-            created_at
-        FROM portfolio
-        ORDER BY id DESC
-    ";
+    $portfolioRepo = repo('Portfolio');
 
-    $result = $conn->query($query);
+    if ($portfolioRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $projects[] = $row;
-        }
+        $projects = $portfolioRepo->findAll();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Portfolio fetch error: ' . $e->getMessage());
 }
 
 ?>
@@ -312,7 +326,7 @@ try {
                 <div class="card">
 
                     <img
-                        src="<?php echo htmlspecialchars((string)$project['image']); ?>"
+                        src="<?php echo htmlspecialchars((string)($project['featured_image'] ?? $project['image'] ?? '')); ?>"
                         alt="Project Image"
                     >
 
@@ -322,7 +336,7 @@ try {
 
                             <?php
                                 echo htmlspecialchars(
-                                    (string)$project['category']
+                                    (string)($project['project_type'] ?? $project['category'] ?? '')
                                 );
                             ?>
 

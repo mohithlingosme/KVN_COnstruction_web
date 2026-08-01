@@ -16,11 +16,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -78,38 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
 
-            $stmt = $conn->prepare(
-                "
-                INSERT INTO services
-                (
-                    title,
-                    description,
-                    image
-                )
-                VALUES
-                (
-                    ?,
-                    ?,
-                    ?
-                )
-                "
-            );
+            $serviceRepo = repo('Service');
 
-            if (!$stmt) {
+            if ($serviceRepo) {
 
-                $error =
-                    'Database prepare failed.';
+                $ok = $serviceRepo->insert([
+                    'title'       => $title,
+                    'description' => $description,
+                    'image'       => $image,
+                ]);
 
-            } else {
-
-                $stmt->bind_param(
-                    'sss',
-                    $title,
-                    $description,
-                    $image
-                );
-
-                if ($stmt->execute()) {
+                if ($ok) {
 
                     $message =
                         'Service created successfully.';
@@ -124,7 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'Failed to create service.';
                 }
 
-                $stmt->close();
+            } else {
+
+                $error =
+                    'Service repository unavailable.';
             }
 
         } catch (Throwable $e) {

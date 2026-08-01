@@ -10,6 +10,8 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 | File: /helpers/security.php
 |--------------------------------------------------------------------------
+| REFACTORED: All SQL delegated to App\Repositories\AuditRepository.
+|--------------------------------------------------------------------------
 */
 
 /*
@@ -22,19 +24,8 @@ function sanitize(mixed $data): mixed
     if (is_array($data)) {
         return array_map('sanitize', $data);
     }
-
-    return trim(
-        htmlspecialchars(
-            strip_tags((string) $data),
-            ENT_QUOTES,
-            'UTF-8'
-        )
-    );
+    return trim(htmlspecialchars(strip_tags((string) $data), ENT_QUOTES, 'UTF-8'));
 }
-
-
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -43,10 +34,7 @@ function sanitize(mixed $data): mixed
 */
 function safeRichText(string $content): string
 {
-    return strip_tags(
-        $content,
-        '<p><br><b><strong><i><em><u><ul><ol><li><h1><h2><h3><h4><blockquote><a><img>'
-    );
+    return strip_tags($content, '<p><br><b><strong><i><em><u><ul><ol><li><h1><h2><h3><h4><blockquote><a><img>');
 }
 
 if (!function_exists('sanitize_html')) {
@@ -86,9 +74,7 @@ function securityHeaders(): void
         . "form-action 'self';"
     );
 
-    header(
-        'Permissions-Policy: geolocation=(), microphone=(), camera=()'
-    );
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
 }
 
 /*
@@ -101,7 +87,6 @@ function csrfToken(): string
     if (empty($_SESSION['_csrf_token'])) {
         $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
     }
-
     return $_SESSION['_csrf_token'];
 }
 
@@ -112,18 +97,12 @@ function csrfToken(): string
 */
 /* csrfField() canonical is defined in helpers/csrf.php. */
 
-
-
 /*
 |--------------------------------------------------------------------------
 | VERIFY CSRF TOKEN
 |--------------------------------------------------------------------------
 */
 // verifyCsrfToken() canonical is defined in helpers/csrf.php.
-// Avoid redeclaration (duplicate-functions remediation).
-
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -132,10 +111,7 @@ function csrfToken(): string
 */
 function requireCsrf(): void
 {
-    $token = $_POST['_token']
-        ?? $_SERVER['HTTP_X_CSRF_TOKEN']
-        ?? null;
-
+    $token = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
     if (!verifyCsrfToken($token)) {
         http_response_code(403);
         exit('Invalid CSRF token');
@@ -157,43 +133,30 @@ function generateSecureToken(int $length = 32): string
 | PASSWORD HASH
 |--------------------------------------------------------------------------
 */
-/**
- * Validate password strength
- * Minimum 8 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 special character
- */
 function validatePasswordStrength(string $password): array
 {
     $errors = [];
-
     if (strlen($password) < 8) {
         $errors[] = 'Password must be at least 8 characters long.';
     }
-
     if (!preg_match('/[A-Z]/', $password)) {
         $errors[] = 'Password must contain at least one uppercase letter.';
     }
-
     if (!preg_match('/[a-z]/', $password)) {
         $errors[] = 'Password must contain at least one lowercase letter.';
     }
-
     if (!preg_match('/[0-9]/', $password)) {
         $errors[] = 'Password must contain at least one number.';
     }
-
     if (!preg_match('/[^A-Za-z0-9]/', $password)) {
         $errors[] = 'Password must contain at least one special character.';
     }
-
     return $errors;
 }
 
 function hashPassword(string $password): string
 {
-    return password_hash(
-        $password,
-        PASSWORD_DEFAULT
-    );
+    return password_hash($password, PASSWORD_DEFAULT);
 }
 
 /*
@@ -201,14 +164,9 @@ function hashPassword(string $password): string
 | PASSWORD VERIFY
 |--------------------------------------------------------------------------
 */
-function verifyPassword(
-    string $password,
-    string $hash
-): bool {
-    return password_verify(
-        $password,
-        $hash
-    );
+function verifyPassword(string $password, string $hash): bool
+{
+    return password_verify($password, $hash);
 }
 
 /*
@@ -216,39 +174,27 @@ function verifyPassword(
 | RATE LIMIT
 |--------------------------------------------------------------------------
 */
-function rateLimit(
-    string $key,
-    int $maxAttempts = 10,
-    int $window = 300
-): bool {
-
+function rateLimit(string $key, int $maxAttempts = 10, int $window = 300): bool
+{
     if (!isset($_SESSION['_rate_limit'])) {
         $_SESSION['_rate_limit'] = [];
     }
 
     $now = time();
-
-    if (
-        !isset($_SESSION['_rate_limit'][$key])
-    ) {
+    if (!isset($_SESSION['_rate_limit'][$key])) {
         $_SESSION['_rate_limit'][$key] = [];
     }
 
     $_SESSION['_rate_limit'][$key] = array_filter(
         $_SESSION['_rate_limit'][$key],
-        fn ($timestamp) => ($now - $timestamp) < $window
+        fn($timestamp) => ($now - $timestamp) < $window
     );
 
-    if (
-        count($_SESSION['_rate_limit'][$key])
-        >=
-        $maxAttempts
-    ) {
+    if (count($_SESSION['_rate_limit'][$key]) >= $maxAttempts) {
         return false;
     }
 
     $_SESSION['_rate_limit'][$key][] = $now;
-
     return true;
 }
 
@@ -259,8 +205,7 @@ function rateLimit(
 */
 function getClientIp(): string
 {
-    return $_SERVER['REMOTE_ADDR']
-        ?? 'UNKNOWN';
+    return $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
 }
 
 /*
@@ -270,8 +215,7 @@ function getClientIp(): string
 */
 function getUserAgent(): string
 {
-    return $_SERVER['HTTP_USER_AGENT']
-        ?? 'UNKNOWN';
+    return $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
 }
 
 /*
@@ -281,10 +225,7 @@ function getUserAgent(): string
 */
 function isAjaxRequest(): bool
 {
-    return !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
-        &&
-        strtolower($_SERVER['HTTP_X_REQUESTED_WITH'])
-        === 'xmlhttprequest';
+    return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
 
 /*
@@ -302,7 +243,7 @@ function requireAjax(): void
 
 /*
 |--------------------------------------------------------------------------
-| SECURITY LOG
+| SECURITY LOG (delegates to AuditRepository)
 |--------------------------------------------------------------------------
 */
 function logSecurityEvent(
@@ -311,15 +252,10 @@ function logSecurityEvent(
     $severity = 'info',
     $details = ''
 ): void {
-
-    // Support both call signatures used across the codebase:
-    // 1) logSecurityEvent(?int $userId, string $event, string $severity, string $details)
-    // 2) logSecurityEvent(string $event, string $message, array $context)
-    // If first argument is not numeric (e.g. event code), shift parameters.
+    // Support both call signatures used across the codebase
     if (!is_null($userIdOrEvent) && !is_int($userIdOrEvent) && !is_numeric($userIdOrEvent)) {
         $event = (string)$userIdOrEvent;
         $message = $eventOrMessage;
-        // In signature #2, $severity param carries context array.
         $context = $severity;
         if (is_array($context)) {
             $details = json_encode($context);
@@ -328,52 +264,24 @@ function logSecurityEvent(
         }
         $severity = 'info';
         $userId = null;
-
     } else {
         $userId = $userIdOrEvent === null ? null : (int)$userIdOrEvent;
         $event = $eventOrMessage;
     }
 
-
-    if (!isset($GLOBALS['conn'])) {
-        return;
-    }
-
     try {
+        $repo = repo('Audit');
+        if (!$repo) return;
 
-        $stmt = $GLOBALS['conn']->prepare(
-            "INSERT INTO security_logs
-            (
-                user_id,
-                event_type,
-                severity,
-                details,
-                ip_address,
-                user_agent,
-                created_at
-            )
-            VALUES
-            (
-                :user_id,
-                :event_type,
-                :severity,
-                :details,
-                :ip_address,
-                :user_agent,
-                NOW()
-            )"
+        $repo->logEvent(
+            $userId ?? 0,
+            $event,
+            $severity,
+            $details,
+            getClientIp(),
+            getUserAgent()
         );
-
-        $stmt->execute([
-            ':user_id'    => $userId,
-            ':event_type' => $event,
-            ':severity'   => $severity,
-            ':details'    => $details,
-            ':ip_address' => getClientIp(),
-            ':user_agent' => getUserAgent()
-        ]);
-
-    } catch (Throwable $e) {
+    } catch (\Throwable $e) {
         error_log($e->getMessage());
     }
 }
@@ -385,79 +293,36 @@ function logSecurityEvent(
 */
 function cleanupSecurityLogs(int $days = 90): void
 {
-    if (!isset($GLOBALS['conn'])) {
-        return;
-    }
-
     try {
-
-        $stmt = $GLOBALS['conn']->prepare(
-            "DELETE FROM security_logs
-             WHERE created_at <
-             DATE_SUB(NOW(), INTERVAL :days DAY)"
-        );
-
-        $stmt->bindValue(
-            ':days',
-            $days,
-            PDO::PARAM_INT
-        );
-
-        $stmt->execute();
-
-    } catch (Throwable $e) {
+        $repo = repo('Audit');
+        if (!$repo) return;
+        $repo->purgeOldLogs($days);
+    } catch (\Throwable $e) {
         error_log($e->getMessage());
     }
 }
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN AUDIT LOG
+| ADMIN AUDIT LOG (delegates to AuditRepository)
 |--------------------------------------------------------------------------
 */
 if (!function_exists('logAdminAction')) {
-    function logAdminAction(
-        ?int $adminId,
-        string $action,
-        string $details = ''
-    ): void {
-
-        if (!isset($GLOBALS['conn'])) {
-            return;
-        }
-
+    function logAdminAction(?int $adminId, string $action, string $details = ''): void
+    {
         try {
+            $repo = repo('Audit');
+            if (!$repo) return;
 
-            $stmt = $GLOBALS['conn']->prepare(
-                "INSERT INTO audit_logs
-                (
-                    user_id,
-                    action,
-                    details,
-                    ip_address,
-                    user_agent,
-                    created_at
-                )
-                VALUES
-                (
-                    :user_id,
-                    :action,
-                    :details,
-                    :ip_address,
-                    :user_agent,
-                    NOW()
-                )"
+            $repo->logAudit(
+                $adminId ?? 0,
+                $action,
+                'admin',
+                0,
+                $details,
+                getClientIp()
             );
-
-            $stmt->execute([
-                ':user_id' => $adminId,
-                ':action' => $action,
-                ':details' => $details,
-                ':ip_address' => getClientIp(),
-                ':user_agent' => getUserAgent()
-            ]);
-
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             error_log($e->getMessage());
         }
     }

@@ -24,8 +24,7 @@ if ($adminTestingBypass && in_array($adminTestingIp, ['127.0.0.1', '::1'], true)
 |--------------------------------------------------------------------------
 | ADMIN SECURITY MIDDLEWARE
 |--------------------------------------------------------------------------
-| File:
-| /middleware/admin.php
+| REFACTORED: SQL queries delegated to UserRepository and SessionRepository.
 |--------------------------------------------------------------------------
 */
 
@@ -38,10 +37,16 @@ require_once dirname(__DIR__) . '/config/app.php';
 */
 
 require_once HELPER_PATH . '/session.php';
-
 require_once HELPER_PATH . '/security.php';
-
 require_once HELPER_PATH . '/csrf.php';
+
+/*
+|--------------------------------------------------------------------------
+| LOAD REPOSITORIES
+|--------------------------------------------------------------------------
+*/
+
+require_once dirname(__DIR__) . '/public/includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -49,9 +54,13 @@ require_once HELPER_PATH . '/csrf.php';
 |--------------------------------------------------------------------------
 */
 
-define('STRICT_ADMIN_IP_CHECK', false);
+if (!defined('STRICT_ADMIN_IP_CHECK')) {
+    define('STRICT_ADMIN_IP_CHECK', false);
+}
 
-define('STRICT_ADMIN_AGENT_CHECK', false);
+if (!defined('STRICT_ADMIN_AGENT_CHECK')) {
+    define('STRICT_ADMIN_AGENT_CHECK', false);
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -60,34 +69,16 @@ define('STRICT_ADMIN_AGENT_CHECK', false);
 */
 
 if (!validateSession()) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | LOG
-    |--------------------------------------------------------------------------
-    */
-
     logSecurityEvent(
-
         $_SESSION['user_id'] ?? null,
-
         'invalid_admin_session',
-
         'warning',
-
         'Invalid admin session detected'
     );
 
     destroySession();
-
-    $_SESSION['error'] =
-    'Session expired.';
-
-    header(
-
-        'Location: ' . base_url('admin/login.php')
-    );
-
+    $_SESSION['error'] = 'Session expired.';
+    header('Location: ' . base_url('admin/login.php'));
     exit;
 }
 
@@ -98,23 +89,14 @@ if (!validateSession()) {
 */
 
 if (!isLoggedIn()) {
-
     logSecurityEvent(
-
         null,
-
         'unauthenticated_admin_access',
-
         'warning',
-
         'Unauthenticated admin route access'
     );
 
-    header(
-
-        'Location: ' . base_url('admin/login.php')
-    );
-
+    header('Location: ' . base_url('admin/login.php'));
     exit;
 }
 
@@ -125,25 +107,15 @@ if (!isLoggedIn()) {
 */
 
 if (!isAdmin()) {
-
     logSecurityEvent(
-
         currentUserId(),
-
         'non_admin_access_attempt',
-
         'critical',
-
         'Non-admin attempted admin access'
     );
 
     destroySession();
-
-    header(
-
-        'Location: ' . base_url('login.php')
-    );
-
+    header('Location: ' . base_url('login.php'));
     exit;
 }
 
@@ -153,254 +125,77 @@ if (!isAdmin()) {
 |--------------------------------------------------------------------------
 */
 
-if (
-
-    !isset($_SESSION['is_admin'])
-
-    ||
-
-    $_SESSION['is_admin'] !== true
-) {
-
+if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
     logSecurityEvent(
-
         currentUserId(),
-
         'invalid_admin_session_flag',
-
         'critical',
-
         'Admin isolation failed'
     );
 
     destroySession();
-
-    header(
-
-        'Location: ' . base_url('admin/login.php')
-    );
-
+    header('Location: ' . base_url('admin/login.php'));
     exit;
 }
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE USER VALIDATION
+| DATABASE USER VALIDATION (via UserRepository)
 |--------------------------------------------------------------------------
 */
 
 try {
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $admin = $userRepo->findById((int)currentUserId());
 
-    $query = "
+        if (!$admin) {
+            logSecurityEvent(currentUserId(), 'admin_account_missing', 'critical', 'Admin account deleted during session');
+            destroySession();
+            header('Location: ' . base_url('admin/login.php'));
+            exit;
+        }
 
-        SELECT
+        if (($admin['status'] ?? '') !== 'active') {
+            logSecurityEvent($admin['id'], 'inactive_admin_access', 'critical', 'Inactive admin attempted access');
+            destroySession();
+            header('Location: ' . base_url('admin/login.php'));
+            exit;
+        }
 
-            id,
-            full_name,
-            email,
-            role,
-            status,
-            locked_until
-
-        FROM users
-
-        WHERE id = :id
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':id' =>
-        currentUserId()
-    ]);
-
-    $admin =
-    $stmt->fetch();
-
-    /*
-    |--------------------------------------------------------------------------
-    | USER EXISTS
-    |--------------------------------------------------------------------------
-    */
-
-    if (!$admin) {
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'admin_account_missing',
-
-            'critical',
-
-            'Admin account deleted during session'
-        );
-
-        destroySession();
-
-        header(
-
-            'Location: ' . base_url('admin/login.php')
-        );
-
-        exit;
+        if (!empty($admin['locked_until']) && strtotime($admin['locked_until']) > time()) {
+            logSecurityEvent($admin['id'], 'locked_admin_access', 'critical', 'Locked admin attempted access');
+            destroySession();
+            header('Location: ' . base_url('admin/login.php'));
+            exit;
+        }
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ACCOUNT ACTIVE
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $admin['status']
-        !==
-        'active'
-    ) {
-
-        logSecurityEvent(
-
-            $admin['id'],
-
-            'inactive_admin_access',
-
-            'critical',
-
-            'Inactive admin attempted access'
-        );
-
-        destroySession();
-
-        header(
-
-            'Location: ' . base_url('admin/login.php')
-        );
-
-        exit;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ACCOUNT LOCKED
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        !empty($admin['locked_until'])
-
-        &&
-
-        strtotime($admin['locked_until'])
-        > time()
-    ) {
-
-        logSecurityEvent(
-
-            $admin['id'],
-
-            'locked_admin_access',
-
-            'critical',
-
-            'Locked admin attempted access'
-        );
-
-        destroySession();
-
-        header(
-
-            'Location: ' . base_url('admin/login.php')
-        );
-
-        exit;
-    }
-
 } catch (Exception $e) {
-
-    error_log(
-
-        'Admin Middleware Error: '
-        .
-        $e->getMessage()
-    );
-
+    error_log('Admin Middleware Error: ' . $e->getMessage());
     destroySession();
-
-    header(
-
-        'Location: ' . base_url('admin/login.php')
-    );
-
+    header('Location: ' . base_url('admin/login.php'));
     exit;
 }
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN SESSION DATABASE VALIDATION
+| ADMIN SESSION DATABASE VALIDATION (via SessionRepository)
 |--------------------------------------------------------------------------
 */
 
 try {
-
-    $query = "
-
-        SELECT id
-
-        FROM user_sessions
-
-        WHERE session_token = :token
-
-        AND is_admin_session = 1
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':token' =>
-        $_SESSION['session_token']
-    ]);
-
-    $adminSession =
-    $stmt->fetch();
-
-    if (!$adminSession) {
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'admin_session_missing',
-
-            'critical',
-
-            'Admin DB session missing'
-        );
-
-        destroySession();
-
-        header(
-
-            'Location: ' . base_url('admin/login.php')
-        );
-
-        exit;
+    $sessionRepo = repo('Session');
+    if ($sessionRepo && !empty($_SESSION['session_token'])) {
+        $adminSession = $sessionRepo->findByToken((string)$_SESSION['session_token']);
+        if (!$adminSession) {
+            logSecurityEvent(currentUserId(), 'admin_session_missing', 'critical', 'Admin DB session missing');
+            destroySession();
+            header('Location: ' . base_url('admin/login.php'));
+            exit;
+        }
     }
-
 } catch (Exception $e) {
-
-    error_log(
-        $e->getMessage()
-    );
+    error_log($e->getMessage());
 }
 
 /*
@@ -410,40 +205,10 @@ try {
 */
 
 if (STRICT_ADMIN_IP_CHECK) {
-
-    if (
-
-        isset($_SESSION['admin_ip'])
-
-        &&
-
-        $_SESSION['admin_ip']
-        !==
-        ($_SERVER['REMOTE_ADDR'] ?? '')
-    ) {
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'admin_ip_mismatch',
-
-            'critical',
-
-            'Admin IP mismatch'
-        );
-
+    if (isset($_SESSION['admin_ip']) && $_SESSION['admin_ip'] !== ($_SERVER['REMOTE_ADDR'] ?? '')) {
+        logSecurityEvent(currentUserId(), 'admin_ip_mismatch', 'critical', 'Admin IP mismatch');
         destroySession();
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/login.php'
-        );
-
+        header('Location: ' . APP_URL . '/admin/login.php');
         exit;
     }
 }
@@ -455,40 +220,10 @@ if (STRICT_ADMIN_IP_CHECK) {
 */
 
 if (STRICT_ADMIN_AGENT_CHECK) {
-
-    if (
-
-        isset($_SESSION['admin_user_agent'])
-
-        &&
-
-        $_SESSION['admin_user_agent']
-        !==
-        ($_SERVER['HTTP_USER_AGENT'] ?? '')
-    ) {
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'admin_agent_mismatch',
-
-            'critical',
-
-            'Admin browser mismatch'
-        );
-
+    if (isset($_SESSION['admin_user_agent']) && $_SESSION['admin_user_agent'] !== ($_SERVER['HTTP_USER_AGENT'] ?? '')) {
+        logSecurityEvent(currentUserId(), 'admin_agent_mismatch', 'critical', 'Admin browser mismatch');
         destroySession();
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/login.php'
-        );
-
+        header('Location: ' . APP_URL . '/admin/login.php');
         exit;
     }
 }
@@ -524,11 +259,8 @@ generateCsrfToken();
 */
 
 logAdminAction(
-
     currentUserId(),
-
     'admin_route_access',
-
     current_url()
 );
 
@@ -539,18 +271,10 @@ logAdminAction(
 */
 
 $currentAdmin = [
-
-    'id' =>
-    $admin['id'],
-
-    'name' =>
-    $admin['full_name'],
-
-    'email' =>
-    $admin['email'],
-
-    'role' =>
-    $admin['role']
+    'id'    => $admin['id'] ?? null,
+    'name'  => $admin['full_name'] ?? '',
+    'email' => $admin['email'] ?? '',
+    'role'  => $admin['role'] ?? '',
 ];
 
 /*
@@ -558,4 +282,3 @@ $currentAdmin = [
 | ADMIN AUTHORIZED
 |--------------------------------------------------------------------------
 */
-?>

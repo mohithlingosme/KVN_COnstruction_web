@@ -102,6 +102,39 @@ class User
         return $user ?: null;
     }
 
+    public function findByIdentifier(string $identifier): ?array
+    {
+        $identifier = trim($identifier);
+
+        $query = "
+
+            SELECT *
+
+            FROM users
+
+            WHERE deleted_at IS NULL
+              AND (
+                    LOWER(email) = LOWER(:identifier)
+                 OR phone = :phone_identifier
+                 OR LOWER(full_name) = LOWER(:identifier)
+                 OR LOWER(name) = LOWER(:identifier)
+              )
+
+            LIMIT 1
+
+        ";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([
+            ':identifier' => $identifier,
+            ':phone_identifier' => $identifier
+        ]);
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $user ?: null;
+    }
+
     /* =========================================================
        ACCOUNT STATUS
     ========================================================= */
@@ -177,14 +210,16 @@ class User
             |--------------------------------------------------------------------------
             */
 
+            $lockedUntil = date(
+                'Y-m-d H:i:s',
+                time() + (15 * 60)
+            );
+
             $lockQuery = "
 
                 UPDATE users
 
-                SET locked_until = DATE_ADD(
-                    NOW(),
-                    INTERVAL 15 MINUTE
-                )
+                SET locked_until = :locked_until
 
                 WHERE id = :id
 
@@ -195,7 +230,8 @@ class User
             $lockStmt = $this->db->prepare($lockQuery);
 
             $lockStmt->execute([
-                ':id' => $userId
+                ':id' => $userId,
+                ':locked_until' => $lockedUntil
             ]);
 
             $this->db->commit();
@@ -297,7 +333,7 @@ class User
 
             $historyQuery = "
 
-                INSERT INTO password_histories (
+                INSERT INTO password_history (
 
                     user_id,
                     password_hash,
@@ -401,10 +437,7 @@ class User
                     :ip_address,
                     :user_agent,
                     0,
-                    DATE_ADD(
-                        NOW(),
-                        INTERVAL :expiry MINUTE
-                    ),
+                    :expires_at,
                     NOW()
 
                 )
@@ -433,9 +466,8 @@ class User
             );
 
             $stmt->bindValue(
-                ':expiry',
-                $expiryMinutes,
-                PDO::PARAM_INT
+                ':expires_at',
+                date('Y-m-d H:i:s', time() + ($expiryMinutes * 60))
             );
 
             $stmt->bindValue(
@@ -647,10 +679,7 @@ class User
                 :ip_address,
                 :user_agent,
                 1,
-                DATE_ADD(
-                    NOW(),
-                    INTERVAL 30 DAY
-                ),
+                :expires_at,
                 NOW(),
                 NOW()
 
@@ -660,7 +689,7 @@ class User
 
         $stmt = $this->db->prepare($query);
 
-        return $stmt->execute([
+            return $stmt->execute([
 
             ':user_id' => $userId,
 
@@ -671,11 +700,13 @@ class User
 
             ':fingerprint_hash' => $fingerprintHash,
 
-            ':device_hash' => $deviceHash,
+                ':device_hash' => $deviceHash,
 
-            ':ip_address' => $ipAddress,
+                ':ip_address' => $ipAddress,
 
-            ':user_agent' =>
+                ':expires_at' => date('Y-m-d H:i:s', time() + (30 * 24 * 60 * 60)),
+
+                ':user_agent' =>
             $_SERVER['HTTP_USER_AGENT'] ?? null
         ]);
     }
@@ -742,7 +773,9 @@ class User
     ========================================================= */
 
     public function updateLastLogin(
-        int $userId
+        int $userId,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
     ): bool {
 
         $query = "
@@ -752,6 +785,8 @@ class User
             SET
 
                 last_login = NOW(),
+                last_login_ip = :ip_address,
+                last_login_user_agent = :user_agent,
                 updated_at = NOW()
 
             WHERE id = :id
@@ -761,7 +796,9 @@ class User
         $stmt = $this->db->prepare($query);
 
         return $stmt->execute([
-            ':id' => $userId
+            ':id' => $userId,
+            ':ip_address' => $ipAddress ?? ($_SERVER['REMOTE_ADDR'] ?? null),
+            ':user_agent' => $userAgent ?? ($_SERVER['HTTP_USER_AGENT'] ?? null)
         ]);
     }
 }

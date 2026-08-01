@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -37,36 +37,18 @@ if (isset($_GET['delete'])) {
 
     try {
 
-        /*
-        |--------------------------------------------------------------------------
-        | GET FILE PATH
-        |--------------------------------------------------------------------------
-        */
+        $mediaRepo = repo('Media');
 
-        $stmt = $conn->prepare(
-            "
-            SELECT file_path
-            FROM media
-            WHERE id = ?
-            "
-        );
+        if ($mediaRepo) {
 
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'i',
-                $id
-            );
-
-            $stmt->execute();
-
-            $result =
-                $stmt->get_result();
+            /*
+            |--------------------------------------------------------------------------
+            | GET FILE PATH
+            |--------------------------------------------------------------------------
+            */
 
             $media =
-                $result->fetch_assoc();
-
-            $stmt->close();
+                $mediaRepo->findById($id);
 
             /*
             |--------------------------------------------------------------------------
@@ -76,14 +58,11 @@ if (isset($_GET['delete'])) {
 
             if (
                 $media &&
-                file_exists(
-                    $media['file_path']
-                )
+                !empty($media['file_path']) &&
+                file_exists($media['file_path'])
             ) {
 
-                unlink(
-                    $media['file_path']
-                );
+                unlink($media['file_path']);
             }
 
             /*
@@ -92,30 +71,12 @@ if (isset($_GET['delete'])) {
             |--------------------------------------------------------------------------
             */
 
-            $delete =
-                $conn->prepare(
-                    "
-                    DELETE FROM media
-                    WHERE id = ?
-                    "
-                );
-
-            if ($delete) {
-
-                $delete->bind_param(
-                    'i',
-                    $id
-                );
-
-                $delete->execute();
-
-                $delete->close();
-            }
+            $mediaRepo->deleteById($id);
         }
 
     } catch (Throwable $e) {
 
-        die($e->getMessage());
+        error_log('Media delete error: ' . $e->getMessage());
     }
 
     header('Location: index.php');
@@ -132,31 +93,16 @@ $mediaFiles = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            title,
-            file_name,
-            file_path,
-            file_type,
-            created_at
-        FROM media
-        ORDER BY id DESC
-    ";
+    $mediaRepo = repo('Media');
 
-    $result = $conn->query($query);
+    if ($mediaRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $mediaFiles[] = $row;
-        }
+        $mediaFiles = $mediaRepo->getAll();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Media fetch error: ' . $e->getMessage());
 }
 
 ?>

@@ -6,8 +6,7 @@
 |--------------------------------------------------------------------------
 | AUTHENTICATION MIDDLEWARE
 |--------------------------------------------------------------------------
-| File:
-| /middleware/auth.php
+| REFACTORED: SQL queries delegated to UserRepository and SessionRepository.
 |--------------------------------------------------------------------------
 */
 
@@ -18,6 +17,7 @@
 */
 
 require_once dirname(__DIR__) . '/config/app.php';
+require_once dirname(__DIR__) . '/public/includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -26,53 +26,18 @@ require_once dirname(__DIR__) . '/config/app.php';
 */
 
 if (!validateSession()) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECURITY LOG
-    |--------------------------------------------------------------------------
-    */
-
     if (function_exists('logSecurityEvent')) {
-
         logSecurityEvent(
-
             $_SESSION['user_id'] ?? null,
-
             'unauthorized_access',
-
             'warning',
-
             'Unauthenticated access attempt'
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | DESTROY INVALID SESSION
-    |--------------------------------------------------------------------------
-    */
-
     destroySession();
-
-    /*
-    |--------------------------------------------------------------------------
-    | REDIRECT LOGIN
-    |--------------------------------------------------------------------------
-    */
-
-    $_SESSION['error'] =
-    'Please login to continue.';
-
-    header(
-
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
-    );
-
+    $_SESSION['error'] = 'Please login to continue.';
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
@@ -82,26 +47,9 @@ if (!validateSession()) {
 |--------------------------------------------------------------------------
 */
 
-if (
-
-    empty($_SESSION['user_id'])
-
-    ||
-
-    empty($_SESSION['role'])
-) {
-
+if (empty($_SESSION['user_id']) || empty($_SESSION['role'])) {
     destroySession();
-
-    header(
-
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
-    );
-
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
@@ -111,64 +59,19 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$timeout =
+$timeout = isAdmin() ? ADMIN_SESSION_TIMEOUT : SESSION_TIMEOUT;
 
-    isAdmin()
-
-    ?
-
-    ADMIN_SESSION_TIMEOUT
-
-    :
-
-    SESSION_TIMEOUT;
-
-if (
-
-    isset($_SESSION['last_activity'])
-
-    &&
-
-    (
-
-        time()
-        -
-        $_SESSION['last_activity']
-
-    ) > $timeout
-) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | LOG TIMEOUT
-    |--------------------------------------------------------------------------
-    */
-
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
     logSecurityEvent(
-
         $_SESSION['user_id'],
-
         'session_timeout',
-
         'warning',
-
         'Session expired due to inactivity'
     );
 
     destroySession();
-
-    $_SESSION['error'] =
-    'Session expired. Please login again.';
-
-    header(
-
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
-    );
-
+    $_SESSION['error'] = 'Session expired. Please login again.';
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
@@ -178,194 +81,54 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$currentFingerprint =
-generateSessionFingerprint();
+$currentFingerprint = generateSessionFingerprint();
 
-if (
-
-    !isset($_SESSION['fingerprint'])
-
-    ||
-
-    $_SESSION['fingerprint']
-    !==
-    $currentFingerprint
-) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | POSSIBLE SESSION HIJACKING
-    |--------------------------------------------------------------------------
-    */
-
+if (!isset($_SESSION['fingerprint']) || $_SESSION['fingerprint'] !== $currentFingerprint) {
     logSecurityEvent(
-
         $_SESSION['user_id'],
-
         'session_hijack_attempt',
-
         'critical',
-
         'Session fingerprint mismatch'
     );
 
     destroySession();
-
-    $_SESSION['error'] =
-    'Security validation failed.';
-
-    header(
-
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
-    );
-
+    $_SESSION['error'] = 'Security validation failed.';
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
 /*
 |--------------------------------------------------------------------------
-| USER STATUS VALIDATION
+| USER STATUS VALIDATION (via UserRepository)
 |--------------------------------------------------------------------------
 */
 
 try {
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $user = $userRepo->findById((int)$_SESSION['user_id']);
 
-    $query = "
+        if (!$user) {
+            logSecurityEvent($_SESSION['user_id'], 'invalid_user_session', 'critical', 'User account missing');
+            destroySession();
+            header('Location: ' . APP_URL . '/login.php');
+            exit;
+        }
 
-        SELECT
+        if (($user['status'] ?? '') !== 'active') {
+            logSecurityEvent($user['id'], 'blocked_user_access', 'warning', 'Inactive account tried accessing system');
+            destroySession();
+            $_SESSION['error'] = 'Account inactive.';
+            header('Location: ' . APP_URL . '/login.php');
+            exit;
+        }
 
-            id,
-            full_name,
-            email,
-            phone,
-            role,
-            status
-
-        FROM users
-
-        WHERE id = :id
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':id' =>
-        $_SESSION['user_id']
-    ]);
-
-    $user =
-    $stmt->fetch();
-
-    /*
-    |--------------------------------------------------------------------------
-    | USER EXISTS
-    |--------------------------------------------------------------------------
-    */
-
-    if (!$user) {
-
-        logSecurityEvent(
-
-            $_SESSION['user_id'],
-
-            'invalid_user_session',
-
-            'critical',
-
-            'User account missing'
-        );
-
-        destroySession();
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/login.php'
-        );
-
-        exit;
+        $_SESSION['user'] = $user;
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | USER ACTIVE
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $user['status']
-        !==
-        'active'
-    ) {
-
-        logSecurityEvent(
-
-            $user['id'],
-
-            'blocked_user_access',
-
-            'warning',
-
-            'Inactive account tried accessing system'
-        );
-
-        destroySession();
-
-        $_SESSION['error'] =
-        'Account inactive.';
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/login.php'
-        );
-
-        exit;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SESSION USER SYNC
-    |--------------------------------------------------------------------------
-    */
-
-    $_SESSION['user'] = $user;
-
 } catch (Exception $e) {
-
-    error_log(
-
-        'Auth Middleware Error: '
-        .
-        $e->getMessage()
-    );
-
+    error_log('Auth Middleware Error: ' . $e->getMessage());
     destroySession();
-
-    header(
-
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
-    );
-
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
@@ -375,42 +138,21 @@ try {
 |--------------------------------------------------------------------------
 */
 
-$_SESSION['last_activity'] =
-time();
+$_SESSION['last_activity'] = time();
 
 /*
 |--------------------------------------------------------------------------
-| UPDATE DB SESSION ACTIVITY
+| UPDATE DB SESSION ACTIVITY (via SessionRepository)
 |--------------------------------------------------------------------------
 */
 
 try {
-
-    $query = "
-
-        UPDATE user_sessions
-
-        SET
-
-            last_activity = NOW()
-
-        WHERE session_token = :token
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':token' =>
-        $_SESSION['session_token']
-    ]);
-
+    $sessionRepo = repo('Session');
+    if ($sessionRepo && !empty($_SESSION['session_token'])) {
+        $sessionRepo->updateActivityByToken((string)$_SESSION['session_token']);
+    }
 } catch (Exception $e) {
-
-    error_log(
-        $e->getMessage()
-    );
+    error_log($e->getMessage());
 }
 
 /*
@@ -419,27 +161,11 @@ try {
 |--------------------------------------------------------------------------
 */
 
-if (
-
-    isset($_SESSION['role'])
-
-    &&
-
-    in_array(
-        $_SESSION['role'],
-        ['admin', 'super_admin'],
-        true
-    )
-) {
-
+if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'], true)) {
     if (function_exists('logAdminAction')) {
-
         logAdminAction(
-
             $_SESSION['user_id'],
-
             'admin_route_access',
-
             current_url()
         );
     }
@@ -450,4 +176,3 @@ if (
 | AUTHENTICATED USER READY
 |--------------------------------------------------------------------------
 */
-?>

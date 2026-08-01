@@ -16,7 +16,8 @@ require_once '../../../config/app.php';
 require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 require_once '../../../helpers/csrf.php';
-require_once '../../../app/models/Lead.php';
+require_once '../../../includes/repositories.php';
+require_once '../../../bootstrap/providers/ServiceProvider.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -57,46 +58,33 @@ if (!in_array($newStatus, $validStatuses, true)) {
 
 /*
 |--------------------------------------------------------------------------
-| UPDATE LEAD STATUS
+| UPDATE LEAD STATUS VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
 try {
-    $leadModel = new Lead($conn);
-    $lead = $leadModel->find($leadId);
+    $service = ServiceProvider::get('LeadService');
+    $existing = $service->getById($leadId);
 
-    if (!$lead) {
+    if (!$existing['status']) {
         json_response(['success' => false, 'message' => 'Lead not found.'], 404);
     }
 
-    $updated = $leadModel->update($leadId, [
-        'name' => $lead['name'],
-        'phone' => $lead['phone'],
-        'email' => $lead['email'] ?? '',
-        'lead_type' => $lead['lead_type'] ?? 'general',
+    $lead = $existing['data'];
+
+    $result = $service->update($leadId, [
+        'name'        => $lead['name'] ?? '',
+        'phone'       => $lead['phone'] ?? '',
+        'email'       => $lead['email'] ?? '',
+        'lead_type'   => $lead['lead_type'] ?? 'general',
         'lead_source' => $lead['lead_source'] ?? 'website',
-        'budget' => $lead['budget'] ?? 0,
-        'status' => $newStatus,
+        'budget'      => $lead['budget'] ?? 0,
+        'status'      => $newStatus,
         'assigned_to' => $lead['assigned_to'] ?? '',
-        'message' => $lead['message'] ?? ''
+        'message'     => $lead['message'] ?? '',
     ]);
 
-    if ($updated) {
-        /*
-        |--------------------------------------------------------------------------
-        | LOG EVENT
-        |--------------------------------------------------------------------------
-        */
-
-        if (function_exists('logSecurityEvent')) {
-            logSecurityEvent('LEAD_STATUS_UPDATED', [
-                'lead_id' => $leadId,
-                'old_status' => $lead['status'],
-                'new_status' => $newStatus,
-                'ip' => $_SERVER['REMOTE_ADDR'] ?? ''
-            ]);
-        }
-
+    if ($result['status']) {
         json_response(['success' => true, 'message' => 'Lead status updated.']);
     } else {
         json_response(['success' => false, 'message' => 'Failed to update lead status.'], 500);

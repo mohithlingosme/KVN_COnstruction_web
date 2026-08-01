@@ -172,7 +172,7 @@ if (!function_exists('verifyCsrfToken')) {
 */
 
 if (!function_exists('validateCsrf')) {
-    function validateCsrf(): bool
+    function validateCsrf(?string $token = null): bool
     {
         $protectedMethods = [
             'POST',
@@ -191,8 +191,8 @@ if (!function_exists('validateCsrf')) {
             return true;
         }
 
-        $token =
-            $_POST['csrf_token']
+        $token = $token
+            ?? $_POST['csrf_token']
             ?? $_SERVER['HTTP_X_CSRF_TOKEN']
             ?? '';
 

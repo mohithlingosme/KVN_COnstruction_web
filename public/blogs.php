@@ -2,102 +2,21 @@
 
 require_once '../config/app.php';
 
-// =====================================
-// SEO
-// =====================================
+$pageTitle = "Construction Blogs & Insights | " . APP_NAME;
+$metaDescription = "Explore construction insights, villa planning guides, BBMP approvals, interior trends, cost estimation, and expert building tips from KVN Construction.";
 
-$pageTitle =
-"Construction Blogs & Insights | " . APP_NAME;
+$publicController = new \App\Controllers\PublicController();
+$data = $publicController->blogs();
+$blogs = $data['blogs'] ?? [];
+$featuredBlog = !empty($blogs) ? $blogs[0] : null;
 
-$metaDescription =
-"Explore construction insights, villa planning guides, BBMP approvals, interior trends, cost estimation, and expert building tips from KVN Construction.";
-
-
-// =====================================
-// FEATURED BLOG
-// =====================================
-
-$featuredQuery = "
-    SELECT *
-FROM blogs
-    WHERE status = 'published'
-    AND is_featured = 1
-    ORDER BY published_at DESC
-    LIMIT 1
-";
-
-$featuredStmt = $conn->prepare($featuredQuery);
-
-$featuredStmt->execute();
-
-$featuredBlog = $featuredStmt->fetch();
-
-// =====================================
-// ALL BLOGS
-// =====================================
-
-$query = "
-    SELECT
-        blogs.*,
-        blog_categories.category_name
-
-    FROM blogs
-
-    LEFT JOIN blog_categories
-        ON blogs.category_id = blog_categories.id
-
-    WHERE blogs.status = 'published'
-
-    ORDER BY blogs.published_at DESC
-";
-
-$stmt = $conn->prepare($query);
-
-$stmt->execute();
-
-$blogs = $stmt->fetchAll();
-
-// =====================================
-// BLOG CATEGORIES
-// =====================================
-
-$categoryQuery = "
-    SELECT *
-    FROM blog_categories
-    ORDER BY category_name ASC
-";
-
-$categoryStmt =
-$conn->prepare($categoryQuery);
-
-$categoryStmt->execute();
-
-$categories =
-$categoryStmt->fetchAll();
-
-// =====================================
-// FEATURED VIDEOS
-// =====================================
-
-$videoQuery = "
-    SELECT *
-    FROM videos
-    WHERE status = 'active'
-    ORDER BY id DESC
-    LIMIT 3
-";
-
-$videoStmt =
-$conn->prepare($videoQuery);
-
-$videoStmt->execute();
-
-$videos =
-$videoStmt->fetchAll();
+$categories = [];
+$videos = $publicController->videos()['videos'] ?? [];
 
 include '../app/views/layouts/header.php';
 
 ?>
+
 
 <!-- ================================= -->
 <!-- HERO -->

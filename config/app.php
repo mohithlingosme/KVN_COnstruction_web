@@ -56,6 +56,52 @@ if (!defined('PUBLIC_PATH')) { define('PUBLIC_PATH', ROOT_PATH . '/public'); }
 if (!defined('UPLOAD_PATH')) { define('UPLOAD_PATH', ROOT_PATH . '/uploads'); }
 if (!defined('HELPER_PATH')) { define('HELPER_PATH', ROOT_PATH . '/helpers'); }
 if (!defined('MIDDLEWARE_PATH')) { define('MIDDLEWARE_PATH', ROOT_PATH . '/middleware'); }
+
+/*
+|--------------------------------------------------------------------------
+| PSR-4 AUTOLOADER FOR App\ NAMESPACE & CORE CLASSES
+|--------------------------------------------------------------------------
+*/
+spl_autoload_register(function ($class) {
+    $prefix = 'App\\';
+    $baseDir = APP_PATH . '/';
+
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) === 0) {
+        $relativeClass = substr($class, $len);
+        $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
+
+        // Case-insensitive fallback for operating system file matching (e.g., Core vs core, Controllers vs controllers)
+        $parts = explode('\\', $relativeClass);
+        $filename = array_pop($parts) . '.php';
+        $dir = $baseDir . implode('/', array_map('lcfirst', $parts));
+        $altFile = rtrim($dir, '/') . '/' . $filename;
+        if (file_exists($altFile)) {
+            require_once $altFile;
+            return;
+        }
+    }
+
+    // Legacy unnamespaced class fallbacks in core, app/controllers, app/services, app/repositories
+    $legacyPaths = [
+        ROOT_PATH . '/core/' . $class . '.php',
+        APP_PATH . '/controllers/' . $class . '.php',
+        APP_PATH . '/services/' . $class . '.php',
+        APP_PATH . '/repositories/' . $class . '.php',
+        APP_PATH . '/models/' . $class . '.php',
+    ];
+    foreach ($legacyPaths as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            return;
+        }
+    }
+});
+
 /*
 |--------------------------------------------------------------------------
 | DATABASE CONFIG
@@ -127,138 +173,6 @@ define('ALLOWED_DOCUMENT_TYPES', [
 | consistent configuration with proper HTTPS detection.
 | Do NOT duplicate session_start() here.
 */
-
-/*
-|--------------------------------------------------------------------------
-| ERROR REPORTING
-|--------------------------------------------------------------------------
-*/
-
-if (APP_ENV === 'development') {
-
-    ini_set('display_errors', '1');
-    ini_set('display_startup_errors', '1');
-    error_reporting(E_ALL);
-
-} else {
-
-    ini_set('display_errors', '0');
-    ini_set('display_startup_errors', '0');
-    ini_set('log_errors', '1');
-    ini_set('error_log', ROOT_PATH . '/storage/logs/error.log');
-    error_reporting(E_ALL);
-}
-
-ini_set('html_errors', '0');
-
-set_exception_handler(function (\Throwable $exception) {
-    error_log("Uncaught Exception: " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine());
-    
-    if (APP_ENV !== 'development') {
-        http_response_code(500);
-        if (is_ajax_request()) {
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Internal Server Error']);
-        } else {
-            echo "<h1>500 Internal Server Error</h1><p>Something went wrong. Our team has been notified.</p>";
-        }
-        exit;
-    }
-    // In development, let the default handler print the stack trace if display_errors is on
-    throw $exception;
-});
-
-set_error_handler(function ($level, $message, $file, $line) {
-    if (error_reporting() & $level) {
-        throw new \ErrorException($message, 0, $level, $file, $line);
-    }
-    return false;
-});
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-$conn = null;
-
-if (file_exists(CONFIG_PATH . '/database.php')) {
-
-    require_once CONFIG_PATH . '/database.php';
-
-    if (class_exists('Database')) {
-
-        try {
-
-            $db = new Database();
-            $conn = $db->connect();
-
-        } catch (Throwable $e) {
-
-            error_log(
-                'Database connection failed: ' .
-                $e->getMessage()
-            );
-
-            $conn = null;
-        }
-    }
-}
-
-$GLOBALS['conn'] = $conn;
-
-/*
-|--------------------------------------------------------------------------
-| LOAD HELPERS
-|--------------------------------------------------------------------------
-*/
-
-// Load core helpers early.
-// IMPORTANT: do NOT load mail/sms/otp runtime heavy helpers on every request.
-// This reduces latency on public routes.
-$helperFiles = [
-    HELPER_PATH . '/functions.php',
-    HELPER_PATH . '/formatter.php',
-    HELPER_PATH . '/csrf.php',
-    HELPER_PATH . '/session.php',
-    HELPER_PATH . '/rateLimiter.php',
-    HELPER_PATH . '/security.php',
-    HELPER_PATH . '/seo.php',
-    HELPER_PATH . '/upload.php',
-];
-
-foreach ($helperFiles as $file) {
-    if (file_exists($file)) {
-        require_once $file;
-    } else {
-        error_log("Missing helper file: {$file}");
-    }
-}
-
-// Lazy-load side-effectful helpers only when needed.
-if (!function_exists('requireOtpHelpers')) {
-    function requireOtpHelpers(): void {
-        static $loaded = false;
-        if ($loaded) return;
-        $loaded = true;
-        $files = [
-            HELPER_PATH . '/otp.php',
-            HELPER_PATH . '/mail.php',
-            HELPER_PATH . '/sms.php',
-        ];
-        foreach ($files as $file) {
-            if (file_exists($file)) {
-                require_once $file;
-            }
-        }
-    }
-}
-
-// Backward compatibility: if code calls these helpers, ensure lazy-load occurred.
-// generateOtp() canonical is defined in helpers/otp.php.
-// Backward compatibility wrapper removed to eliminate duplicate function declarations.
-
 
 
 /*

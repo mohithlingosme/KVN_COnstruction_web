@@ -69,7 +69,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -679,7 +679,7 @@ $users =
 
         <tbody>
 
-        <?php if ($users && $users->num_rows > 0): ?>
+        <?php if ($users && $users->num_rows() > 0): ?>
 
             <?php while ($row = $users->fetch_assoc()): ?>
 

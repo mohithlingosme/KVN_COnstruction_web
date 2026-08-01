@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -34,32 +34,16 @@ $testimonials = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            client_name,
-            client_role,
-            message,
-            rating,
-            image,
-            created_at
-        FROM testimonials
-        ORDER BY id DESC
-    ";
+    $testimonialRepo = repo('Testimonial');
 
-    $result = $conn->query($query);
+    if ($testimonialRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $testimonials[] = $row;
-        }
+        $testimonials = $testimonialRepo->getAll();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Testimonials fetch error: ' . $e->getMessage());
 }
 
 ?>

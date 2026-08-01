@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | DELETE USER
 |--------------------------------------------------------------------------
-| File:
-| /public/admin/users/delete.php
+| File: /public/admin/users/delete.php
 |--------------------------------------------------------------------------
 */
 
@@ -17,9 +18,16 @@ require_once '../../../middleware/admin.php';
 
 require_once '../../../helpers/security.php';
 
-require_once '../../../helpers/session.php';
+require_once '../../../includes/repositories.php';
 
-require_once '../../../helpers/rateLimiter.php';
+/*
+|--------------------------------------------------------------------------
+| PAGE CONFIG
+|--------------------------------------------------------------------------
+*/
+
+$pageTitle =
+'Delete User | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,69 +48,13 @@ if ($userId <= 0) {
 
 /*
 |--------------------------------------------------------------------------
-| PREVENT SELF DELETE
+| FETCH USER VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
-if ($userId == currentUserId()) {
+$userService = new \App\Services\AdminUserService();
 
-    $_SESSION['error'] =
-    'You cannot delete your own account.';
-
-    redirect('admin/users/index.php');
-}
-
-/*
-|--------------------------------------------------------------------------
-| RATE LIMIT
-|--------------------------------------------------------------------------
-*/
-
-if (
-
-    !checkRateLimit(
-
-        'delete_user',
-
-        10,
-
-        300
-    )
-) {
-
-    $_SESSION['error'] =
-    'Too many requests. Please try again later.';
-
-    redirect('admin/users/index.php');
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH USER
-|--------------------------------------------------------------------------
-*/
-
-$query = "
-
-    SELECT *
-
-    FROM users
-
-    WHERE id = :id
-
-    LIMIT 1
-";
-
-$stmt =
-$conn->prepare($query);
-
-$stmt->execute([
-
-    ':id' => $userId
-]);
-
-$user =
-$stmt->fetch();
+$user = $userService->getUserById($userId);
 
 if (!$user) {
 
@@ -114,164 +66,275 @@ if (!$user) {
 
 /*
 |--------------------------------------------------------------------------
-| PREVENT SUPER ADMIN DELETE
-|--------------------------------------------------------------------------
-|
-| Optional protection
+| CONFIRM DELETE
 |--------------------------------------------------------------------------
 */
 
-if (
+if (isset($_GET['confirm'])) {
 
-    isset($user['role'])
+    $result = $userService->deleteUser(
+        $userId,
+        currentUserId()
+    );
 
-    &&
+    if ($result['success']) {
 
-    $user['role'] === 'super_admin'
-) {
+        $_SESSION['success'] =
+        $result['message'];
 
-    $_SESSION['error'] =
-    'Super admin cannot be deleted.';
+    } else {
+
+        $_SESSION['error'] =
+        $result['message'];
+    }
 
     redirect('admin/users/index.php');
 }
 
-/*
-|--------------------------------------------------------------------------
-| DELETE PROFILE IMAGE
-|--------------------------------------------------------------------------
-*/
-
-if (
-
-    !empty($user['profile_image'])
-) {
-
-    $imagePath =
-
-        ROOT_PATH
-
-        .
-
-        '/uploads/users/'
-
-        .
-
-        $user['profile_image'];
-
-    if (file_exists($imagePath)) {
-
-        @unlink($imagePath);
-    }
-}
-
-/*
-|--------------------------------------------------------------------------
-| DELETE USER SESSIONS
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    $sessionQuery = "
-
-        DELETE FROM user_sessions
-
-        WHERE user_id = :user_id
-    ";
-
-    $sessionStmt =
-    $conn->prepare($sessionQuery);
-
-    $sessionStmt->execute([
-
-        ':user_id' => $userId
-    ]);
-
-} catch(Exception $e){}
-
-/*
-|--------------------------------------------------------------------------
-| DELETE SECURITY LOGS
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    $logQuery = "
-
-        DELETE FROM security_logs
-
-        WHERE user_id = :user_id
-    ";
-
-    $logStmt =
-    $conn->prepare($logQuery);
-
-    $logStmt->execute([
-
-        ':user_id' => $userId
-    ]);
-
-} catch(Exception $e){}
-
-/*
-|--------------------------------------------------------------------------
-| DELETE USER
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    $deleteQuery = "
-
-        DELETE FROM users
-
-        WHERE id = :id
-
-        LIMIT 1
-    ";
-
-    $deleteStmt =
-    $conn->prepare($deleteQuery);
-
-    $deleteStmt->execute([
-
-        ':id' => $userId
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECURITY LOG
-    |--------------------------------------------------------------------------
-    */
-
-    logSecurityEvent(
-
-        currentUserId(),
-
-        'user_deleted',
-
-        'warning',
-
-        'Deleted user ID: ' . $userId
-    );
-
-    $_SESSION['success'] =
-    'User deleted successfully.';
-
-} catch(Exception $e) {
-
-    $_SESSION['error'] =
-    'Failed to delete user.';
-}
-
-/*
-|--------------------------------------------------------------------------
-| REDIRECT
-|--------------------------------------------------------------------------
-*/
-
-redirect('admin/users/index.php');
-
 ?>
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+
+        <?php echo escape($pageTitle); ?>
+
+    </title>
+
+    <!-- Bootstrap -->
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap Icons -->
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
+
+    <!-- Admin CSS -->
+
+    <link
+        rel="stylesheet"
+        href="<?php echo base_url('assets/admin/css/admin.css'); ?>"
+    >
+
+</head>
+
+<body>
+
+<div class="admin-layout">
+
+    <!-- SIDEBAR -->
+
+    <?php include '../../../app/views/layouts/sidebar.php'; ?>
+
+    <!-- MAIN -->
+
+    <div class="admin-main">
+
+        <!-- NAVBAR -->
+
+        <?php include '../../../app/views/layouts/navbar.php'; ?>
+
+        <!-- CONTENT -->
+
+        <div class="admin-content">
+
+            <!-- HEADER -->
+
+            <div class="dashboard-header">
+
+                <div>
+
+                    <h1>
+
+                        Delete User
+
+                    </h1>
+
+                    <p>
+
+                        Confirm user deletion.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <!-- DELETE CONFIRM CARD -->
+
+            <div class="section-card">
+
+                <div class="text-center py-5">
+
+                    <!-- ICON -->
+
+                    <div class="mb-4">
+
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:64px;"></i>
+
+                    </div>
+
+                    <h3 class="text-danger mb-3">
+
+                        Are you sure?
+
+                    </h3>
+
+                    <p class="mb-4" style="max-width:500px; margin:0 auto;">
+
+                        You are about to delete the user account for
+
+                        <strong>
+
+                            <?php echo escape($user['full_name']); ?>
+
+                        </strong>
+
+                        (<?php echo escape($user['email']); ?>).
+
+                        This action will permanently remove this user and all associated data.
+
+                        This cannot be undone.
+
+                    </p>
+
+                    <!-- USER INFO -->
+
+                    <div class="d-flex justify-content-center gap-4 mb-4">
+
+                        <div>
+
+                            <small class="text-muted">
+
+                                Role
+
+                            </small>
+
+                            <br>
+
+                            <strong>
+
+                                <?php echo ucfirst(escape($user['role'])); ?>
+
+                            </strong>
+
+                        </div>
+
+                        <div>
+
+                            <small class="text-muted">
+
+                                Status
+
+                            </small>
+
+                            <br>
+
+                            <span class="badge
+
+                                <?php
+
+                                if($user['status'] === 'active'){
+
+                                    echo 'bg-success';
+
+                                }else{
+
+                                    echo 'bg-warning';
+                                }
+
+                                ?>
+                            ">
+
+                                <?php echo ucfirst(escape($user['status'])); ?>
+
+                            </span>
+
+                        </div>
+
+                        <div>
+
+                            <small class="text-muted">
+
+                                Joined
+
+                            </small>
+
+                            <br>
+
+                            <strong>
+
+                                <?php echo date('d M Y', strtotime($user['created_at'])); ?>
+
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ACTIONS -->
+
+                    <div class="d-flex justify-content-center gap-3">
+
+                        <a
+                            href="?id=<?= (int)$user['id'] ?>&confirm=1"
+                            class="btn btn-danger btn-lg delete-confirm"
+                        >
+
+                            <i class="bi bi-trash-fill"></i>
+
+                            Yes, Delete User
+
+                        </a>
+
+                        <a
+                            href="view.php?id=<?= (int)$user['id'] ?>"
+                            class="btn btn-dark btn-lg"
+                        >
+
+                            <i class="bi bi-x-circle"></i>
+
+                            Cancel
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Bootstrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Admin JS -->
+
+<script src="<?php echo base_url('assets/admin/js/admin.js'); ?>"></script>
+
+</body>
+
+</html>

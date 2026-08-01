@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -61,57 +61,28 @@ $image    = '';
 
 try {
 
-    $stmt = $conn->prepare(
-        "
-        SELECT
-            id,
-            title,
-            category,
-            image
-        FROM portfolio
-        WHERE id = ?
-        LIMIT 1
-        "
-    );
+    $portfolioRepo = repo('Portfolio');
 
-    if (!$stmt) {
+    if (!$portfolioRepo) {
 
-        die('Database query failed.');
+        die('Portfolio repository unavailable.');
     }
 
-    $stmt->bind_param(
-        'i',
-        $id
-    );
+    $project = $portfolioRepo->findById($id);
 
-    $stmt->execute();
-
-    $stmt->store_result();
-
-    if ($stmt->num_rows !== 1) {
+    if (!$project) {
 
         die('Portfolio project not found.');
     }
 
-    $stmt->bind_result(
-        $project_id,
-        $project_title,
-        $project_category,
-        $project_image
-    );
-
-    $stmt->fetch();
-
     $title =
-        (string) $project_title;
+        (string) ($project['title'] ?? '');
 
     $category =
-        (string) $project_category;
+        (string) ($project['project_type'] ?? $project['category'] ?? '');
 
     $image =
-        (string) $project_image;
-
-    $stmt->close();
+        (string) ($project['featured_image'] ?? $project['image'] ?? '');
 
 } catch (Throwable $e) {
 
@@ -161,43 +132,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
 
-            $update = $conn->prepare(
-                "
-                UPDATE portfolio
-                SET
-                    title = ?,
-                    category = ?,
-                    image = ?
-                WHERE id = ?
-                "
-            );
+            $ok = $portfolioRepo->update($id, [
+                'title'         => $title,
+                'project_type'  => $category,
+                'featured_image' => $image,
+                'slug'          => strtolower(str_replace(' ', '-', $title)),
+            ]);
 
-            if (!$update) {
+            if ($ok) {
 
-                $error =
-                    'Database update failed.';
+                $success =
+                    'Portfolio project updated successfully.';
+
             } else {
 
-                $update->bind_param(
-                    'sssi',
-                    $title,
-                    $category,
-                    $image,
-                    $id
-                );
-
-                if ($update->execute()) {
-
-                    $success =
-                        'Portfolio project updated successfully.';
-
-                } else {
-
-                    $error =
-                        'Failed to update portfolio project.';
-                }
-
-                $update->close();
+                $error =
+                    'Failed to update portfolio project.';
             }
 
         } catch (Throwable $e) {

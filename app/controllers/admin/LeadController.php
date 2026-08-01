@@ -1,183 +1,133 @@
 <?php
 
-require_once ROOT_PATH . '/config/app.php';
-require_once ROOT_PATH . '/app/models/Lead.php';
+declare(strict_types=1);
 
+require_once ROOT_PATH . '/config/app.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
+
+/**
+ * LeadController - Thin controller
+ * - Parses HTTP requests
+ * - Calls LeadService for business logic
+ * - Returns responses (JSON, redirect, flash messages)
+ */
 class LeadController
 {
-    private $conn;
-    private $leadModel;
+    private LeadService $leadService;
 
-    public function __construct($database)
+    public function __construct(?PDO $database = null)
     {
-        $this->conn = $database;
-        $this->leadModel = new Lead($this->conn);
+        $this->leadService = ServiceProvider::get('LeadService');
     }
 
-    // =====================================================
-    // CREATE LEAD
-    // =====================================================
+    /**
+     * GET /leads - List all leads
+     */
+    public function index(): array
+    {
+        $result = $this->leadService->getAll();
+        return $result['data'] ?? [];
+    }
 
-    public function store()
+    /**
+     * GET /leads/{id} - Show single lead
+     */
+    public function show(int $id)
+    {
+        $result = $this->leadService->getById($id);
+        if (!$result['status']) {
+            $_SESSION['error'] = $result['message'];
+            if (function_exists('redirect')) {
+                redirect('admin/leads/index.php');
+            }
+            return false;
+        }
+        return $result['data'];
+    }
+
+    /**
+     * POST /leads - Create a new lead
+     */
+    public function store(): bool
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return;
-        }
-
-        $data = [
-            'name' => trim($_POST['name'] ?? ''),
-            'phone' => trim($_POST['phone'] ?? ''),
-            'email' => trim($_POST['email'] ?? ''),
-            'lead_type' => trim($_POST['lead_type'] ?? 'general'),
-            'lead_source' => trim($_POST['lead_source'] ?? 'website'),
-            'budget' => (float) ($_POST['budget'] ?? 0),
-            'status' => trim($_POST['status'] ?? 'new'),
-            'assigned_to' => trim($_POST['assigned_to'] ?? ''),
-            'message' => trim($_POST['message'] ?? '')
-        ];
-
-        // VALIDATION
-        if (empty($data['name']) || empty($data['phone'])) {
-            $_SESSION['error'] = "Name and phone are required.";
-            if (function_exists('redirect')) {
-                redirect('admin/leads/create.php');
-            }
             return false;
         }
 
-        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $_SESSION['error'] = "Invalid email address.";
+        $result = $this->leadService->create($_POST);
+
+        if ($result['status']) {
+            $_SESSION['success'] = $result['message'];
             if (function_exists('redirect')) {
-                redirect('admin/leads/create.php');
+                redirect('admin/leads/index.php');
             }
-            return false;
+            return true;
         }
 
-        try {
-            if ($this->leadModel->create($data)) {
-                if (function_exists('logSecurityEvent') && function_exists('currentUserId')) {
-                    logSecurityEvent(currentUserId(), 'lead_created', 'info', 'Lead created: ' . $data['name']);
-                }
-                $_SESSION['success'] = "Lead created successfully.";
-                if (function_exists('redirect')) {
-                    redirect('admin/leads/index.php');
-                }
-                return true;
-            }
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Failed to create lead.";
-        }
-
+        $_SESSION['error'] = $result['message'];
         if (function_exists('redirect')) {
             redirect('admin/leads/create.php');
         }
         return false;
     }
 
-    // =====================================================
-    // GET ALL LEADS
-    // =====================================================
-
-    public function index()
-    {
-        try {
-            return $this->leadModel->all();
-        } catch (Exception $e) {
-            return [];
-        }
-    }
-
-    // =====================================================
-    // GET SINGLE LEAD
-    // =====================================================
-
-    public function show($id)
-    {
-        try {
-            return $this->leadModel->find((int)$id);
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    // =====================================================
-    // UPDATE LEAD
-    // =====================================================
-
-    public function update($id)
+    /**
+     * POST /leads/{id}/update - Update a lead
+     */
+    public function update(int $id): bool
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            return;
-        }
-
-        $data = [
-            'name' => trim($_POST['name'] ?? ''),
-            'phone' => trim($_POST['phone'] ?? ''),
-            'email' => trim($_POST['email'] ?? ''),
-            'lead_type' => trim($_POST['lead_type'] ?? 'general'),
-            'lead_source' => trim($_POST['lead_source'] ?? 'website'),
-            'budget' => (float) ($_POST['budget'] ?? 0),
-            'status' => trim($_POST['status'] ?? 'new'),
-            'assigned_to' => trim($_POST['assigned_to'] ?? ''),
-            'message' => trim($_POST['message'] ?? '')
-        ];
-
-        // VALIDATION
-        if (empty($data['name']) || empty($data['phone'])) {
-            $_SESSION['error'] = "Name and phone are required.";
-            if (function_exists('redirect')) {
-                redirect('admin/leads/edit.php?id=' . $id);
-            }
             return false;
         }
 
-        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $_SESSION['error'] = "Invalid email address.";
+        $result = $this->leadService->update($id, $_POST);
+
+        if ($result['status']) {
+            $_SESSION['success'] = $result['message'];
             if (function_exists('redirect')) {
-                redirect('admin/leads/edit.php?id=' . $id);
+                redirect('admin/leads/index.php');
             }
-            return false;
+            return true;
         }
 
-        try {
-            if ($this->leadModel->update((int)$id, $data)) {
-                if (function_exists('logSecurityEvent') && function_exists('currentUserId')) {
-                    logSecurityEvent(currentUserId(), 'lead_updated', 'info', 'Lead updated: ' . $data['name']);
-                }
-                $_SESSION['success'] = "Lead updated successfully.";
-                if (function_exists('redirect')) {
-                    redirect('admin/leads/index.php');
-                }
-                return true;
-            }
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Failed to update lead.";
-        }
-
+        $_SESSION['error'] = $result['message'];
         if (function_exists('redirect')) {
             redirect('admin/leads/edit.php?id=' . $id);
         }
         return false;
     }
 
-    // =====================================================
-    // DELETE LEAD
-    // =====================================================
-
-    public function delete($id)
+    /**
+     * POST /leads/{id}/delete - Delete a lead
+     */
+    public function delete(int $id): bool
     {
-        try {
-            if ($this->leadModel->delete((int)$id)) {
-                if (function_exists('logSecurityEvent') && function_exists('currentUserId')) {
-                    logSecurityEvent(currentUserId(), 'lead_deleted', 'warning', 'Lead ID deleted: ' . $id);
-                }
-                $_SESSION['success'] = "Lead deleted successfully.";
-                return true;
-            }
-        } catch (Exception $e) {
-            $_SESSION['error'] = "Failed to delete lead.";
+        $result = $this->leadService->delete($id);
+
+        if ($result['status']) {
+            $_SESSION['success'] = $result['message'];
+            return true;
         }
+
+        $_SESSION['error'] = $result['message'];
         return false;
     }
+
+    /**
+     * GET /leads/stats - Get lead statistics
+     */
+    public function stats(): array
+    {
+        $result = $this->leadService->getStats();
+        return $result['data'] ?? [];
+    }
+
+    /**
+     * GET /leads/search - Search leads
+     */
+    public function search(string $query): array
+    {
+        $result = $this->leadService->search($query);
+        return $result['data'] ?? [];
+    }
 }
-?>

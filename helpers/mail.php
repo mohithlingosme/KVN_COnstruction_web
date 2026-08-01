@@ -619,11 +619,12 @@ if (
 |--------------------------------------------------------------------------
 */
 
+if (!function_exists('sendAdminLoginAlert')) {
 function sendAdminLoginAlert(
     string $email,
     string $adminName,
-    string $ipAddress,
-    string $device
+    string $ipAddress = '',
+    string $device = ''
 ): bool {
 
     $subject =
@@ -719,6 +720,7 @@ function sendAdminLoginAlert(
 
         'Admin login detected.'
     );
+}
 }
 
 /*

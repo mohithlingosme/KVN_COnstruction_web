@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,197 +30,27 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE DOCUMENTS TABLE
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS client_documents (
+require_once '../../../config/app.php';
+require_once __DIR__ . '/../../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        document_title VARCHAR(255) NOT NULL,
-
-        document_category VARCHAR(100) NOT NULL,
-
-        file_name VARCHAR(255) NOT NULL,
-
-        file_type VARCHAR(50) NOT NULL,
-
-        file_size VARCHAR(50) NOT NULL,
-
-        upload_date DATE NOT NULL,
-
-        status ENUM(
-            'Active',
-            'Archived',
-            'Pending'
-        )
-        NOT NULL DEFAULT 'Active',
-
-        remarks TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEMO DATA
+| FETCH DOCUMENT DATA
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM client_documents
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO client_documents
-        (
-
-            client_id,
-            document_title,
-            document_category,
-            file_name,
-            file_type,
-            file_size,
-            upload_date,
-            status,
-            remarks
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'Construction Agreement',
-            'Legal',
-            'construction-agreement.pdf',
-            'PDF',
-            '2.3 MB',
-            '2026-01-15',
-            'Active',
-            'Signed project agreement document.'
-        ),
-
-        (
-            $clientId,
-            'Project Floor Plan',
-            'Architecture',
-            'floor-plan-v1.pdf',
-            'PDF',
-            '5.1 MB',
-            '2026-02-01',
-            'Active',
-            'Approved architectural floor plan.'
-        ),
-
-        (
-            $clientId,
-            'Structural Drawings',
-            'Engineering',
-            'structural-drawings.zip',
-            'ZIP',
-            '18.6 MB',
-            '2026-03-10',
-            'Pending',
-            'Final structural review pending.'
-        ),
-
-        (
-            $clientId,
-            'Electrical Layout',
-            'MEP',
-            'electrical-layout.pdf',
-            'PDF',
-            '3.7 MB',
-            '2026-04-05',
-            'Archived',
-            'Old electrical layout version.'
-        )
-        "
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH DOCUMENTS
-|--------------------------------------------------------------------------
-*/
-
-$documents =
-    $conn->query(
-        "
-        SELECT *
-        FROM client_documents
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
-
-/*
-|--------------------------------------------------------------------------
-| STATS
-|--------------------------------------------------------------------------
-*/
-
-$totalDocuments = 0;
-$activeDocuments = 0;
-$pendingDocuments = 0;
-$archivedDocuments = 0;
-
-if ($documents && $documents->num_rows > 0) {
-
-    while ($calc = $documents->fetch_assoc()) {
-
-        $totalDocuments++;
-
-        if (
-            $calc['status']
-            === 'Active'
-        ) {
-
-            $activeDocuments++;
-        }
-
-        if (
-            $calc['status']
-            === 'Pending'
-        ) {
-
-            $pendingDocuments++;
-        }
-
-        if (
-            $calc['status']
-            === 'Archived'
-        ) {
-
-            $archivedDocuments++;
-        }
-    }
-
-    $documents->data_seek(0);
-}
+$data = $clientService->getDocumentData($clientId);
+$documents = $data['documents'];
+$totalDocuments = $data['totalDocuments'];
+$activeDocuments = $data['activeDocuments'];
+$pendingDocuments = $data['pendingDocuments'];
+$archivedDocuments = $data['archivedDocuments'];
 
 ?>
 
@@ -687,11 +509,11 @@ if ($documents && $documents->num_rows > 0) {
 
     <!-- DOCUMENT LIST -->
 
-    <?php if ($documents && $documents->num_rows > 0): ?>
+    <?php if (!empty($documents)): ?>
 
         <div class="documents-grid">
 
-            <?php while ($row = $documents->fetch_assoc()): ?>
+            <?php foreach ($documents as $row): ?>
 
                 <div class="document-card">
 
@@ -830,7 +652,7 @@ if ($documents && $documents->num_rows > 0) {
 
                 </div>
 
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         </div>
 

@@ -73,7 +73,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -282,7 +282,7 @@ $totalPending =
 $totalPartial =
     0;
 
-if ($revenues && $revenues->num_rows > 0) {
+if ($revenues && $revenues->num_rows() > 0) {
 
     while ($calc = $revenues->fetch_assoc()) {
 
@@ -865,7 +865,7 @@ if ($revenues && $revenues->num_rows > 0) {
 
             <tbody>
 
-            <?php if ($revenues && $revenues->num_rows > 0): ?>
+            <?php if ($revenues && $revenues->num_rows() > 0): ?>
 
                 <?php while ($row = $revenues->fetch_assoc()): ?>
 

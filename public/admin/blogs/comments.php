@@ -23,6 +23,8 @@ require_once '../../../helpers/csrf.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -31,46 +33,6 @@ require_once '../../../helpers/rateLimiter.php';
 
 $pageTitle =
 'Blog Comments | ' . APP_NAME;
-
-/*
-|--------------------------------------------------------------------------
-| CREATE TABLE IF NOT EXISTS
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    $conn->exec("
-
-        CREATE TABLE IF NOT EXISTS blog_comments (
-
-            id INT PRIMARY KEY AUTO_INCREMENT,
-
-            blog_id INT NOT NULL,
-
-            user_name VARCHAR(255) NOT NULL,
-
-            user_email VARCHAR(255) NOT NULL,
-
-            comment TEXT NOT NULL,
-
-            status ENUM(
-                'pending',
-                'approved',
-                'spam',
-                'rejected'
-            ) DEFAULT 'pending',
-
-            ip_address VARCHAR(100) NULL,
-
-            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-
-            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
-            ON UPDATE CURRENT_TIMESTAMP
-        )
-    ");
-
-} catch(Exception $e){}
 
 /*
 |--------------------------------------------------------------------------
@@ -161,31 +123,11 @@ if (
     |--------------------------------------------------------------------------
     */
 
+    $blogRepo = repo('Blog');
+
     try {
 
-        $query = "
-
-            UPDATE blog_comments
-
-            SET
-
-                status = :status,
-                updated_at = NOW()
-
-            WHERE id = :id
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':status' =>
-            $status,
-
-            ':id' =>
-            $commentId
-        ]);
+        $blogRepo->updateCommentStatus($commentId, $status);
 
         /*
         |--------------------------------------------------------------------------
@@ -236,22 +178,11 @@ if (
     $commentId =
     (int) $_GET['delete'];
 
+    $blogRepo = repo('Blog');
+
     try {
 
-        $deleteQuery = "
-
-            DELETE FROM blog_comments
-
-            WHERE id = :id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':id' => $commentId
-        ]);
+        $blogRepo->deleteComment($commentId);
 
         logSecurityEvent(
 
@@ -284,33 +215,12 @@ if (
 
 $comments = [];
 
+$blogRepo = repo('Blog');
+
 try {
 
-    $query = "
-
-        SELECT
-
-            bc.*,
-
-            b.title AS blog_title,
-
-            b.slug AS blog_slug
-
-        FROM blog_comments bc
-
-        LEFT JOIN blogs b
-        ON bc.blog_id = b.id
-
-        ORDER BY bc.id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
     $comments =
-    $stmt->fetchAll();
+    $blogRepo->getAllComments();
 
 } catch(Exception $e){
 

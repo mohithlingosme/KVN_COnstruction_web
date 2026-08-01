@@ -1,0 +1,7 @@
+﻿
+app\controllers\AuthController.php:15:        $this->sessionManager = 
+new SessionManager();
+public\reset-password.php:273:    $sessionManager = new 
+SessionManager($GLOBALS['conn']);
+
+

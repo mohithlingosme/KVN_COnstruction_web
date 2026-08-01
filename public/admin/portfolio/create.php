@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -80,37 +80,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
 
-            $stmt = $conn->prepare(
-                "
-                INSERT INTO portfolio
-                (
-                    title,
-                    category,
-                    image
-                )
-                VALUES
-                (
-                    ?,
-                    ?,
-                    ?
-                )
-                "
-            );
+            $portfolioRepo = repo('Portfolio');
 
-            if (!$stmt) {
+            if ($portfolioRepo) {
 
-                $error =
-                    'Database query failed.';
-            } else {
+                $id = $portfolioRepo->create([
+                    'title'         => $title,
+                    'category'      => $category,
+                    'image'         => $image,
+                    'slug'          => strtolower(str_replace(' ', '-', $title)),
+                    'status'        => 'active',
+                    'short_description' => $title,
+                    'description'   => '',
+                ]);
 
-                $stmt->bind_param(
-                    'sss',
-                    $title,
-                    $category,
-                    $image
-                );
-
-                if ($stmt->execute()) {
+                if ($id > 0) {
 
                     $success =
                         'Portfolio project created successfully.';
@@ -125,7 +109,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'Failed to create portfolio project.';
                 }
 
-                $stmt->close();
+            } else {
+
+                $error =
+                    'Portfolio repository unavailable.';
             }
 
         } catch (Throwable $e) {

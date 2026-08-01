@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | VIEW LEAD
 |--------------------------------------------------------------------------
-| File:
-| /public/admin/leads/view.php
+| File: /public/admin/leads/view.php
 |--------------------------------------------------------------------------
 */
 
@@ -18,6 +19,8 @@ require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
+
+require_once '../../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -38,39 +41,21 @@ if ($leadId <= 0) {
 
 /*
 |--------------------------------------------------------------------------
-| FETCH LEAD
+| FETCH LEAD VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
-$query = "
+require_once '../../../bootstrap/providers/ServiceProvider.php';
 
-    SELECT *
+$service = ServiceProvider::get('LeadService');
+$result = $service->getById($leadId);
 
-    FROM leads
-
-    WHERE id = :id
-
-    LIMIT 1
-";
-
-$stmt =
-$conn->prepare($query);
-
-$stmt->execute([
-
-    ':id' => $leadId
-]);
-
-$lead =
-$stmt->fetch();
-
-if (!$lead) {
-
-    $_SESSION['error'] =
-    'Lead not found.';
-
+if (!$result['status']) {
+    $_SESSION['error'] = $result['message'];
     redirect('admin/leads/index.php');
 }
+
+$lead = $result['data'];
 
 /*
 |--------------------------------------------------------------------------
@@ -81,34 +66,13 @@ if (!$lead) {
 $activities = [];
 
 try {
-
-    $activityQuery = "
-
-        SELECT
-            id,
-            activity_type,
-            description,
-            created_at
-
-        FROM lead_activities
-
-        WHERE lead_id = :lead_id
-
-        ORDER BY id DESC
-    ";
-
-    $activityStmt =
-    $conn->prepare($activityQuery);
-
-    $activityStmt->execute([
-
-        ':lead_id' => $leadId
-    ]);
-
-    $activities =
-    $activityStmt->fetchAll();
-
-} catch(Exception $e){}
+    $leadRepo = repo('Lead');
+    if ($leadRepo) {
+        $activities = $leadRepo->getLeadActivities($leadId);
+    }
+} catch (Exception $e) {
+    error_log('Lead activities fetch error: ' . $e->getMessage());
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -119,35 +83,13 @@ try {
 $projects = [];
 
 try {
-
-    $projectQuery = "
-
-        SELECT
-            id,
-            project_name,
-            status,
-            budget,
-            created_at
-
-        FROM projects
-
-        WHERE lead_id = :lead_id
-
-        ORDER BY id DESC
-    ";
-
-    $projectStmt =
-    $conn->prepare($projectQuery);
-
-    $projectStmt->execute([
-
-        ':lead_id' => $leadId
-    ]);
-
-    $projects =
-    $projectStmt->fetchAll();
-
-} catch(Exception $e){}
+    $projectRepo = repo('Project');
+    if ($projectRepo) {
+        $projects = $projectRepo->findByLeadId($leadId);
+    }
+} catch (Exception $e) {
+    error_log('Lead projects fetch error: ' . $e->getMessage());
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -156,9 +98,7 @@ try {
 */
 
 $pageTitle =
-$lead['name']
-.
-' | Lead Details';
+($lead['name'] ?? 'Lead') . ' | Lead Details | ' . APP_NAME;
 
 ?>
 
@@ -300,13 +240,9 @@ $lead['name']
                             <?php
 
                             echo strtoupper(
-
                                 substr(
-
-                                    $lead['name'],
-
+                                    $lead['name'] ?? '?',
                                     0,
-
                                     1
                                 )
                             );
@@ -317,13 +253,7 @@ $lead['name']
 
                         <h3>
 
-                            <?php
-
-                            echo escape(
-                                $lead['name']
-                            );
-
-                            ?>
+                            <?php echo escape($lead['name'] ?? ''); ?>
 
                         </h3>
 
@@ -333,13 +263,11 @@ $lead['name']
 
                         </p>
 
-                        <!-- STATUS -->
-
                         <?php
 
                         $status =
                         strtolower(
-                            $lead['status']
+                            $lead['status'] ?? 'new'
                         );
 
                         ?>
@@ -371,7 +299,6 @@ $lead['name']
                             <?php
 
                             echo ucfirst(
-
                                 str_replace(
                                     '_',
                                     ' ',
@@ -405,8 +332,6 @@ $lead['name']
 
                         <div class="row">
 
-                            <!-- NAME -->
-
                             <div class="col-md-6 mb-4">
 
                                 <label class="text-muted">
@@ -417,19 +342,11 @@ $lead['name']
 
                                 <h6>
 
-                                    <?php
-
-                                    echo escape(
-                                        $lead['name']
-                                    );
-
-                                    ?>
+                                    <?php echo escape($lead['name'] ?? ''); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- EMAIL -->
 
                             <div class="col-md-6 mb-4">
 
@@ -441,22 +358,11 @@ $lead['name']
 
                                 <h6>
 
-                                    <?php
-
-                                    echo escape(
-
-                                        $lead['email']
-                                        ??
-                                        'N/A'
-                                    );
-
-                                    ?>
+                                    <?php echo escape($lead['email'] ?? 'N/A'); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- PHONE -->
 
                             <div class="col-md-6 mb-4">
 
@@ -468,22 +374,11 @@ $lead['name']
 
                                 <h6>
 
-                                    <?php
-
-                                    echo escape(
-
-                                        $lead['phone']
-                                        ??
-                                        'N/A'
-                                    );
-
-                                    ?>
+                                    <?php echo escape($lead['phone'] ?? 'N/A'); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- TYPE -->
 
                             <div class="col-md-6 mb-4">
 
@@ -495,25 +390,11 @@ $lead['name']
 
                                 <h6>
 
-                                    <?php
-
-                                    echo ucfirst(
-
-                                        escape(
-
-                                            $lead['lead_type']
-                                            ??
-                                            'General'
-                                        )
-                                    );
-
-                                    ?>
+                                    <?php echo ucfirst(escape($lead['lead_type'] ?? 'General')); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- SOURCE -->
 
                             <div class="col-md-6 mb-4">
 
@@ -525,25 +406,11 @@ $lead['name']
 
                                 <h6>
 
-                                    <?php
-
-                                    echo ucfirst(
-
-                                        escape(
-
-                                            $lead['lead_source']
-                                            ??
-                                            'Website'
-                                        )
-                                    );
-
-                                    ?>
+                                    <?php echo ucfirst(escape($lead['lead_source'] ?? 'Website')); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- BUDGET -->
 
                             <div class="col-md-6 mb-4">
 
@@ -555,22 +422,11 @@ $lead['name']
 
                                 <h6>
 
-                                    ₹<?php
-
-                                    echo number_format(
-
-                                        $lead['budget']
-                                        ??
-                                        0
-                                    );
-
-                                    ?>
+                                    ₹<?php echo number_format((float)($lead['budget'] ?? 0)); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- ASSIGNED -->
 
                             <div class="col-md-6 mb-4">
 
@@ -582,22 +438,11 @@ $lead['name']
 
                                 <h6>
 
-                                    <?php
-
-                                    echo escape(
-
-                                        $lead['assigned_to']
-                                        ??
-                                        'Unassigned'
-                                    );
-
-                                    ?>
+                                    <?php echo escape($lead['assigned_to'] ?? 'Unassigned'); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- CREATED -->
 
                             <div class="col-md-6 mb-4">
 
@@ -609,25 +454,11 @@ $lead['name']
 
                                 <h6>
 
-                                    <?php
-
-                                    echo date(
-
-                                        'd M Y h:i A',
-
-                                        strtotime(
-
-                                            $lead['created_at']
-                                        )
-                                    );
-
-                                    ?>
+                                    <?php echo date('d M Y h:i A', strtotime($lead['created_at'])); ?>
 
                                 </h6>
 
                             </div>
-
-                            <!-- MESSAGE -->
 
                             <div class="col-lg-12 mb-4">
 
@@ -639,19 +470,7 @@ $lead['name']
 
                                 <div class="lead-message-box">
 
-                                    <?php
-
-                                    echo nl2br(
-
-                                        escape(
-
-                                            $lead['message']
-                                            ??
-                                            'No notes available.'
-                                        )
-                                    );
-
-                                    ?>
+                                    <?php echo nl2br(escape($lead['message'] ?? 'No notes available.')); ?>
 
                                 </div>
 
@@ -699,45 +518,19 @@ $lead['name']
 
                                     <h6>
 
-                                        <?php
-
-                                        echo escape(
-
-                                            $activity['activity_type']
-                                        );
-
-                                        ?>
+                                        <?php echo escape($activity['activity_type'] ?? ''); ?>
 
                                     </h6>
 
                                     <p>
 
-                                        <?php
-
-                                        echo escape(
-
-                                            $activity['description']
-                                        );
-
-                                        ?>
+                                        <?php echo escape($activity['description'] ?? ''); ?>
 
                                     </p>
 
                                     <small class="text-muted">
 
-                                        <?php
-
-                                        echo date(
-
-                                            'd M Y h:i A',
-
-                                            strtotime(
-
-                                                $activity['created_at']
-                                            )
-                                        );
-
-                                        ?>
+                                        <?php echo date('d M Y h:i A', strtotime($activity['created_at'])); ?>
 
                                     </small>
 
@@ -815,13 +608,7 @@ $lead['name']
 
                                         <td>
 
-                                            <?php
-
-                                            echo escape(
-                                                $project['project_name']
-                                            );
-
-                                            ?>
+                                            <?php echo escape($project['project_name'] ?? ''); ?>
 
                                         </td>
 
@@ -829,16 +616,7 @@ $lead['name']
 
                                             <span class="badge bg-primary">
 
-                                                <?php
-
-                                                echo ucfirst(
-
-                                                    escape(
-                                                        $project['status']
-                                                    )
-                                                );
-
-                                                ?>
+                                                <?php echo ucfirst(escape($project['status'] ?? '')); ?>
 
                                             </span>
 
@@ -846,34 +624,13 @@ $lead['name']
 
                                         <td>
 
-                                            ₹<?php
-
-                                            echo number_format(
-
-                                                $project['budget']
-                                                ??
-                                                0
-                                            );
-
-                                            ?>
+                                            ₹<?php echo number_format((float)($project['budget'] ?? 0)); ?>
 
                                         </td>
 
                                         <td>
 
-                                            <?php
-
-                                            echo date(
-
-                                                'd M Y',
-
-                                                strtotime(
-
-                                                    $project['created_at']
-                                                )
-                                            );
-
-                                            ?>
+                                            <?php echo date('d M Y', strtotime($project['created_at'])); ?>
 
                                         </td>
 

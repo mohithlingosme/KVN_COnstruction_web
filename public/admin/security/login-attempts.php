@@ -69,7 +69,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -447,7 +447,7 @@ $attempts =
 
         <tbody>
 
-        <?php if ($attempts && $attempts->num_rows > 0): ?>
+        <?php if ($attempts && $attempts->num_rows() > 0): ?>
 
             <?php while ($row = $attempts->fetch_assoc()): ?>
 

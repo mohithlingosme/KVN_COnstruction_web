@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -34,31 +34,16 @@ $projects = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            title,
-            category,
-            image,
-            is_featured,
-            created_at
-        FROM portfolio
-        ORDER BY id DESC
-    ";
+    $portfolioRepo = repo('Portfolio');
 
-    $result = $conn->query($query);
+    if ($portfolioRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $projects[] = $row;
-        }
+        $projects = $portfolioRepo->findAll();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Portfolio featured fetch error: ' . $e->getMessage());
 }
 
 /*
@@ -80,25 +65,11 @@ if (
 
     try {
 
-        $stmt = $conn->prepare(
-            "
-            UPDATE portfolio
-            SET is_featured = ?
-            WHERE id = ?
-            "
-        );
+        $portfolioRepo = repo('Portfolio');
 
-        if ($stmt) {
+        if ($portfolioRepo) {
 
-            $stmt->bind_param(
-                'ii',
-                $toggle,
-                $id
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+            $portfolioRepo->setFeatured($id, $toggle);
         }
 
         header('Location: featured.php');
@@ -106,7 +77,7 @@ if (
 
     } catch (Throwable $e) {
 
-        die($e->getMessage());
+        error_log('Portfolio featured toggle error: ' . $e->getMessage());
     }
 }
 
@@ -334,7 +305,7 @@ if (
                         <td>
 
                             <img
-                                src="<?php echo htmlspecialchars((string)$project['image']); ?>"
+                                src="<?php echo htmlspecialchars((string)($project['featured_image'] ?? $project['image'] ?? '')); ?>"
                                 alt="Project"
                             >
 
@@ -354,7 +325,7 @@ if (
 
                             <?php
                                 echo htmlspecialchars(
-                                    (string)$project['category']
+                                    (string)($project['project_type'] ?? $project['category'] ?? '')
                                 );
                             ?>
 
@@ -362,7 +333,7 @@ if (
 
                         <td>
 
-                            <?php if ((int)$project['is_featured'] === 1): ?>
+                            <?php if ((int)($project['is_featured'] ?? 0) === 1): ?>
 
                                 <span class="badge featured">
 
@@ -394,7 +365,7 @@ if (
 
                         <td>
 
-                            <?php if ((int)$project['is_featured'] === 1): ?>
+                            <?php if ((int)($project['is_featured'] ?? 0) === 1): ?>
 
                                 <a
                                     href="?toggle=0&id=<?php echo (int)$project['id']; ?>"

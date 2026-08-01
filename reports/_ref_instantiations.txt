@@ -1,0 +1,28 @@
+﻿
+app\controllers\AuthController.php:15:        $this->sessionManager = 
+new SessionManager();
+app\models\Lead.php:5:class Lead extends Model
+app\repositories\BlogRepository.php:7:class BlogRepository extends 
+Repository
+app\repositories\LeadRepository.php:10:class LeadRepository extends 
+Repository
+app\repositories\MediaRepository.php:7:class MediaRepository extends 
+Repository
+app\repositories\ProjectRepository.php:10:class ProjectRepository 
+extends Repository
+app\repositories\QuotationRepository.php:7:class QuotationRepository 
+extends Repository
+app\services\AuthService.php:12:class AuthService extends Service
+app\services\InvoiceService.php:13:class InvoiceService extends Service
+app\services\LeadService.php:11:class LeadService extends Service
+app\services\MediaService.php:13:class MediaService extends Service
+app\services\QuotationService.php:7:class QuotationService extends 
+Service
+bootstrap\providers\ServiceProvider.php:23:            $database = new 
+Database();
+core\Model.php:45:        new Database();
+public\reset-password.php:273:    $sessionManager = new 
+SessionManager($GLOBALS['conn']);
+_runtime_test.php:154:    $db = new Database();
+
+

@@ -25,6 +25,8 @@ require_once '../../../helpers/rateLimiter.php';
 
 require_once '../../../helpers/upload.php';
 
+require_once '../../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | VALIDATE PROJECT ID
@@ -48,27 +50,10 @@ if ($projectId <= 0) {
 |--------------------------------------------------------------------------
 */
 
-$query = "
-
-    SELECT *
-
-    FROM projects
-
-    WHERE id = :id
-
-    LIMIT 1
-";
-
-$stmt =
-$conn->prepare($query);
-
-$stmt->execute([
-
-    ':id' => $projectId
-]);
+$projectRepo = repo('Project');
 
 $project =
-$stmt->fetch();
+$projectRepo ? $projectRepo->findById($projectId) : null;
 
 if (!$project) {
 
@@ -88,27 +73,10 @@ $clients = [];
 
 try {
 
-    $clientQuery = "
-
-        SELECT
-            id,
-            full_name,
-            phone
-
-        FROM users
-
-        WHERE role = 'client'
-
-        ORDER BY full_name ASC
-    ";
-
-    $clientStmt =
-    $conn->prepare($clientQuery);
-
-    $clientStmt->execute();
-
-    $clients =
-    $clientStmt->fetchAll();
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $clients = $userRepo->getClients();
+    }
 
 } catch(Exception $e){}
 
@@ -322,73 +290,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
 
-        $updateQuery = "
-
-            UPDATE projects
-
-            SET
-
-                client_id = :client_id,
-                lead_id = :lead_id,
-                project_name = :project_name,
-                project_type = :project_type,
-                location = :location,
-                description = :description,
-                budget = :budget,
-                status = :status,
-                progress = :progress,
-                start_date = :start_date,
-                end_date = :end_date,
-                project_image = :project_image,
-                updated_at = NOW()
-
-            WHERE id = :id
-        ";
-
-        $updateStmt =
-        $conn->prepare($updateQuery);
-
-        $updateStmt->execute([
-
-            ':client_id' =>
-            $clientId,
-
-            ':lead_id' =>
-            $leadId,
-
-            ':project_name' =>
-            $projectName,
-
-            ':project_type' =>
-            $projectType,
-
-            ':location' =>
-            $location,
-
-            ':description' =>
-            $description,
-
-            ':budget' =>
-            $budget,
-
-            ':status' =>
-            $status,
-
-            ':progress' =>
-            $progress,
-
-            ':start_date' =>
-            $startDate,
-
-            ':end_date' =>
-            $endDate,
-
-            ':project_image' =>
-            $projectImage,
-
-            ':id' =>
-            $projectId
+        $ok = $projectRepo->updateProject($projectId, [
+            'client_id'     => $clientId,
+            'lead_id'       => $leadId,
+            'project_name'  => $projectName,
+            'project_type'  => $projectType,
+            'location'      => $location,
+            'description'   => $description,
+            'budget'        => $budget,
+            'status'        => $status,
+            'progress'      => $progress,
+            'start_date'    => $startDate,
+            'end_date'      => $endDate,
+            'project_image' => $projectImage,
         ]);
+
+        if (!$ok) {
+            throw new Exception('Failed to update project.');
+        }
 
         /*
         |--------------------------------------------------------------------------

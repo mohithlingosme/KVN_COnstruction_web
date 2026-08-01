@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -61,57 +61,28 @@ $image       = '';
 
 try {
 
-    $stmt = $conn->prepare(
-        "
-        SELECT
-            id,
-            title,
-            description,
-            image
-        FROM services
-        WHERE id = ?
-        LIMIT 1
-        "
-    );
+    $serviceRepo = repo('Service');
 
-    if (!$stmt) {
+    if (!$serviceRepo) {
 
-        die('Database query failed.');
+        die('Service repository unavailable.');
     }
 
-    $stmt->bind_param(
-        'i',
-        $id
-    );
+    $service = $serviceRepo->findById($id);
 
-    $stmt->execute();
-
-    $stmt->store_result();
-
-    if ($stmt->num_rows !== 1) {
+    if (!$service) {
 
         die('Service not found.');
     }
 
-    $stmt->bind_result(
-        $service_id,
-        $service_title,
-        $service_description,
-        $service_image
-    );
-
-    $stmt->fetch();
-
     $title =
-        (string) $service_title;
+        (string) ($service['title'] ?? '');
 
     $description =
-        (string) $service_description;
+        (string) ($service['description'] ?? '');
 
     $image =
-        (string) $service_image;
-
-    $stmt->close();
+        (string) ($service['image'] ?? '');
 
 } catch (Throwable $e) {
 
@@ -161,43 +132,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
 
-            $update = $conn->prepare(
-                "
-                UPDATE services
-                SET
-                    title = ?,
-                    description = ?,
-                    image = ?
-                WHERE id = ?
-                "
-            );
+            $ok = $serviceRepo->update($id, [
+                'title'       => $title,
+                'description' => $description,
+                'image'       => $image,
+            ]);
 
-            if (!$update) {
+            if ($ok) {
 
-                $error =
-                    'Database update failed.';
+                $success =
+                    'Service updated successfully.';
+
             } else {
 
-                $update->bind_param(
-                    'sssi',
-                    $title,
-                    $description,
-                    $image,
-                    $id
-                );
-
-                if ($update->execute()) {
-
-                    $success =
-                        'Service updated successfully.';
-
-                } else {
-
-                    $error =
-                        'Failed to update service.';
-                }
-
-                $update->close();
+                $error =
+                    'Failed to update service.';
             }
 
         } catch (Throwable $e) {

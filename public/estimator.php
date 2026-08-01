@@ -1,403 +1,133 @@
 <?php
+
 declare(strict_types=1);
 
-
-
-
-
-/*
-|--------------------------------------------------------------------------
-| APPLICATION
-|--------------------------------------------------------------------------
-*/
-
 require_once '../config/app.php';
-
-// $conn is created in config/app.php.
-// Ensure it exists for IDE/runtime helpers.
-if (!isset($conn) && isset($GLOBALS['conn'])) {
-    $conn = $GLOBALS['conn'];
-}
-
 require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/csrf.php';
 require_once ROOT_PATH . '/helpers/rateLimiter.php';
 
-/*
-|--------------------------------------------------------------------------
-| DATABASE
-|--------------------------------------------------------------------------
-*/
-
-require_once ROOT_PATH . '/config/database.php';
-
-/*
-|--------------------------------------------------------------------------
-| SECURITY HEADERS
-|--------------------------------------------------------------------------
-*/
-
-// Ensure $conn exists for rateLimiter/model helpers.
-$conn = $conn ?? ($GLOBALS['conn'] ?? null);
-
 securityHeaders();
-
-/*
-|--------------------------------------------------------------------------
-| RATE LIMIT
-|--------------------------------------------------------------------------
-*/
 
 $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
-// Rate limiting uses action_type, max_attempts, decay_seconds
 if (!checkRateLimit('estimator', 20, 3600)) {
     http_response_code(429);
     die('Too many estimator requests. Please try again later.');
 }
 
-/*
-|--------------------------------------------------------------------------
-| GUARD: DB must exist
-|--------------------------------------------------------------------------
-*/
-
-if (!$conn) {
-    http_response_code(500);
-    die('Server is not ready. Please try again later.');
-}
-
-/*
-|--------------------------------------------------------------------------
-| CREATE TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->exec(
-    "
-    CREATE TABLE IF NOT EXISTS estimator_leads (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        full_name VARCHAR(255) NOT NULL,
-
-        phone VARCHAR(20) NOT NULL,
-
-        email VARCHAR(255) NULL,
-
-        location VARCHAR(255) NULL,
-
-        plot_area DECIMAL(12,2) NOT NULL,
-
-        floors INT NOT NULL DEFAULT 1,
-
-        package_id INT NOT NULL,
-
-        estimated_cost DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-
-        ip_address VARCHAR(45) NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| FETCH PACKAGES
-|--------------------------------------------------------------------------
-*/
-
-$stmt = $conn->prepare(
-    "
-    SELECT *
-    FROM estimator_packages
-    WHERE status = 'Active'
-    ORDER BY id ASC
-    "
-);
-$stmt->execute();
-$packages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-/*
-|--------------------------------------------------------------------------
-| FORM SUBMISSION
-|--------------------------------------------------------------------------
-*/
+$estimatorService = new \App\Services\EstimatorService();
+$packages = $estimatorService->getPackages();
 
 $successMessage = '';
 $errorMessage = '';
 $estimatedCost = 0;
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
-    /*
-    |--------------------------------------------------------------------------
-    | HONEYPOT
-    |--------------------------------------------------------------------------
-    */
-
     if (!empty($_POST['website'] ?? '')) {
-        if (function_exists('logSecurityEvent')) {
-            logSecurityEvent(null, 'estimator_spam_attempt', 'warning', 'Spam detected from IP: ' . $clientIp);
-        }
         die('Spam detected.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | CSRF VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
     if (!function_exists('validateCsrf') || !validateCsrf($_POST['csrf_token'] ?? '')) {
-        if (function_exists('logSecurityEvent')) {
-            logSecurityEvent(null, 'estimator_csrf_failed', 'critical', 'Invalid CSRF from IP: ' . $clientIp);
-        }
         die('Invalid CSRF token.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | SANITIZE INPUTS
-    |--------------------------------------------------------------------------
-    */
-
-    $fullName = sanitize($_POST['full_name'] ?? '');
-    $phone = sanitize($_POST['phone'] ?? '');
-    $email = sanitize($_POST['email'] ?? '');
-    $location = sanitize($_POST['location'] ?? '');
-
-    $plotSize = (float) ($_POST['plot_size'] ?? 0);
-    $floors = (int) ($_POST['floors'] ?? 1);
-    $packageId = (int) ($_POST['package_id'] ?? 0);
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        $fullName === '' ||
-        $phone === '' ||
-        $location === '' ||
-        $plotSize <= 0 ||
-        $floors <= 0 ||
-        $packageId <= 0
-    ) {
-        $errorMessage = 'Please fill all required fields.';
-    } elseif (!preg_match('/^[0-9]{10}$/', $phone)) {
-        $errorMessage = 'Please enter a valid 10-digit phone number.';
-    } elseif ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errorMessage = 'Please enter a valid email address.';
+    $result = $estimatorService->processLeadSubmission($_POST, $clientIp);
+    if ($result['success'] ?? false) {
+        $successMessage = $result['message'];
+        $estimatedCost = $result['estimated_cost'];
     } else {
-        /*
-        |--------------------------------------------------------------------------
-        | FETCH PACKAGE
-        |--------------------------------------------------------------------------
-        */
-
-        $stmt = $conn->prepare(
-            "
-            SELECT *
-            FROM estimator_packages
-            WHERE id = ?
-            LIMIT 1
-            "
-        );
-        $stmt->execute([$packageId]);
-        $package = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$package) {
-            $errorMessage = 'Invalid package selected.';
-        } else {
-            /*
-            |--------------------------------------------------------------------------
-            | COST CALCULATION
-            |--------------------------------------------------------------------------
-            |
-            | Construction area = plot_size * floors
-            | Estimated cost = constructionArea * base_price
-            */
-
-            $basePrice = (float) ($package['base_price'] ?? 0);
-            $constructionArea = $plotSize * $floors;
-            $estimatedCost = $constructionArea * $basePrice;
-
-            if ($estimatedCost <= 0) {
-                $errorMessage = 'Unable to generate estimate with provided inputs.';
-            } else {
-                /*
-                |--------------------------------------------------------------------------
-                | SAVE LEAD
-                |--------------------------------------------------------------------------
-                */
-
-                $insert = $conn->prepare(
-                    "
-                    INSERT INTO estimator_leads
-                    (
-                        full_name,
-                        phone,
-                        email,
-                        location,
-                        plot_area,
-                        floors,
-                        package_id,
-                        estimated_cost,
-                        ip_address,
-                        created_at
-                    )
-                    VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-                    "
-                );
-
-                $insert->execute([
-                    $fullName,
-                    $phone,
-                    $email,
-                    $location,
-                    $plotSize,
-                    $floors,
-                    $packageId,
-                    $estimatedCost,
-                    $clientIp
-                ]);
-
-                /*
-                |--------------------------------------------------------------------------
-                | LOG SECURITY EVENT
-                |--------------------------------------------------------------------------
-                */
-
-                if (function_exists('logSecurityEvent')) {
-                    logSecurityEvent(null, 'estimator_submitted', 'info', 'Estimate: ' . $phone . ' Package: ' . $packageId . ' Cost: ' . $estimatedCost);
-                }
-
-                $successMessage = 'Estimator generated successfully.';
-            }
-        }
+        $errorMessage = $result['message'] ?? 'An error occurred.';
     }
 }
 
-/*
-|--------------------------------------------------------------------------
-| PAGE HEADER
-|--------------------------------------------------------------------------
-*/
-
-include ROOT_PATH . '/app/views/layouts/header.php';
+$pageTitle = 'Smart Cost Estimator | ' . APP_NAME;
+include '../app/views/layouts/header.php';
 
 ?>
 
-<section class="estimator-section py-5">
+<section class="hero bg-primary text-white py-5">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold">Smart Construction Estimator</h1>
+        <p class="lead">Calculate instant construction estimates customized for your Bengaluru plot.</p>
+    </div>
+</section>
 
+<section class="py-5 bg-light">
     <div class="container">
-
         <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <?php if ($successMessage): ?>
+                    <div class="alert alert-success shadow-sm">
+                        <h4 class="alert-heading">Estimate Generated!</h4>
+                        <p><?php echo escape($successMessage); ?></p>
+                        <hr>
+                        <h3 class="mb-0">Estimated Cost: ₹<?php echo number_format($estimatedCost, 2); ?></h3>
+                    </div>
+                <?php endif; ?>
 
-            <div class="col-lg-10">
+                <?php if ($errorMessage): ?>
+                    <div class="alert alert-danger shadow-sm">
+                        <?php echo escape($errorMessage); ?>
+                    </div>
+                <?php endif; ?>
 
-                <div class="card shadow border-0 rounded-4">
-
-                    <div class="card-body p-5">
-
-                        <div class="text-center mb-5">
-
-                            <h1 class="fw-bold">Construction Cost Estimator</h1>
-
-                            <p class="text-muted">Estimate your dream project cost instantly.</p>
-
-                        </div>
-
-                        <?php if (!empty($successMessage)) : ?>
-                            <div class="alert alert-success"><?php echo escape($successMessage); ?></div>
-                        <?php endif; ?>
-
-                        <?php if (!empty($errorMessage)) : ?>
-                            <div class="alert alert-danger"><?php echo escape($errorMessage); ?></div>
-                        <?php endif; ?>
-
-                        <form method="POST" id="estimatorForm">
-
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body p-4 p-md-5">
+                        <form method="POST" action="estimator.php">
                             <?php echo csrfField(); ?>
+                            <input type="text" name="website" style="display:none;" tabindex="-1" autocomplete="off">
 
-                            <input type="text" name="website" style="display:none" autocomplete="off">
-
-                            <div class="row">
-
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label">Full Name</label>
-                                    <input type="text" name="full_name" class="form-control" required>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label font-weight-bold">Full Name *</label>
+                                    <input type="text" name="full_name" class="form-control" required value="<?php echo escape($_POST['full_name'] ?? ''); ?>">
                                 </div>
-
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label">Phone Number</label>
-                                    <input type="text" name="phone" class="form-control" maxlength="10" required>
+                                <div class="col-md-6">
+                                    <label class="form-label font-weight-bold">Phone Number *</label>
+                                    <input type="tel" name="phone" class="form-control" required pattern="[0-9]{10}" value="<?php echo escape($_POST['phone'] ?? ''); ?>">
                                 </div>
-
-                                <div class="col-md-6 mb-4">
+                                <div class="col-md-6">
                                     <label class="form-label">Email Address</label>
-                                    <input type="email" name="email" class="form-control">
+                                    <input type="email" name="email" class="form-control" value="<?php echo escape($_POST['email'] ?? ''); ?>">
                                 </div>
-
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label">Project Location</label>
-                                    <input type="text" name="location" class="form-control" required>
+                                <div class="col-md-6">
+                                    <label class="form-label font-weight-bold">Location *</label>
+                                    <input type="text" name="location" class="form-control" placeholder="e.g. Indiranagar, Bengaluru" required value="<?php echo escape($_POST['location'] ?? ''); ?>">
                                 </div>
-
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label">Plot Size (sq.ft)</label>
-                                    <input type="number" name="plot_size" class="form-control" min="100" required>
+                                <div class="col-md-4">
+                                    <label class="form-label font-weight-bold">Plot Area (sqft) *</label>
+                                    <input type="number" name="plot_size" class="form-control" min="100" max="50000" required value="<?php echo escape((string)($_POST['plot_size'] ?? 1200)); ?>">
                                 </div>
-
-                                <div class="col-md-6 mb-4">
-                                    <label class="form-label">Number of Floors</label>
-                                    <input type="number" name="floors" class="form-control" min="1" value="1" required>
+                                <div class="col-md-4">
+                                    <label class="form-label font-weight-bold">Number of Floors *</label>
+                                    <select name="floors" class="form-select" required>
+                                        <option value="1">Ground Floor (G)</option>
+                                        <option value="2" selected>G + 1 Floor</option>
+                                        <option value="3">G + 2 Floors</option>
+                                        <option value="4">G + 3 Floors</option>
+                                    </select>
                                 </div>
-
-                                <div class="col-12 mb-4">
-                                    <label class="form-label">Select Package</label>
+                                <div class="col-md-4">
+                                    <label class="form-label font-weight-bold">Package Grade *</label>
                                     <select name="package_id" class="form-select" required>
-                                        <option value="">Select Package</option>
-                                        <?php foreach (($packages ?? []) as $package) : ?>
-                                            <option value="<?php echo (int) ($package['id'] ?? 0); ?>">
-                                                <?php echo escape((string) ($package['package_name'] ?? '')); ?>
-                                                - ₹<?php echo number_format((float) ($package['base_price'] ?? 0)); ?>/sq.ft
+                                        <?php foreach ($packages as $pkg): ?>
+                                            <option value="<?php echo (int)($pkg['id'] ?? 0); ?>">
+                                                <?php echo escape($pkg['package_name'] ?? 'Package'); ?> (₹<?php echo number_format((float)($pkg['base_price'] ?? 0)); ?>/sqft)
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100 py-3 font-weight-bold">Calculate & Request Detailed Proposal</button>
+                                </div>
                             </div>
-
-                            <button type="submit" class="btn-main w-100" style="padding:16px 32px;font-size:18px;">Generate Estimate</button>
-
                         </form>
-
-                        <?php if ($estimatedCost > 0) : ?>
-                            <div class="alert alert-info mt-5">
-                                <h4 class="mb-3">Estimated Construction Cost</h4>
-                                <h2 class="fw-bold">₹<?php echo number_format($estimatedCost, 2); ?></h2>
-                            </div>
-                        <?php endif; ?>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
-
 </section>
 
-<?php
-include ROOT_PATH . '/app/views/layouts/footer.php';
-?>
-
+<?php include '../app/views/layouts/footer.php'; ?>

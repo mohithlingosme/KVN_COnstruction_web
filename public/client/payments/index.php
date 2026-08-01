@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,208 +30,27 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE PAYMENTS TABLE
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS client_payments (
+require_once '../../../config/app.php';
+require_once __DIR__ . '/../../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        invoice_number VARCHAR(100) NOT NULL,
-
-        payment_type VARCHAR(255) NOT NULL,
-
-        total_amount DECIMAL(12,2) NOT NULL,
-
-        paid_amount DECIMAL(12,2) NOT NULL,
-
-        balance_amount DECIMAL(12,2) NOT NULL,
-
-        payment_status ENUM(
-            'Paid',
-            'Partial',
-            'Pending',
-            'Overdue'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        payment_date DATE DEFAULT NULL,
-
-        due_date DATE DEFAULT NULL,
-
-        remarks TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEMO DATA
+| FETCH PAYMENT DATA
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM client_payments
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO client_payments
-        (
-
-            client_id,
-            project_name,
-            invoice_number,
-            payment_type,
-            total_amount,
-            paid_amount,
-            balance_amount,
-            payment_status,
-            payment_date,
-            due_date,
-            remarks
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'Luxury Villa',
-            'INV-1001',
-            'Foundation Payment',
-            1500000,
-            1500000,
-            0,
-            'Paid',
-            '2026-01-25',
-            '2026-01-30',
-            'Foundation stage payment completed.'
-        ),
-
-        (
-            $clientId,
-            'Luxury Villa',
-            'INV-1002',
-            'Structural Work',
-            2500000,
-            1500000,
-            1000000,
-            'Partial',
-            '2026-04-10',
-            '2026-04-20',
-            'Partial payment received.'
-        ),
-
-        (
-            $clientId,
-            'Farm House',
-            'INV-1003',
-            'Interior Work',
-            1800000,
-            1800000,
-            0,
-            'Paid',
-            '2025-09-18',
-            '2025-09-25',
-            'Interior payment cleared.'
-        ),
-
-        (
-            $clientId,
-            'Commercial Complex',
-            'INV-1004',
-            'Planning Advance',
-            5000000,
-            0,
-            5000000,
-            'Pending',
-            NULL,
-            '2026-06-15',
-            'Awaiting advance payment.'
-        )
-        "
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| FETCH PAYMENTS
-|--------------------------------------------------------------------------
-*/
-
-$payments =
-    $conn->query(
-        "
-        SELECT *
-        FROM client_payments
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
-
-/*
-|--------------------------------------------------------------------------
-| PAYMENT STATS
-|--------------------------------------------------------------------------
-*/
-
-$totalInvoices = 0;
-$totalPaid = 0;
-$totalPending = 0;
-$totalBalance = 0;
-
-if ($payments && $payments->num_rows > 0) {
-
-    while ($calc = $payments->fetch_assoc()) {
-
-        $totalInvoices++;
-
-        $totalPaid +=
-            (float)$calc['paid_amount'];
-
-        $totalBalance +=
-            (float)$calc['balance_amount'];
-
-        if (
-            $calc['payment_status']
-            === 'Pending'
-            ||
-            $calc['payment_status']
-            === 'Partial'
-            ||
-            $calc['payment_status']
-            === 'Overdue'
-        ) {
-
-            $totalPending++;
-        }
-    }
-
-    $payments->data_seek(0);
-}
+$data = $clientService->getPaymentData($clientId);
+$payments = $data['payments'];
+$totalInvoices = $data['totalInvoices'];
+$totalPaid = $data['totalPaid'];
+$totalPending = $data['totalPending'];
+$totalBalance = $data['totalBalance'];
 
 ?>
 
@@ -661,7 +472,7 @@ if ($payments && $payments->num_rows > 0) {
 
     <div class="table-wrapper">
 
-        <?php if ($payments && $payments->num_rows > 0): ?>
+        <?php if (!empty($payments)): ?>
 
             <table>
 
@@ -707,7 +518,7 @@ if ($payments && $payments->num_rows > 0) {
 
                 <tbody>
 
-                    <?php while ($row = $payments->fetch_assoc()): ?>
+                    <?php foreach ($payments as $row): ?>
 
                         <tr>
 
@@ -802,7 +613,7 @@ if ($payments && $payments->num_rows > 0) {
 
                         </tr>
 
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
 
                 </tbody>
 

@@ -1,161 +1,52 @@
 <?php
 
-class Database
-{
-    // =====================================
-    // DATABASE CONFIGURATION
-    // =====================================
+use PDO;
+use PDOException;
 
-     private $host;
-     private $db_name;
-     private $username;
-     private $password;
-     private $charset  = 'utf8mb4';
-     private $conn;
+/**
+ * Legacy Database connection class (global namespace)
+ *
+ * Retained for backward compatibility with core/Model.php and
+ * legacy procedural code that uses `$GLOBALS['conn']`.
+ *
+ * NOTE: PSR-4 code should use App\Core\Database (app/Core/Database.php) instead.
+ *
+ * @deprecated Use App\Core\Database::getInstance() for new code.
+ */
+class Database {
+    private static $instance = null;
+    private $connection;
 
-    public function __construct()
-    {
-        $this->host = DB_HOST;
-        $this->db_name = DB_NAME;
-        $this->username = DB_USER;
-        $this->password = DB_PASS;
-    }
+    private $host = DB_HOST;
+    private $db   = DB_NAME;
+    private $user = DB_USER;
+    private $pass = DB_PASS;
+    private $charset = 'utf8mb4';
 
-
-    // =====================================
-    // CREATE CONNECTION
-    // =====================================
-
-    public function connect()
-    {
-        // RETURN EXISTING CONNECTION
-
-        if($this->conn instanceof PDO){
-
-            return $this->conn;
-        }
+    private function __construct() {
+        $dsn = "mysql:host={$this->host};dbname={$this->db};charset={$this->charset}";
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ];
 
         try {
-
-            // DSN
-
-            $dsn =
-            "mysql:host={$this->host};port=" . DB_PORT . ";
-            dbname={$this->db_name};
-            charset={$this->charset}";
-
-            // PDO OPTIONS
-
-            $options = [
-
-                // THROW EXCEPTIONS
-
-                PDO::ATTR_ERRMODE =>
-                PDO::ERRMODE_EXCEPTION,
-
-                // FETCH ASSOCIATIVE ARRAYS
-
-                PDO::ATTR_DEFAULT_FETCH_MODE =>
-                PDO::FETCH_ASSOC,
-
-                // DISABLE EMULATED PREPARES
-
-                PDO::ATTR_EMULATE_PREPARES =>
-                false,
-
-                // PERSISTENT CONNECTION
-
-                PDO::ATTR_PERSISTENT =>
-                false
-            ];
-
-            // CREATE PDO CONNECTION
-
-            $this->conn =
-            new PDO(
-
-                $dsn,
-
-                $this->username,
-
-                $this->password,
-
-                $options
-            );
-
-            // MYSQL SESSION CONFIG
-
-            $this->conn->exec("SET NAMES utf8mb4");
-
-            $this->conn->exec("SET time_zone = '+05:30'");
-
+            $this->connection = new PDO($dsn, $this->user, $this->pass, $options);
         } catch (PDOException $e) {
-            // Let the application bootstrap decide how to present failures.
-            // This prevents connection details leaking in a browser response.
-            throw new RuntimeException('Database connection unavailable', 0, $e);
+            error_log("Database Connection Error: " . $e->getMessage());
+            throw new \Exception("Database connection failed. Please try again later.");
         }
-
-        return $this->conn;
     }
 
-    // =====================================
-    // CHECK LOCAL ENVIRONMENT
-    // =====================================
-
-    private function isLocalhost()
-    {
-        if (php_sapi_name() === 'cli') {
-
-            return true;
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
         }
-
-        return in_array(
-
-            $_SERVER['REMOTE_ADDR'] ?? '',
-
-            [
-
-                '127.0.0.1',
-
-                '::1'
-            ]
-        );
+        return self::$instance;
     }
 
-    // =====================================
-    // BEGIN TRANSACTION
-    // =====================================
-
-    public function beginTransaction()
-    {
-        return $this->conn->beginTransaction();
-    }
-
-    // =====================================
-    // COMMIT TRANSACTION
-    // =====================================
-
-    public function commit()
-    {
-        return $this->conn->commit();
-    }
-
-    // =====================================
-    // ROLLBACK TRANSACTION
-    // =====================================
-
-    public function rollback()
-    {
-        return $this->conn->rollBack();
-    }
-
-    // =====================================
-    // CLOSE CONNECTION
-    // =====================================
-
-    public function close()
-    {
-        $this->conn = null;
+    public function getConnection() {
+        return $this->connection;
     }
 }
-?>

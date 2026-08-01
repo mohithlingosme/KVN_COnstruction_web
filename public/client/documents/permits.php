@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,131 +30,14 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE PERMITS TABLE
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS client_permits (
+require_once '../../../config/app.php';
+require_once __DIR__ . '/../../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        permit_title VARCHAR(255) NOT NULL,
-
-        permit_number VARCHAR(100) NOT NULL,
-
-        authority_name VARCHAR(255) NOT NULL,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        issue_date DATE NOT NULL,
-
-        expiry_date DATE DEFAULT NULL,
-
-        status ENUM(
-            'Approved',
-            'Pending',
-            'Rejected',
-            'Expired'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        file_name VARCHAR(255) DEFAULT NULL,
-
-        remarks TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM client_permits
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO client_permits
-        (
-
-            client_id,
-            permit_title,
-            permit_number,
-            authority_name,
-            project_name,
-            issue_date,
-            expiry_date,
-            status,
-            file_name,
-            remarks
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'Building Construction Permit',
-            'PRM-2026-001',
-            'BBMP Bangalore',
-            'Luxury Villa Project',
-            '2026-01-15',
-            '2027-01-15',
-            'Approved',
-            'building-permit.pdf',
-            'Construction permit approved successfully.'
-        ),
-
-        (
-            $clientId,
-            'Electrical Approval',
-            'PRM-2026-002',
-            'BESCOM',
-            'Farm House Project',
-            '2026-03-10',
-            '2027-03-10',
-            'Pending',
-            'electrical-approval.pdf',
-            'Awaiting final authority verification.'
-        ),
-
-        (
-            $clientId,
-            'Water Connection Permit',
-            'PRM-2025-003',
-            'BWSSB',
-            'Commercial Complex',
-            '2025-05-01',
-            '2026-05-01',
-            'Expired',
-            'water-permit.pdf',
-            'Permit expired and renewal required.'
-        )
-        "
-    );
-}
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
@@ -170,15 +45,7 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$permits =
-    $conn->query(
-        "
-        SELECT *
-        FROM client_permits
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
+$permits = $clientService->getPermits($clientId);
 
 /*
 |--------------------------------------------------------------------------
@@ -186,43 +53,21 @@ $permits =
 |--------------------------------------------------------------------------
 */
 
-$totalPermits = 0;
+$totalPermits = count($permits);
 $approvedPermits = 0;
 $pendingPermits = 0;
 $expiredPermits = 0;
 
-if ($permits && $permits->num_rows > 0) {
-
-    while ($calc = $permits->fetch_assoc()) {
-
-        $totalPermits++;
-
-        if (
-            $calc['status']
-            === 'Approved'
-        ) {
-
-            $approvedPermits++;
-        }
-
-        if (
-            $calc['status']
-            === 'Pending'
-        ) {
-
-            $pendingPermits++;
-        }
-
-        if (
-            $calc['status']
-            === 'Expired'
-        ) {
-
-            $expiredPermits++;
-        }
+foreach ($permits as $row) {
+    if (($row['status'] ?? '') === 'Approved') {
+        $approvedPermits++;
     }
-
-    $permits->data_seek(0);
+    if (($row['status'] ?? '') === 'Pending') {
+        $pendingPermits++;
+    }
+    if (($row['status'] ?? '') === 'Expired') {
+        $expiredPermits++;
+    }
 }
 
 ?>
@@ -693,11 +538,11 @@ if ($permits && $permits->num_rows > 0) {
 
     <!-- PERMITS -->
 
-    <?php if ($permits && $permits->num_rows > 0): ?>
+    <?php if (!empty($permits)): ?>
 
         <div class="permits-grid">
 
-            <?php while ($row = $permits->fetch_assoc()): ?>
+            <?php foreach ($permits as $row): ?>
 
                 <div class="permit-card">
 
@@ -849,7 +694,7 @@ if ($permits && $permits->num_rows > 0) {
 
                 </div>
 
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         </div>
 

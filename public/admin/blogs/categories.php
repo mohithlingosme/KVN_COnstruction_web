@@ -23,6 +23,8 @@ require_once '../../../helpers/csrf.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -31,40 +33,6 @@ require_once '../../../helpers/rateLimiter.php';
 
 $pageTitle =
 'Blog Categories | ' . APP_NAME;
-
-/*
-|--------------------------------------------------------------------------
-| CREATE TABLE IF NOT EXISTS
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    $conn->exec("
-
-        CREATE TABLE IF NOT EXISTS blog_categories (
-
-            id INT PRIMARY KEY AUTO_INCREMENT,
-
-            category_name VARCHAR(255) NOT NULL,
-
-            slug VARCHAR(255) NOT NULL UNIQUE,
-
-            description TEXT NULL,
-
-            status ENUM(
-                'active',
-                'inactive'
-            ) DEFAULT 'active',
-
-            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-
-            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
-            ON UPDATE CURRENT_TIMESTAMP
-        )
-    ");
-
-} catch(Exception $e){}
 
 /*
 |--------------------------------------------------------------------------
@@ -160,28 +128,13 @@ if (
     |--------------------------------------------------------------------------
     */
 
+    $blogRepo = repo('Blog');
+
     try {
 
-        $checkQuery = "
+        $existing = $blogRepo->findCategoryBySlug($slug);
 
-            SELECT id
-
-            FROM blog_categories
-
-            WHERE slug = :slug
-
-            LIMIT 1
-        ";
-
-        $checkStmt =
-        $conn->prepare($checkQuery);
-
-        $checkStmt->execute([
-
-            ':slug' => $slug
-        ]);
-
-        if($checkStmt->fetch()){
+        if($existing){
 
             $_SESSION['error'] =
             'Category already exists.';
@@ -199,41 +152,18 @@ if (
 
     try {
 
-        $query = "
+        $blogRepo->insertCategory([
 
-            INSERT INTO blog_categories (
-
-                category_name,
-                slug,
-                description,
-                status,
-                created_at
-
-            ) VALUES (
-
-                :category_name,
-                :slug,
-                :description,
-                :status,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':category_name' =>
+            'category_name' =>
             $categoryName,
 
-            ':slug' =>
+            'slug' =>
             $slug,
 
-            ':description' =>
+            'description' =>
             $description,
 
-            ':status' =>
+            'status' =>
             $status
         ]);
 
@@ -286,6 +216,8 @@ if (
     $categoryId =
     (int) $_GET['delete'];
 
+    $blogRepo = repo('Blog');
+
     try {
 
         /*
@@ -294,37 +226,18 @@ if (
         |--------------------------------------------------------------------------
         */
 
-        $countQuery = "
+        $categoryData = $blogRepo->getAllCategories();
 
-            SELECT COUNT(*) AS total
+        $blogCount = 0;
 
-            FROM blogs
+        foreach ($categoryData as $cat) {
+            if ((int)$cat['id'] === $categoryId) {
+                $blogCount = (int)($cat['blog_count'] ?? 0);
+                break;
+            }
+        }
 
-            WHERE category = (
-
-                SELECT category_name
-
-                FROM blog_categories
-
-                WHERE id = :id
-            )
-        ";
-
-        $countStmt =
-        $conn->prepare($countQuery);
-
-        $countStmt->execute([
-
-            ':id' => $categoryId
-        ]);
-
-        $blogCount =
-        $countStmt->fetch();
-
-        if (
-
-            !empty($blogCount['total'])
-        ) {
+        if ($blogCount > 0) {
 
             $_SESSION['error'] =
             'Cannot delete category with blogs assigned.';
@@ -338,20 +251,7 @@ if (
         |--------------------------------------------------------------------------
         */
 
-        $deleteQuery = "
-
-            DELETE FROM blog_categories
-
-            WHERE id = :id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':id' => $categoryId
-        ]);
+        $blogRepo->deleteCategory($categoryId);
 
         logSecurityEvent(
 
@@ -386,31 +286,7 @@ $categories = [];
 
 try {
 
-    $query = "
-
-        SELECT
-            bc.*,
-
-            (
-                SELECT COUNT(*)
-
-                FROM blogs b
-
-                WHERE b.category = bc.category_name
-            ) AS blog_count
-
-        FROM blog_categories bc
-
-        ORDER BY bc.id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
-    $categories =
-    $stmt->fetchAll();
+    $categories = $blogRepo->getAllCategories();
 
 } catch(Exception $e){
 

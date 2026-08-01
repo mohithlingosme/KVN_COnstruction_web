@@ -51,3 +51,5 @@ docker/*/Dockerfile.local
 # Database backups
 *.sql.gz
 *.sql.bak
+# Generated srcpack context bundles
+Summari_Ai_context/

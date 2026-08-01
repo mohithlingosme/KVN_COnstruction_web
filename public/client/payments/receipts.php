@@ -18,14 +18,6 @@ if (!isset($_SESSION['client_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
 | CLIENT DETAILS
 |--------------------------------------------------------------------------
 */
@@ -38,130 +30,14 @@ $clientName =
 
 /*
 |--------------------------------------------------------------------------
-| CREATE RECEIPTS TABLE
+| SERVICE LAYER
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS payment_receipts (
+require_once '../../../config/app.php';
+require_once __DIR__ . '/../../includes/repositories.php';
 
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        client_id INT NOT NULL,
-
-        receipt_number VARCHAR(100) NOT NULL,
-
-        invoice_number VARCHAR(100) NOT NULL,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        payment_method VARCHAR(100) NOT NULL,
-
-        transaction_id VARCHAR(255) DEFAULT NULL,
-
-        paid_amount DECIMAL(12,2) NOT NULL,
-
-        payment_date DATE NOT NULL,
-
-        receipt_status ENUM(
-            'Verified',
-            'Pending',
-            'Failed'
-        )
-        NOT NULL DEFAULT 'Verified',
-
-        notes TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM payment_receipts
-        WHERE client_id = $clientId
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO payment_receipts
-        (
-
-            client_id,
-            receipt_number,
-            invoice_number,
-            project_name,
-            payment_method,
-            transaction_id,
-            paid_amount,
-            payment_date,
-            receipt_status,
-            notes
-
-        )
-
-        VALUES
-
-        (
-            $clientId,
-            'RCPT-1001',
-            'INV-2026-001',
-            'Luxury Villa',
-            'Bank Transfer',
-            'TXN987654321',
-            1770000,
-            '2026-01-25',
-            'Verified',
-            'Foundation payment received successfully.'
-        ),
-
-        (
-            $clientId,
-            'RCPT-1002',
-            'INV-2026-002',
-            'Luxury Villa',
-            'UPI Payment',
-            'UPI123456789',
-            1500000,
-            '2026-04-10',
-            'Verified',
-            'Partial structural work payment.'
-        ),
-
-        (
-            $clientId,
-            'RCPT-1003',
-            'INV-2026-003',
-            'Farm House',
-            'Cheque',
-            'CHQ908070',
-            500000,
-            '2026-05-12',
-            'Pending',
-            'Cheque clearance pending.'
-        )
-        "
-    );
-}
+$clientService = new \App\Services\ClientService();
 
 /*
 |--------------------------------------------------------------------------
@@ -169,15 +45,7 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$receipts =
-    $conn->query(
-        "
-        SELECT *
-        FROM payment_receipts
-        WHERE client_id = $clientId
-        ORDER BY id DESC
-        "
-    );
+$receipts = $clientService->getPaymentReceipts($clientId);
 
 /*
 |--------------------------------------------------------------------------
@@ -185,38 +53,19 @@ $receipts =
 |--------------------------------------------------------------------------
 */
 
-$totalReceipts = 0;
-$totalReceived = 0;
+$totalReceipts = count($receipts);
+$totalReceived = 0.0;
 $verifiedCount = 0;
 $pendingCount = 0;
 
-if ($receipts && $receipts->num_rows > 0) {
-
-    while ($calc = $receipts->fetch_assoc()) {
-
-        $totalReceipts++;
-
-        $totalReceived +=
-            (float)$calc['paid_amount'];
-
-        if (
-            $calc['receipt_status']
-            === 'Verified'
-        ) {
-
-            $verifiedCount++;
-        }
-
-        if (
-            $calc['receipt_status']
-            === 'Pending'
-        ) {
-
-            $pendingCount++;
-        }
+foreach ($receipts as $row) {
+    $totalReceived += (float)($row['paid_amount'] ?? 0);
+    if (($row['receipt_status'] ?? '') === 'Verified') {
+        $verifiedCount++;
     }
-
-    $receipts->data_seek(0);
+    if (($row['receipt_status'] ?? '') === 'Pending') {
+        $pendingCount++;
+    }
 }
 
 ?>
@@ -656,7 +505,7 @@ if ($receipts && $receipts->num_rows > 0) {
 
     <div class="table-wrapper">
 
-        <?php if ($receipts && $receipts->num_rows > 0): ?>
+        <?php if (!empty($receipts)): ?>
 
             <table>
 
@@ -706,7 +555,7 @@ if ($receipts && $receipts->num_rows > 0) {
 
                 <tbody>
 
-                    <?php while ($row = $receipts->fetch_assoc()): ?>
+                    <?php foreach ($receipts as $row): ?>
 
                         <tr>
 
@@ -810,7 +659,7 @@ if ($receipts && $receipts->num_rows > 0) {
 
                         </tr>
 
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
 
                 </tbody>
 

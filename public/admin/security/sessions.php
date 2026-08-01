@@ -81,7 +81,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $stmt =
@@ -497,7 +497,7 @@ $sessions =
 
         <tbody>
 
-        <?php if ($sessions && $sessions->num_rows > 0): ?>
+        <?php if ($sessions && $sessions->num_rows() > 0): ?>
 
             <?php while ($row = $sessions->fetch_assoc()): ?>
 

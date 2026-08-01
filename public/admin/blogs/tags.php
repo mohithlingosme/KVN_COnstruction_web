@@ -23,6 +23,8 @@ require_once '../../../helpers/csrf.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -31,40 +33,6 @@ require_once '../../../helpers/rateLimiter.php';
 
 $pageTitle =
 'Blog Tags | ' . APP_NAME;
-
-/*
-|--------------------------------------------------------------------------
-| CREATE TABLE IF NOT EXISTS
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    $conn->exec("
-
-        CREATE TABLE IF NOT EXISTS blog_tags (
-
-            id INT PRIMARY KEY AUTO_INCREMENT,
-
-            tag_name VARCHAR(255) NOT NULL,
-
-            slug VARCHAR(255) NOT NULL UNIQUE,
-
-            description TEXT NULL,
-
-            status ENUM(
-                'active',
-                'inactive'
-            ) DEFAULT 'active',
-
-            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-
-            updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
-            ON UPDATE CURRENT_TIMESTAMP
-        )
-    ");
-
-} catch(Exception $e){}
 
 /*
 |--------------------------------------------------------------------------
@@ -160,28 +128,13 @@ if (
     |--------------------------------------------------------------------------
     */
 
+    $blogRepo = repo('Blog');
+
     try {
 
-        $checkQuery = "
+        $existing = $blogRepo->findTagBySlug($slug);
 
-            SELECT id
-
-            FROM blog_tags
-
-            WHERE slug = :slug
-
-            LIMIT 1
-        ";
-
-        $checkStmt =
-        $conn->prepare($checkQuery);
-
-        $checkStmt->execute([
-
-            ':slug' => $slug
-        ]);
-
-        if($checkStmt->fetch()){
+        if($existing){
 
             $_SESSION['error'] =
             'Tag already exists.';
@@ -199,41 +152,18 @@ if (
 
     try {
 
-        $query = "
+        $blogRepo->insertTag([
 
-            INSERT INTO blog_tags (
-
-                tag_name,
-                slug,
-                description,
-                status,
-                created_at
-
-            ) VALUES (
-
-                :tag_name,
-                :slug,
-                :description,
-                :status,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':tag_name' =>
+            'tag_name' =>
             $tagName,
 
-            ':slug' =>
+            'slug' =>
             $slug,
 
-            ':description' =>
+            'description' =>
             $description,
 
-            ':status' =>
+            'status' =>
             $status
         ]);
 
@@ -286,6 +216,8 @@ if (
     $tagId =
     (int) $_GET['delete'];
 
+    $blogRepo = repo('Blog');
+
     try {
 
         /*
@@ -294,27 +226,8 @@ if (
         |--------------------------------------------------------------------------
         */
 
-        $tagQuery = "
-
-            SELECT tag_name
-
-            FROM blog_tags
-
-            WHERE id = :id
-
-            LIMIT 1
-        ";
-
-        $tagStmt =
-        $conn->prepare($tagQuery);
-
-        $tagStmt->execute([
-
-            ':id' => $tagId
-        ]);
-
         $tag =
-        $tagStmt->fetch();
+        $blogRepo->findTagById($tagId);
 
         /*
         |--------------------------------------------------------------------------
@@ -324,34 +237,18 @@ if (
 
         if($tag){
 
-            $countQuery = "
+            $allTags = $blogRepo->getAllTags();
 
-                SELECT COUNT(*) AS total
+            $usage = 0;
 
-                FROM blogs
+            foreach ($allTags as $t) {
+                if ((int)$t['id'] === $tagId) {
+                    $usage = (int)($t['blog_count'] ?? 0);
+                    break;
+                }
+            }
 
-                WHERE tags LIKE :tag
-            ";
-
-            $countStmt =
-            $conn->prepare($countQuery);
-
-            $countStmt->execute([
-
-                ':tag' =>
-                '%' .
-                $tag['tag_name']
-                .
-                '%'
-            ]);
-
-            $usage =
-            $countStmt->fetch();
-
-            if (
-
-                !empty($usage['total'])
-            ) {
+            if ($usage > 0) {
 
                 $_SESSION['error'] =
                 'Cannot delete tag assigned to blogs.';
@@ -366,20 +263,7 @@ if (
         |--------------------------------------------------------------------------
         */
 
-        $deleteQuery = "
-
-            DELETE FROM blog_tags
-
-            WHERE id = :id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':id' => $tagId
-        ]);
+        $blogRepo->deleteTag($tagId);
 
         logSecurityEvent(
 
@@ -414,35 +298,7 @@ $tags = [];
 
 try {
 
-    $query = "
-
-        SELECT
-            bt.*,
-
-            (
-                SELECT COUNT(*)
-
-                FROM blogs b
-
-                WHERE b.tags LIKE CONCAT(
-                    '%',
-                    bt.tag_name,
-                    '%'
-                )
-            ) AS blog_count
-
-        FROM blog_tags bt
-
-        ORDER BY bt.id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
-    $tags =
-    $stmt->fetchAll();
+    $tags = $blogRepo->getAllTags();
 
 } catch(Exception $e){
 

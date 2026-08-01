@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | EDIT USER
 |--------------------------------------------------------------------------
-| File:
-| /public/admin/users/edit.php
+| File: /public/admin/users/edit.php
 |--------------------------------------------------------------------------
 */
 
@@ -24,6 +25,8 @@ require_once '../../../helpers/session.php';
 require_once '../../../helpers/rateLimiter.php';
 
 require_once '../../../helpers/upload.php';
+
+require_once '../../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -53,31 +56,13 @@ if ($userId <= 0) {
 
 /*
 |--------------------------------------------------------------------------
-| FETCH USER
+| FETCH USER VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
-$query = "
+$userService = new \App\Services\AdminUserService();
 
-    SELECT *
-
-    FROM users
-
-    WHERE id = :id
-
-    LIMIT 1
-";
-
-$stmt =
-$conn->prepare($query);
-
-$stmt->execute([
-
-    ':id' => $userId
-]);
-
-$user =
-$stmt->fetch();
+$user = $userService->getUserById($userId);
 
 if (!$user) {
 
@@ -152,76 +137,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /*
     |--------------------------------------------------------------------------
-    | VALIDATION
+    | VALIDATE VIA SERVICE
     |--------------------------------------------------------------------------
     */
 
-    if (
+    $validation = $userService->validateUserData([
+        'full_name' => $full_name,
+        'email'     => $email,
+        'password'  => $password,
+    ], true, $userId);
 
-        empty($full_name)
-
-        ||
-
-        empty($email)
-    ) {
-
-        $_SESSION['error'] =
-        'Required fields missing.';
-
-        redirect(
-
-            'admin/users/edit.php?id='
-            .
-            $userId
-        );
-    }
-
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (!$validation['valid']) {
 
         $_SESSION['error'] =
-        'Invalid email address.';
-
-        redirect(
-
-            'admin/users/edit.php?id='
-            .
-            $userId
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK EMAIL DUPLICATE
-    |--------------------------------------------------------------------------
-    */
-
-    $checkQuery = "
-
-        SELECT id
-
-        FROM users
-
-        WHERE email = :email
-
-        AND id != :id
-
-        LIMIT 1
-    ";
-
-    $checkStmt =
-    $conn->prepare($checkQuery);
-
-    $checkStmt->execute([
-
-        ':email' => $email,
-
-        ':id' => $userId
-    ]);
-
-    if ($checkStmt->fetch()) {
-
-        $_SESSION['error'] =
-        'Email already exists.';
+        implode(' ', $validation['errors']);
 
         redirect(
 
@@ -238,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     */
 
     $profile_image =
-    $user['profile_image'];
+    $user['profile_image'] ?? null;
 
     if (
 
@@ -278,126 +207,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /*
     |--------------------------------------------------------------------------
-    | UPDATE QUERY
+    | UPDATE USER VIA SERVICE
     |--------------------------------------------------------------------------
     */
 
-    try {
+    $updateData = [
+        'full_name'     => $full_name,
+        'email'         => $email,
+        'phone'         => $phone,
+        'role'          => $role,
+        'status'        => $status,
+        'profile_image' => $profile_image,
+        '_admin_id'     => currentUserId(),
+    ];
 
-        $query = "
+    if (!empty($password)) {
+        $updateData['password'] = $password;
+    }
 
-            UPDATE users
+    $result = $userService->updateUser($userId, $updateData);
 
-            SET
-
-                full_name = :full_name,
-                email = :email,
-                phone = :phone,
-                role = :role,
-                status = :status,
-                profile_image = :profile_image,
-                updated_at = NOW()
-        ";
-
-        /*
-        |--------------------------------------------------------------------------
-        | OPTIONAL PASSWORD UPDATE
-        |--------------------------------------------------------------------------
-        */
-
-        if (!empty($password)) {
-
-            if (strlen($password) < 8) {
-
-                $_SESSION['error'] =
-                'Password must be minimum 8 characters.';
-
-                redirect(
-
-                    'admin/users/edit.php?id='
-                    .
-                    $userId
-                );
-            }
-
-            $query .= "
-
-                , password = :password
-            ";
-        }
-
-        $query .= "
-
-            WHERE id = :id
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $params = [
-
-            ':full_name' =>
-            $full_name,
-
-            ':email' =>
-            $email,
-
-            ':phone' =>
-            $phone,
-
-            ':role' =>
-            $role,
-
-            ':status' =>
-            $status,
-
-            ':profile_image' =>
-            $profile_image,
-
-            ':id' =>
-            $userId
-        ];
-
-        if (!empty($password)) {
-
-            $params[':password'] =
-
-            password_hash(
-
-                $password,
-
-                PASSWORD_BCRYPT
-            );
-        }
-
-        $stmt->execute($params);
-
-        /*
-        |--------------------------------------------------------------------------
-        | SECURITY LOG
-        |--------------------------------------------------------------------------
-        */
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'user_updated',
-
-            'info',
-
-            'Updated user ID: ' . $userId
-        );
+    if ($result['success']) {
 
         $_SESSION['success'] =
-        'User updated successfully.';
+        $result['message'];
 
         redirect('admin/users/index.php');
 
-    } catch(Exception $e) {
+    } else {
 
         $_SESSION['error'] =
-        'Failed to update user.';
+        $result['message'];
 
         redirect(
 

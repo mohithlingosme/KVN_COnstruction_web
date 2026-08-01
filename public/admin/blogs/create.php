@@ -25,6 +25,8 @@ require_once '../../../helpers/rateLimiter.php';
 
 require_once '../../../helpers/upload.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -148,28 +150,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
+    $blogRepo = repo('Blog');
+
     try {
 
-        $slugQuery = "
+        $existing = $blogRepo->findBySlug($slug);
 
-            SELECT id
-
-            FROM blogs
-
-            WHERE slug = :slug
-
-            LIMIT 1
-        ";
-
-        $slugStmt =
-        $conn->prepare($slugQuery);
-
-        $slugStmt->execute([
-
-            ':slug' => $slug
-        ]);
-
-        if($slugStmt->fetch()){
+        if($existing){
 
             $slug .=
             '-' .
@@ -233,83 +220,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
 
-        $query = "
+        $blogRepo->insertBlog([
 
-            INSERT INTO blogs (
-
-                title,
-                slug,
-                category,
-                excerpt,
-                content,
-                featured_image,
-                meta_title,
-                meta_description,
-                tags,
-                status,
-                is_featured,
-                views,
-                author_id,
-                created_at
-
-            ) VALUES (
-
-                :title,
-                :slug,
-                :category,
-                :excerpt,
-                :content,
-                :featured_image,
-                :meta_title,
-                :meta_description,
-                :tags,
-                :status,
-                :is_featured,
-                0,
-                :author_id,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':title' =>
+            'title' =>
             $title,
 
-            ':slug' =>
+            'slug' =>
             $slug,
 
-            ':category' =>
+            'category' =>
             $category,
 
-            ':excerpt' =>
+            'excerpt' =>
             $excerpt,
 
-            ':content' =>
+            'content' =>
             $content,
 
-            ':featured_image' =>
+            'featured_image' =>
             $featuredImage,
 
-            ':meta_title' =>
+            'meta_title' =>
             $metaTitle,
 
-            ':meta_description' =>
+            'meta_description' =>
             $metaDescription,
 
-            ':tags' =>
+            'tags' =>
             $tags,
 
-            ':status' =>
+            'status' =>
             $status,
 
-            ':is_featured' =>
+            'is_featured' =>
             $isFeatured,
 
-            ':author_id' =>
+            'author_id' =>
             currentUserId()
         ]);
 

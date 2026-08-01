@@ -3,22 +3,32 @@
 declare(strict_types=1);
 
 /*
- * Compatibility bridge for legacy dashboard pages which use mysqli. New code
- * uses the PDO connection created by config/app.php; these older pages expect
- * mysqli methods such as bind_param() and num_rows, so give them a dedicated
- * connection without exposing credentials or connection errors to visitors.
+ * PDO Database Connection (replaces legacy mysqli).
+ *
+ * All queries now use PDO prepared statements internally, eliminating
+ * SQL injection vulnerabilities from string interpolation.
+ *
+ * The $conn variable provides a mysqli-compatible interface so that
+ * existing code using $conn->query(), $conn->prepare(), fetch_assoc(),
+ * num_rows, etc. continues to work without modification.
+ *
+ * @see App\Security\PdoDatabase
  */
 require_once dirname(__DIR__, 2) . '/config/app.php';
+require_once dirname(__DIR__, 2) . '/app/security/PdoDatabase.php';
 
-if (!extension_loaded('mysqli')) {
-    throw new RuntimeException('The mysqli PHP extension is required for legacy admin pages.');
-}
+use App\Security\PdoDatabase;
 
-$legacyConnection = mysqli_init();
-if ($legacyConnection === false || !@mysqli_real_connect($legacyConnection, DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT)) {
-    error_log('Legacy mysqli connection failed.');
+try {
+    $conn = new PdoDatabase([
+        'host'    => DB_HOST,
+        'port'    => DB_PORT,
+        'dbname'  => DB_NAME,
+        'user'    => DB_USER,
+        'pass'    => DB_PASS,
+        'charset' => 'utf8mb4',
+    ]);
+} catch (\Throwable $e) {
+    error_log('PDO Database connection failed: ' . $e->getMessage());
     throw new RuntimeException('Database connection unavailable.');
 }
-
-$legacyConnection->set_charset('utf8mb4');
-$conn = $legacyConnection;

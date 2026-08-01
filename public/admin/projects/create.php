@@ -25,6 +25,8 @@ require_once '../../../helpers/rateLimiter.php';
 
 require_once '../../../helpers/upload.php';
 
+require_once '../../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -44,27 +46,10 @@ $clients = [];
 
 try {
 
-    $clientQuery = "
-
-        SELECT
-            id,
-            full_name,
-            phone
-
-        FROM users
-
-        WHERE role = 'client'
-
-        ORDER BY full_name ASC
-    ";
-
-    $clientStmt =
-    $conn->prepare($clientQuery);
-
-    $clientStmt->execute();
-
-    $clients =
-    $clientStmt->fetchAll();
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $clients = $userRepo->getClients();
+    }
 
 } catch(Exception $e){}
 
@@ -221,83 +206,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
 
-        $query = "
+        $projectRepo = repo('Project');
+        if (!$projectRepo) {
+            throw new Exception('Project repository unavailable.');
+        }
 
-            INSERT INTO projects (
-
-                client_id,
-                lead_id,
-                project_name,
-                project_type,
-                location,
-                description,
-                budget,
-                status,
-                progress,
-                start_date,
-                end_date,
-                project_image,
-                created_at
-
-            ) VALUES (
-
-                :client_id,
-                :lead_id,
-                :project_name,
-                :project_type,
-                :location,
-                :description,
-                :budget,
-                :status,
-                :progress,
-                :start_date,
-                :end_date,
-                :project_image,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':client_id' =>
-            $clientId,
-
-            ':lead_id' =>
-            $leadId,
-
-            ':project_name' =>
-            $projectName,
-
-            ':project_type' =>
-            $projectType,
-
-            ':location' =>
-            $location,
-
-            ':description' =>
-            $description,
-
-            ':budget' =>
-            $budget,
-
-            ':status' =>
-            $status,
-
-            ':progress' =>
-            $progress,
-
-            ':start_date' =>
-            $startDate,
-
-            ':end_date' =>
-            $endDate,
-
-            ':project_image' =>
-            $projectImage
+        $projectId = $projectRepo->createProject([
+            'client_id'     => $clientId,
+            'lead_id'       => $leadId,
+            'project_name'  => $projectName,
+            'project_type'  => $projectType,
+            'location'      => $location,
+            'description'   => $description,
+            'budget'        => $budget,
+            'status'        => $status,
+            'progress'      => $progress,
+            'start_date'    => $startDate,
+            'end_date'      => $endDate,
+            'project_image' => $projectImage,
         ]);
+
+        if ($projectId <= 0) {
+            throw new Exception('Failed to insert project.');
+        }
 
         /*
         |--------------------------------------------------------------------------

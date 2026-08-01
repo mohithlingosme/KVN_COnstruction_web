@@ -1,51 +1,24 @@
 <?php
 
 require_once '../config/app.php';
-
-// =====================================
-// VALIDATE SLUG
-// =====================================
+require_once __DIR__ . '/includes/repositories.php';
 
 if (!isset($_GET['slug'])) {
-
     redirect('projects.php');
 }
 
-$slug = trim($_GET['slug']);
+$slug = trim((string)$_GET['slug']);
 
-// =====================================
-// FETCH PROJECT
-// =====================================
-
-try {
-    $query = "
-        SELECT *
-FROM portfolio
-        WHERE slug = :slug
-        AND status = 'active'
-        LIMIT 1
-    ";
-
-    $stmt = $conn->prepare($query);
-
-    $stmt->bindParam(':slug', $slug);
-
-    $stmt->execute();
-
-    $project = $stmt->fetch();
-} catch (PDOException $e) {
-    error_log("Project details query failed: " . $e->getMessage());
-    $project = false;
-}
-
-// =====================================
-// PROJECT NOT FOUND
-// =====================================
+$publicController = new \App\Controllers\PublicController();
+$data = $publicController->projectDetails($slug);
+$project = $data['project'] ?? null;
 
 if (!$project) {
-
     redirect('projects.php');
 }
+
+$pageTitle = ($project['title'] ?? 'Project Details') . ' | ' . APP_NAME;
+
 
 // =====================================
 // SEO VARIABLES
@@ -59,6 +32,13 @@ substr(strip_tags($project['description']),0,150);
 
 $metaImage =
 base_url($project['featured_image']);
+
+// =====================================
+// RELATED PROJECTS (via ContentRepository)
+// =====================================
+
+$contentRepo = repo('Content');
+$relatedProjects = $contentRepo ? $contentRepo->getRelatedProjects((int)($project['id'] ?? 0), 3) : [];
 
 include '../app/views/layouts/header.php';
 
@@ -444,34 +424,7 @@ include '../app/views/layouts/header.php';
 
         <div class="row g-4">
 
-            <?php
-
-            try {
-                $relatedQuery = "
-                    SELECT *
-                    FROM portfolio
-                    WHERE status = 'active'
-                    AND id != :id
-                    LIMIT 3
-                ";
-
-                $relatedStmt =
-                $conn->prepare($relatedQuery);
-
-                $relatedStmt->bindParam(':id', $project['id']);
-
-                $relatedStmt->execute();
-
-                $relatedProjects =
-                $relatedStmt->fetchAll();
-            } catch (PDOException $e) {
-                error_log("Related projects query failed: " . $e->getMessage());
-                $relatedProjects = [];
-            }
-
-            foreach($relatedProjects as $related):
-
-            ?>
+            <?php foreach($relatedProjects as $related): ?>
 
                 <div class="col-lg-4">
 

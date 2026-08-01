@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 |--------------------------------------------------------------------------
 | KVN CONSTRUCTION PLATFORM
 |--------------------------------------------------------------------------
 | ADMIN USERS MANAGEMENT
 |--------------------------------------------------------------------------
-| File:
-| /public/admin/users/index.php
+| File: /public/admin/users/index.php
 |--------------------------------------------------------------------------
 */
 
@@ -18,6 +19,8 @@ require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
+
+require_once '../../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -30,41 +33,13 @@ $pageTitle =
 
 /*
 |--------------------------------------------------------------------------
-| FETCH USERS
+| FETCH USERS VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
-$users = [];
+$userService = new \App\Services\AdminUserService();
 
-try {
-
-    $query = "
-
-        SELECT
-            id,
-            full_name,
-            email,
-            phone,
-            role,
-            status,
-            created_at
-
-        FROM users
-
-        ORDER BY id DESC
-    ";
-
-    $stmt = $conn->prepare($query);
-
-    $stmt->execute();
-
-    $users = $stmt->fetchAll();
-
-} catch(Exception $e){
-
-    $_SESSION['error'] =
-    'Failed to fetch users.';
-}
+$users = $userService->getAllUsers();
 
 ?>
 

@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -34,47 +34,16 @@ $documents = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            title,
-            file_name,
-            file_path,
-            file_type,
-            created_at
-        FROM media
-        WHERE
-            file_type LIKE 'application/%'
-            OR
-            file_name LIKE '%.pdf'
-            OR
-            file_name LIKE '%.doc'
-            OR
-            file_name LIKE '%.docx'
-            OR
-            file_name LIKE '%.xls'
-            OR
-            file_name LIKE '%.xlsx'
-        ORDER BY id DESC
-    ";
+    $mediaRepo = repo('Media');
 
-    $result =
-        $conn->query($query);
+    if ($mediaRepo) {
 
-    if ($result) {
-
-        while (
-            $row =
-            $result->fetch_assoc()
-        ) {
-
-            $documents[] = $row;
-        }
+        $documents = $mediaRepo->getByType('application/');
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Documents fetch error: ' . $e->getMessage());
 }
 
 /*
@@ -90,37 +59,18 @@ if (isset($_GET['delete'])) {
 
     try {
 
-        /*
-        |--------------------------------------------------------------------------
-        | FETCH FILE
-        |--------------------------------------------------------------------------
-        */
+        $mediaRepo = repo('Media');
 
-        $stmt =
-            $conn->prepare(
-                "
-                SELECT file_path
-                FROM media
-                WHERE id = ?
-                "
-            );
+        if ($mediaRepo) {
 
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'i',
-                $id
-            );
-
-            $stmt->execute();
-
-            $result =
-                $stmt->get_result();
+            /*
+            |--------------------------------------------------------------------------
+            | FETCH FILE
+            |--------------------------------------------------------------------------
+            */
 
             $document =
-                $result->fetch_assoc();
-
-            $stmt->close();
+                $mediaRepo->findById($id);
 
             /*
             |--------------------------------------------------------------------------
@@ -130,16 +80,11 @@ if (isset($_GET['delete'])) {
 
             if (
                 $document &&
-                file_exists(
-                    '../../' .
-                    $document['file_path']
-                )
+                !empty($document['file_path']) &&
+                file_exists($document['file_path'])
             ) {
 
-                unlink(
-                    '../../' .
-                    $document['file_path']
-                );
+                unlink($document['file_path']);
             }
 
             /*
@@ -148,30 +93,12 @@ if (isset($_GET['delete'])) {
             |--------------------------------------------------------------------------
             */
 
-            $delete =
-                $conn->prepare(
-                    "
-                    DELETE FROM media
-                    WHERE id = ?
-                    "
-                );
-
-            if ($delete) {
-
-                $delete->bind_param(
-                    'i',
-                    $id
-                );
-
-                $delete->execute();
-
-                $delete->close();
-            }
+            $mediaRepo->deleteById($id);
         }
 
     } catch (Throwable $e) {
 
-        die($e->getMessage());
+        error_log('Document delete error: ' . $e->getMessage());
     }
 
     header('Location: documents.php');

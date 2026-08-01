@@ -83,7 +83,7 @@ $check =
 
 if (
     $check &&
-    $check->num_rows === 0
+    $check->num_rows() === 0
 ) {
 
     $conn->query(
@@ -316,7 +316,7 @@ $pendingQuotes     = 0;
 $rejectedQuotes    = 0;
 $totalQuotationAmt = 0;
 
-if ($quotations && $quotations->num_rows > 0) {
+if ($quotations && $quotations->num_rows() > 0) {
 
     while ($calc = $quotations->fetch_assoc()) {
 
@@ -974,7 +974,7 @@ if ($quotations && $quotations->num_rows > 0) {
 
             <tbody>
 
-            <?php if ($quotations && $quotations->num_rows > 0): ?>
+            <?php if ($quotations && $quotations->num_rows() > 0): ?>
 
                 <?php while ($row = $quotations->fetch_assoc()): ?>
 

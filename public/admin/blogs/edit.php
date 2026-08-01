@@ -25,6 +25,8 @@ require_once '../../../helpers/rateLimiter.php';
 
 require_once '../../../helpers/upload.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | VALIDATE ID
@@ -48,29 +50,12 @@ if ($blogId <= 0) {
 |--------------------------------------------------------------------------
 */
 
+$blogRepo = repo('Blog');
+
 try {
 
-    $query = "
-
-        SELECT *
-
-        FROM blogs
-
-        WHERE id = :id
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':id' => $blogId
-    ]);
-
     $blog =
-    $stmt->fetch();
+    $blogRepo->findByIdAdmin($blogId);
 
     if (!$blog) {
 
@@ -215,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
     }
 
-    /*
+/*
     |--------------------------------------------------------------------------
     | CHECK SLUG DUPLICATE
     |--------------------------------------------------------------------------
@@ -223,30 +208,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
 
-        $slugQuery = "
+        $existing = $blogRepo->findBySlug($slug);
 
-            SELECT id
-
-            FROM blogs
-
-            WHERE slug = :slug
-
-            AND id != :id
-
-            LIMIT 1
-        ";
-
-        $slugStmt =
-        $conn->prepare($slugQuery);
-
-        $slugStmt->execute([
-
-            ':slug' => $slug,
-
-            ':id' => $blogId
-        ]);
-
-        if($slugStmt->fetch()){
+        if($existing && (int)$existing['id'] !== $blogId){
 
             $slug .=
             '-' .
@@ -340,68 +304,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
 
-        $updateQuery = "
+        $blogRepo->updateBlog($blogId, [
 
-            UPDATE blogs
-
-            SET
-
-                title = :title,
-                slug = :slug,
-                category = :category,
-                excerpt = :excerpt,
-                content = :content,
-                featured_image = :featured_image,
-                meta_title = :meta_title,
-                meta_description = :meta_description,
-                tags = :tags,
-                status = :status,
-                is_featured = :is_featured,
-                updated_at = NOW()
-
-            WHERE id = :id
-        ";
-
-        $updateStmt =
-        $conn->prepare($updateQuery);
-
-        $updateStmt->execute([
-
-            ':title' =>
+            'title' =>
             $title,
 
-            ':slug' =>
+            'slug' =>
             $slug,
 
-            ':category' =>
+            'category' =>
             $category,
 
-            ':excerpt' =>
+            'excerpt' =>
             $excerpt,
 
-            ':content' =>
+            'content' =>
             $content,
 
-            ':featured_image' =>
+            'featured_image' =>
             $featuredImage,
 
-            ':meta_title' =>
+            'meta_title' =>
             $metaTitle,
 
-            ':meta_description' =>
+            'meta_description' =>
             $metaDescription,
 
-            ':tags' =>
+            'tags' =>
             $tags,
 
-            ':status' =>
+            'status' =>
             $status,
 
-            ':is_featured' =>
+            'is_featured' =>
             $isFeatured,
-
-            ':id' =>
-            $blogId
         ]);
 
         /*

@@ -17,7 +17,8 @@ require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 require_once '../../../helpers/formatter.php';
 require_once '../../../helpers/csrf.php';
-require_once '../../../app/controllers/admin/MediaController.php';
+require_once '../../../helpers/upload.php';
+require_once '../../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -46,10 +47,10 @@ $pageTitle = 'Project Gallery | ' . APP_NAME;
 |--------------------------------------------------------------------------
 */
 
+$projectRepo = repo('Project');
+
 try {
-    require_once '../../../app/models/Project.php';
-    $projectModel = new Project($conn);
-    $project = $projectModel->find($projectId);
+    $project = $projectRepo ? $projectRepo->findById($projectId) : null;
 
     if (!$project) {
         $_SESSION['error'] = 'Project not found.';
@@ -62,11 +63,11 @@ try {
 
 /*
 |--------------------------------------------------------------------------
-| MEDIA CONTROLLER
+| MEDIA REPOSITORY
 |--------------------------------------------------------------------------
 */
 
-$mediaController = new MediaController($conn);
+$mediaRepo = repo('Media');
 
 /*
 |--------------------------------------------------------------------------
@@ -98,8 +99,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['media'])) {
                 'size' => $files['size'][$i]
             ];
 
-            $result = $mediaController->uploadProjectMedia($projectId, $file);
-            if ($result['success']) {
+$result = uploadImage($file, 'projects');
+            if ($result['success'] && $mediaRepo) {
+                $mediaRepo->createProjectMedia(
+                    $projectId,
+                    $result['filename'],
+                    $file['name'],
+                    $result['path'],
+                    $file['type'],
+                    $file['size']
+                );
                 $uploadCount++;
             } else {
                 $errorCount++;
@@ -107,8 +116,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['media'])) {
         }
     } else {
         if ($files['error'] !== UPLOAD_ERR_NO_FILE) {
-            $result = $mediaController->uploadProjectMedia($projectId, $files);
-            if ($result['success']) {
+            $result = uploadImage($files, 'projects');
+            if ($result['success'] && $mediaRepo) {
+                $mediaRepo->createProjectMedia(
+                    $projectId,
+                    $result['filename'],
+                    $files['name'],
+                    $result['path'],
+                    $files['type'],
+                    $files['size']
+                );
                 $uploadCount++;
             } else {
                 $errorCount++;
@@ -139,7 +156,8 @@ if (isset($_GET['delete'])) {
     }
 
     $mediaId = (int) $_GET['delete'];
-    if ($mediaController->deleteMedia($mediaId)) {
+    $deleted = $mediaRepo ? $mediaRepo->deleteProjectMedia($mediaId) : null;
+    if ($deleted !== null) {
         $_SESSION['success'] = 'File deleted successfully.';
     } else {
         $_SESSION['error'] = 'Failed to delete file.';
@@ -154,7 +172,7 @@ if (isset($_GET['delete'])) {
 |--------------------------------------------------------------------------
 */
 
-$mediaItems = $mediaController->getProjectMedia($projectId);
+$mediaItems = $mediaRepo ? $mediaRepo->getProjectMedia($projectId) : [];
 
 /*
 |--------------------------------------------------------------------------

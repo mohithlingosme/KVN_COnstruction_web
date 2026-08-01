@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -59,30 +59,16 @@ if (
 
         try {
 
-            $stmt = $conn->prepare(
-                "
-                UPDATE testimonials
-                SET is_featured = ?
-                WHERE id = ?
-                "
-            );
+            $testimonialRepo = repo('Testimonial');
 
-            if ($stmt) {
+            if ($testimonialRepo) {
 
-                $stmt->bind_param(
-                    'ii',
-                    $is_featured,
-                    $id
-                );
-
-                $stmt->execute();
-
-                $stmt->close();
+                $testimonialRepo->setFeatured($id, $is_featured);
             }
 
         } catch (Throwable $e) {
 
-            die($e->getMessage());
+            error_log('Testimonial feature error: ' . $e->getMessage());
         }
     }
 
@@ -100,33 +86,16 @@ $testimonials = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            client_name,
-            client_role,
-            message,
-            rating,
-            image,
-            is_featured,
-            created_at
-        FROM testimonials
-        ORDER BY id DESC
-    ";
+    $testimonialRepo = repo('Testimonial');
 
-    $result = $conn->query($query);
+    if ($testimonialRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $testimonials[] = $row;
-        }
+        $testimonials = $testimonialRepo->getAll();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Testimonials fetch error: ' . $e->getMessage());
 }
 
 ?>

@@ -19,6 +19,10 @@ require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
 
+require_once '../../../includes/repositories.php';
+
+require_once '../../../bootstrap/providers/ServiceProvider.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -30,7 +34,7 @@ $pageTitle =
 
 /*
 |--------------------------------------------------------------------------
-| FETCH LEADS BY STATUS
+| FETCH LEADS VIA SERVICE
 |--------------------------------------------------------------------------
 */
 
@@ -54,16 +58,15 @@ $pipelineStages = [
 
 try {
 
-    require_once '../../../app/controllers/admin/LeadController.php';
-    $controller = new LeadController($conn);
-
-    $leads = $controller->index();
+    $service = ServiceProvider::get('LeadService');
+    $result = $service->getAll();
+    $leads = $result['data'] ?? [];
 
     foreach($leads as $lead){
 
         $status =
         strtolower(
-            $lead['status']
+            $lead['status'] ?? ''
         );
 
         if(

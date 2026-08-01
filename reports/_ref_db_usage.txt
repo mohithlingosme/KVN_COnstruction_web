@@ -1,0 +1,25 @@
+﻿
+app\repositories\ContentRepository.php:9:use App\Core\Database;
+app\repositories\EstimatorRepository.php:9:use App\Core\Database;
+app\repositories\InvoiceRepository.php:9:use App\Core\Database;
+app\repositories\SupportRepository.php:9:use App\Core\Database;
+app\repositories\UserRepository.php:7:use App\Core\Database;
+app\services\InvoiceService.php:8:use App\Core\Database;
+app\services\OtpService.php:4:use App\Core\Database;
+bootstrap\providers\ServiceProvider.php:22:            require_once 
+__DIR__ . '/../../config/database.php';
+config\database.php:12: * NOTE: PSR-4 code should use App\Core\Database 
+(app/Core/Database.php) instead.
+config\database.php:14: * @deprecated Use 
+App\Core\Database::getInstance() for new code.
+core\Model.php:3:require_once __DIR__ . '/../config/database.php';
+helpers\security_audit.php:72:| Item #6  (config/database.php):        
+PDO::exec("SET NAMES utf8mb4") - DDL
+public\reset-password.php:267:    | Uses SessionManager to delete ALL 
+sessions for this user from database
+routes\api_estimator.php:137:        // Use column names that match the 
+actual database schema
+_crawl_test.php:105:    'config/database.php',
+_runtime_test.php:65:    'config/app.php', 'config/database.php',
+
+

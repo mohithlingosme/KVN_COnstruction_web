@@ -18,11 +18,11 @@ if (!isset($_SESSION['admin_id'])) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE
+| REPOSITORY BOOTSTRAP
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -75,37 +75,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
 
-            $stmt = $conn->prepare(
-                "
-                INSERT INTO video_categories
-                (
-                    name,
-                    slug
-                )
-                VALUES
-                (
-                    ?, ?
-                )
-                "
-            );
+            $videoRepo = repo('Video');
 
-            if ($stmt) {
+            if ($videoRepo) {
 
-                $stmt->bind_param(
-                    'ss',
-                    $name,
-                    $slug
-                );
+                $ok = $videoRepo->insertCategory([
+                    'name' => $name,
+                    'slug' => $slug,
+                ]);
 
-                $stmt->execute();
+                if ($ok) {
 
-                $stmt->close();
+                    $success =
+                        'Category added successfully.';
 
-                $success =
-                    'Category added successfully.';
+                    $name = '';
+                    $slug = '';
 
-                $name = '';
-                $slug = '';
+                } else {
+
+                    $error =
+                        'Database query failed.';
+                }
 
             } else {
 
@@ -134,28 +125,16 @@ if (isset($_GET['delete'])) {
 
     try {
 
-        $stmt = $conn->prepare(
-            "
-            DELETE FROM video_categories
-            WHERE id = ?
-            "
-        );
+        $videoRepo = repo('Video');
 
-        if ($stmt) {
+        if ($videoRepo) {
 
-            $stmt->bind_param(
-                'i',
-                $id
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+            $videoRepo->deleteCategory($id);
         }
 
     } catch (Throwable $e) {
 
-        die($e->getMessage());
+        error_log('Video category delete error: ' . $e->getMessage());
     }
 
     header('Location: categories.php');
@@ -172,29 +151,16 @@ $categories = [];
 
 try {
 
-    $query = "
-        SELECT
-            id,
-            name,
-            slug,
-            created_at
-        FROM video_categories
-        ORDER BY id DESC
-    ";
+    $videoRepo = repo('Video');
 
-    $result = $conn->query($query);
+    if ($videoRepo) {
 
-    if ($result) {
-
-        while ($row = $result->fetch_assoc()) {
-
-            $categories[] = $row;
-        }
+        $categories = $videoRepo->getCategories();
     }
 
 } catch (Throwable $e) {
 
-    die($e->getMessage());
+    error_log('Video categories fetch error: ' . $e->getMessage());
 }
 
 ?>

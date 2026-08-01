@@ -6,8 +6,9 @@
 |--------------------------------------------------------------------------
 | CLIENT ACCESS MIDDLEWARE
 |--------------------------------------------------------------------------
-| File:
-| /middleware/client.php
+| File: /middleware/client.php
+|--------------------------------------------------------------------------
+| REFACTORED: SQL queries delegated to UserRepository.
 |--------------------------------------------------------------------------
 */
 
@@ -25,284 +26,60 @@ require_once dirname(__FILE__) . '/auth.php';
 |--------------------------------------------------------------------------
 */
 
-if (
-
-    !isset($_SESSION['role'])
-
-    ||
-
-    $_SESSION['role'] !== 'client'
-) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | SECURITY LOG
-    |--------------------------------------------------------------------------
-    */
-
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'client') {
     if (function_exists('logSecurityEvent')) {
-
-        logSecurityEvent(
-
-            $_SESSION['user_id'] ?? null,
-
-            'unauthorized_client_access',
-
-            'warning',
-
-            'Non-client attempted to access client portal'
-        );
+        logSecurityEvent($_SESSION['user_id'] ?? null, 'unauthorized_client_access', 'warning', 'Non-client attempted to access client portal');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | INVALID ROLE
-    |--------------------------------------------------------------------------
-    */
+    $_SESSION['error'] = 'Unauthorized access.';
 
-    $_SESSION['error'] =
-    'Unauthorized access.';
-
-    /*
-    |--------------------------------------------------------------------------
-    | REDIRECT BASED ON ROLE
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        isset($_SESSION['role'])
-
-        &&
-
-            in_array(
-                $_SESSION['role'],
-                ['admin', 'super_admin'],
-                true
-            )
-    ) {
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/admin/dashboard.php'
-        );
-
+    if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['admin', 'super_admin'], true)) {
+        header('Location: ' . APP_URL . '/admin/dashboard.php');
     } else {
-
         destroySession();
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/login.php'
-        );
+        header('Location: ' . APP_URL . '/login.php');
     }
-
     exit;
 }
 
 /*
 |--------------------------------------------------------------------------
-| VERIFY CLIENT ACCOUNT
+| CLIENT STATUS VALIDATION (via UserRepository)
 |--------------------------------------------------------------------------
 */
 
 try {
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $client = $userRepo->findById((int)$_SESSION['user_id']);
 
-    $query = "
+        if (!$client) {
+            logSecurityEvent($_SESSION['user_id'], 'client_account_missing', 'critical', 'Client account deleted during session');
+            destroySession();
+            $_SESSION['error'] = 'Account not found.';
+            header('Location: ' . APP_URL . '/login.php');
+            exit;
+        }
 
-        SELECT
+        if ($client['status'] !== 'active') {
+            logSecurityEvent($client['id'], 'inactive_client_access', 'warning', 'Inactive client attempted access');
+            destroySession();
+            $_SESSION['error'] = 'Account inactive.';
+            header('Location: ' . APP_URL . '/login.php');
+            exit;
+        }
 
-            id,
-            full_name,
-            email,
-            phone,
-            role,
-            status,
-            phone_verified
-
-        FROM users
-
-        WHERE id = :id
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':id' =>
-        $_SESSION['user_id']
-    ]);
-
-    $client =
-    $stmt->fetch();
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLIENT EXISTS
-    |--------------------------------------------------------------------------
-    */
-
-    if (!$client) {
-
-        logSecurityEvent(
-
-            $_SESSION['user_id'],
-
-            'missing_client_account',
-
-            'critical',
-
-            'Client account missing'
-        );
-
-        destroySession();
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/login.php'
-        );
-
-        exit;
+        $_SESSION['client'] = [
+            'id' => $client['id'],
+            'name' => $client['full_name'],
+            'email' => $client['email'],
+            'phone' => $client['phone'] ?? '',
+        ];
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLIENT STATUS
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $client['status']
-        !==
-        'active'
-    ) {
-
-        logSecurityEvent(
-
-            $client['id'],
-
-            'inactive_client_access',
-
-            'warning',
-
-            'Inactive client attempted access'
-        );
-
-        destroySession();
-
-        $_SESSION['error'] =
-        'Account inactive.';
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/login.php'
-        );
-
-        exit;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | PHONE VERIFICATION CHECK
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        isset($client['phone_verified'])
-
-        &&
-
-        !$client['phone_verified']
-    ) {
-
-        logSecurityEvent(
-
-            $client['id'],
-
-            'unverified_phone_access',
-
-            'warning',
-
-            'Client phone not verified'
-        );
-
-        $_SESSION['error'] =
-        'Phone verification required.';
-
-        header(
-
-            'Location: '
-            .
-            APP_URL
-            .
-            '/verify-phone-otp.php'
-        );
-
-        exit;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLIENT SESSION DATA
-    |--------------------------------------------------------------------------
-    */
-
-    $_SESSION['client'] = [
-
-        'id' =>
-        $client['id'],
-
-        'name' =>
-        $client['full_name'],
-
-        'email' =>
-        $client['email'],
-
-        'phone' =>
-        $client['phone']
-    ];
-
 } catch (Exception $e) {
-
-    error_log(
-
-        'Client Middleware Error: '
-        .
-        $e->getMessage()
-    );
-
+    error_log('Client Middleware Error: ' . $e->getMessage());
     destroySession();
-
-    header(
-
-        'Location: '
-        .
-        APP_URL
-        .
-        '/login.php'
-    );
-
+    header('Location: ' . APP_URL . '/login.php');
     exit;
 }
 
@@ -313,17 +90,7 @@ try {
 */
 
 if (function_exists('logSecurityEvent')) {
-
-    logSecurityEvent(
-
-        $_SESSION['user_id'],
-
-        'client_portal_access',
-
-        'info',
-
-        current_url()
-    );
+    logSecurityEvent($_SESSION['user_id'], 'client_portal_access', 'info', current_url());
 }
 
 /*
@@ -331,4 +98,3 @@ if (function_exists('logSecurityEvent')) {
 | CLIENT AUTHORIZED
 |--------------------------------------------------------------------------
 */
-?>

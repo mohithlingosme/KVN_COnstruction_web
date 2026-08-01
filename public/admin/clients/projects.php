@@ -19,6 +19,8 @@ require_once '../../../helpers/security.php';
 
 require_once '../../../helpers/formatter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | VALIDATE CLIENT ID
@@ -42,34 +44,18 @@ if ($clientId <= 0) {
 |--------------------------------------------------------------------------
 */
 
-$clientQuery = "
+$client = [];
 
-    SELECT
-        id,
-        full_name,
-        email,
-        phone,
-        profile_image
+try {
 
-    FROM users
+    $userRepo = repo('User');
+    if ($userRepo) {
+        $client = $userRepo->findClientById($clientId);
+    }
 
-    WHERE id = :id
-
-    AND role = 'client'
-
-    LIMIT 1
-";
-
-$clientStmt =
-$conn->prepare($clientQuery);
-
-$clientStmt->execute([
-
-    ':id' => $clientId
-]);
-
-$client =
-$clientStmt->fetch();
+} catch(Exception $e){
+    $client = null;
+}
 
 if (!$client) {
 
@@ -89,37 +75,10 @@ $projects = [];
 
 try {
 
-    $query = "
-
-        SELECT
-            id,
-            project_name,
-            project_type,
-            location,
-            budget,
-            status,
-            start_date,
-            end_date,
-            progress,
-            created_at
-
-        FROM projects
-
-        WHERE client_id = :client_id
-
-        ORDER BY id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':client_id' => $clientId
-    ]);
-
-    $projects =
-    $stmt->fetchAll();
+    $projectRepo = repo('Project');
+    if ($projectRepo) {
+        $projects = $projectRepo->findByClient($clientId);
+    }
 
 } catch(Exception $e){
 
