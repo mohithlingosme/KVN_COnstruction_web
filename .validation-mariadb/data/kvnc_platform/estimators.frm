@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select `kvnc_platform`.`estimator_requests`.`id` AS `id`,`kvnc_platform`.`estimator_requests`.`full_name` AS `full_name`,`kvnc_platform`.`estimator_requests`.`name` AS `name`,`kvnc_platform`.`estimator_requests`.`phone` AS `phone`,`kvnc_platform`.`estimator_requests`.`email` AS `email`,`kvnc_platform`.`estimator_requests`.`location` AS `location`,`kvnc_platform`.`estimator_requests`.`plot_area` AS `plot_area`,`kvnc_platform`.`estimator_requests`.`floors` AS `floors`,`kvnc_platform`.`estimator_requests`.`package_id` AS `package_id`,`kvnc_platform`.`estimator_requests`.`estimated_cost` AS `estimated_cost`,`kvnc_platform`.`estimator_requests`.`ip_address` AS `ip_address`,`kvnc_platform`.`estimator_requests`.`lead_id` AS `lead_id`,`kvnc_platform`.`estimator_requests`.`reviewed_by` AS `reviewed_by`,`kvnc_platform`.`estimator_requests`.`reviewed_at` AS `reviewed_at`,`kvnc_platform`.`estimator_requests`.`status` AS `status`,`kvnc_platform`.`estimator_requests`.`notes` AS `notes`,`kvnc_platform`.`estimator_requests`.`source` AS `source`,`kvnc_platform`.`estimator_requests`.`created_at` AS `created_at`,`kvnc_platform`.`estimator_requests`.`updated_at` AS `updated_at`,`kvnc_platform`.`estimator_requests`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`estimator_requests`
+md5=54c9774928df1efb6c3c15273e47272a
+updatable=1
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=2
+with_check_option=0
+timestamp=0001785844015529246
+create-version=2
+source=SELECT * FROM estimator_requests
+client_cs_name=utf8mb4
+connection_cl_name=utf8mb4_general_ci
+view_body_utf8=select `kvnc_platform`.`estimator_requests`.`id` AS `id`,`kvnc_platform`.`estimator_requests`.`full_name` AS `full_name`,`kvnc_platform`.`estimator_requests`.`name` AS `name`,`kvnc_platform`.`estimator_requests`.`phone` AS `phone`,`kvnc_platform`.`estimator_requests`.`email` AS `email`,`kvnc_platform`.`estimator_requests`.`location` AS `location`,`kvnc_platform`.`estimator_requests`.`plot_area` AS `plot_area`,`kvnc_platform`.`estimator_requests`.`floors` AS `floors`,`kvnc_platform`.`estimator_requests`.`package_id` AS `package_id`,`kvnc_platform`.`estimator_requests`.`estimated_cost` AS `estimated_cost`,`kvnc_platform`.`estimator_requests`.`ip_address` AS `ip_address`,`kvnc_platform`.`estimator_requests`.`lead_id` AS `lead_id`,`kvnc_platform`.`estimator_requests`.`reviewed_by` AS `reviewed_by`,`kvnc_platform`.`estimator_requests`.`reviewed_at` AS `reviewed_at`,`kvnc_platform`.`estimator_requests`.`status` AS `status`,`kvnc_platform`.`estimator_requests`.`notes` AS `notes`,`kvnc_platform`.`estimator_requests`.`source` AS `source`,`kvnc_platform`.`estimator_requests`.`created_at` AS `created_at`,`kvnc_platform`.`estimator_requests`.`updated_at` AS `updated_at`,`kvnc_platform`.`estimator_requests`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`estimator_requests`
+mariadb-version=100432

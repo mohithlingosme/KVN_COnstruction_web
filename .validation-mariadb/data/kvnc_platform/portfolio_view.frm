@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select `kvnc_platform`.`portfolio`.`id` AS `id`,`kvnc_platform`.`portfolio`.`title` AS `title`,`kvnc_platform`.`portfolio`.`name` AS `name`,`kvnc_platform`.`portfolio`.`slug` AS `slug`,`kvnc_platform`.`portfolio`.`short_description` AS `short_description`,`kvnc_platform`.`portfolio`.`description` AS `description`,`kvnc_platform`.`portfolio`.`project_type` AS `project_type`,`kvnc_platform`.`portfolio`.`location` AS `location`,`kvnc_platform`.`portfolio`.`client_name` AS `client_name`,`kvnc_platform`.`portfolio`.`budget` AS `budget`,`kvnc_platform`.`portfolio`.`area_sqft` AS `area_sqft`,`kvnc_platform`.`portfolio`.`completion_year` AS `completion_year`,`kvnc_platform`.`portfolio`.`featured_image` AS `featured_image`,`kvnc_platform`.`portfolio`.`status` AS `status`,`kvnc_platform`.`portfolio`.`is_featured` AS `is_featured`,`kvnc_platform`.`portfolio`.`created_at` AS `created_at`,`kvnc_platform`.`portfolio`.`updated_at` AS `updated_at`,`kvnc_platform`.`portfolio`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`portfolio`
+md5=322c83830d24d15698f16c83df721f13
+updatable=1
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=2
+with_check_option=0
+timestamp=0001785844015554849
+create-version=2
+source=SELECT * FROM portfolio
+client_cs_name=utf8mb4
+connection_cl_name=utf8mb4_general_ci
+view_body_utf8=select `kvnc_platform`.`portfolio`.`id` AS `id`,`kvnc_platform`.`portfolio`.`title` AS `title`,`kvnc_platform`.`portfolio`.`name` AS `name`,`kvnc_platform`.`portfolio`.`slug` AS `slug`,`kvnc_platform`.`portfolio`.`short_description` AS `short_description`,`kvnc_platform`.`portfolio`.`description` AS `description`,`kvnc_platform`.`portfolio`.`project_type` AS `project_type`,`kvnc_platform`.`portfolio`.`location` AS `location`,`kvnc_platform`.`portfolio`.`client_name` AS `client_name`,`kvnc_platform`.`portfolio`.`budget` AS `budget`,`kvnc_platform`.`portfolio`.`area_sqft` AS `area_sqft`,`kvnc_platform`.`portfolio`.`completion_year` AS `completion_year`,`kvnc_platform`.`portfolio`.`featured_image` AS `featured_image`,`kvnc_platform`.`portfolio`.`status` AS `status`,`kvnc_platform`.`portfolio`.`is_featured` AS `is_featured`,`kvnc_platform`.`portfolio`.`created_at` AS `created_at`,`kvnc_platform`.`portfolio`.`updated_at` AS `updated_at`,`kvnc_platform`.`portfolio`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`portfolio`
+mariadb-version=100432

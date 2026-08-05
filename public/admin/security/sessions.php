@@ -2,153 +2,44 @@
 
 declare(strict_types=1);
 
-session_start();
-
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| KVN CONSTRUCTION PLATFORM
+|--------------------------------------------------------------------------
+| SECURITY - ADMIN SESSIONS
+|--------------------------------------------------------------------------
+| REFACTORED: All SQL delegated to SecurityAdminRepository.
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
+require_once '../../../config/app.php';
 
-    header('Location: ../login.php');
-    exit();
-}
+require_once '../../../middleware/admin.php';
 
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
+require_once '../../../helpers/security.php';
 
-require_once '../../includes/db.php';
+require_once '../../../helpers/formatter.php';
+
+require_once '../../../includes/repositories.php';
+
+require_once '../../../bootstrap/providers/ServiceProvider.php';
 
 /*
 |--------------------------------------------------------------------------
-| CREATE SESSIONS TABLE
+| PAGE TITLE
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS admin_sessions (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        admin_id INT NOT NULL,
-
-        admin_name VARCHAR(255) NOT NULL,
-
-        session_token VARCHAR(255) NOT NULL,
-
-        ip_address VARCHAR(100) NOT NULL,
-
-        device_name VARCHAR(255) NOT NULL,
-
-        browser VARCHAR(255) NOT NULL,
-
-        operating_system VARCHAR(255) NOT NULL,
-
-        login_time TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP,
-
-        last_activity TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP,
-
-        status ENUM('active','expired')
-        NOT NULL DEFAULT 'active'
-
-    )
-    "
-);
+$pageTitle =
+'Admin Sessions | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEMO SESSIONS
+| REPOSITORY
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM admin_sessions
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO admin_sessions
-            (
-
-                admin_id,
-                admin_name,
-                session_token,
-                ip_address,
-                device_name,
-                browser,
-                operating_system,
-                status
-
-            )
-
-            VALUES
-
-            (?, ?, ?, ?, ?, ?, ?, ?)
-            "
-        );
-
-    if ($stmt) {
-
-        $adminId =
-            1;
-
-        $adminName =
-            'Admin';
-
-        $sessionToken =
-            bin2hex(random_bytes(16));
-
-        $ipAddress =
-            '127.0.0.1';
-
-        $deviceName =
-            'Desktop';
-
-        $browser =
-            'Google Chrome';
-
-        $os =
-            'Windows 11';
-
-        $status =
-            'active';
-
-        $stmt->bind_param(
-            'isssssss',
-            $adminId,
-            $adminName,
-            $sessionToken,
-            $ipAddress,
-            $deviceName,
-            $browser,
-            $os,
-            $status
-        );
-
-        $stmt->execute();
-        $stmt->close();
-    }
-}
+$securityRepo = repo('SecurityAdmin');
 
 /*
 |--------------------------------------------------------------------------
@@ -161,25 +52,8 @@ if (isset($_GET['terminate'])) {
     $sessionId =
         (int) $_GET['terminate'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            UPDATE admin_sessions
-            SET status = 'expired'
-            WHERE id = ?
-            "
-        );
-
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $sessionId
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+    if ($securityRepo) {
+        $securityRepo->terminateSession($sessionId);
     }
 
     header(
@@ -197,12 +71,9 @@ if (isset($_GET['terminate'])) {
 
 if (isset($_POST['terminate_all'])) {
 
-    $conn->query(
-        "
-        UPDATE admin_sessions
-        SET status = 'expired'
-        "
-    );
+    if ($securityRepo) {
+        $securityRepo->terminateAllSessions();
+    }
 
     header(
         'Location: sessions.php'
@@ -217,14 +88,11 @@ if (isset($_POST['terminate_all'])) {
 |--------------------------------------------------------------------------
 */
 
-$sessions =
-    $conn->query(
-        "
-        SELECT *
-        FROM admin_sessions
-        ORDER BY id DESC
-        "
-    );
+$sessions = [];
+
+if ($securityRepo) {
+    $sessions = $securityRepo->getAdminSessions();
+}
 
 ?>
 
@@ -497,16 +365,16 @@ $sessions =
 
         <tbody>
 
-        <?php if ($sessions && $sessions->num_rows() > 0): ?>
+        <?php if (!empty($sessions)): ?>
 
-            <?php while ($row = $sessions->fetch_assoc()): ?>
+            <?php foreach ($sessions as $row): ?>
 
                 <tr>
 
                     <td>
 
                         <?php
-                            echo (int)$row['id'];
+                            echo (int)($row['id'] ?? 0);
                         ?>
 
                     </td>
@@ -515,7 +383,7 @@ $sessions =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['admin_name']
+                                (string)($row['admin_name'] ?? '')
                             );
                         ?>
 
@@ -525,7 +393,7 @@ $sessions =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['ip_address']
+                                (string)($row['ip_address'] ?? '')
                             );
                         ?>
 
@@ -535,7 +403,7 @@ $sessions =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['device_name']
+                                (string)($row['device_name'] ?? '')
                             );
                         ?>
 
@@ -545,7 +413,7 @@ $sessions =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['browser']
+                                (string)($row['browser'] ?? '')
                             );
                         ?>
 
@@ -555,7 +423,7 @@ $sessions =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['operating_system']
+                                (string)($row['operating_system'] ?? '')
                             );
                         ?>
 
@@ -565,7 +433,7 @@ $sessions =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['login_time']
+                                (string)($row['login_time'] ?? '')
                             );
                         ?>
 
@@ -575,7 +443,7 @@ $sessions =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['last_activity']
+                                (string)($row['last_activity'] ?? '')
                             );
                         ?>
 
@@ -584,13 +452,13 @@ $sessions =
                     <td>
 
                         <span
-                            class="badge <?php echo htmlspecialchars((string)$row['status']); ?>"
+                            class="badge <?php echo htmlspecialchars((string)($row['status'] ?? '')); ?>"
                         >
 
                             <?php
                                 echo ucfirst(
                                     htmlspecialchars(
-                                        (string)$row['status']
+                                        (string)($row['status'] ?? '')
                                     )
                                 );
                             ?>
@@ -601,10 +469,10 @@ $sessions =
 
                     <td>
 
-                        <?php if ($row['status'] === 'active'): ?>
+                        <?php if (($row['status'] ?? '') === 'active'): ?>
 
                             <a
-                                href="?terminate=<?php echo (int)$row['id']; ?>"
+                                href="?terminate=<?php echo (int)($row['id'] ?? 0); ?>"
                                 class="terminate-btn"
                                 onclick="return confirm('Terminate this session?')"
                             >
@@ -621,7 +489,7 @@ $sessions =
 
                 </tr>
 
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         <?php else: ?>
 

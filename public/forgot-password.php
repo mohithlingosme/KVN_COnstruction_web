@@ -36,9 +36,9 @@ require_once ROOT_PATH . '/helpers/rateLimiter.php';
 
 require_once ROOT_PATH . '/helpers/mail.php';
 
-require_once ROOT_PATH . '/app/models/User.php';
+require_once ROOT_PATH . '/app/repositories/UserRepository.php';
 
-require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
 
 require_once ROOT_PATH . '/middleware/guest.php';
 
@@ -144,10 +144,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    $userModel = new \App\Models\User($GLOBALS['conn']);
+    $userRepo = ServiceProvider::get('UserRepository');
     
     $user =
-    $userModel->findByEmail($email);
+    $userRepo->findByEmail($email);
 
     /*
     |--------------------------------------------------------------------------
@@ -195,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     */
 
     $saved =
-    $userModel->saveOtp(
+    $userRepo->saveOtp(
 
         (int) $user['id'],
 

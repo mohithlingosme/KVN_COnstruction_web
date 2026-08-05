@@ -2,157 +2,40 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+
+require_once '../../../middleware/admin.php';
+
+require_once '../../../helpers/security.php';
+
+require_once '../../includes/repositories.php';
 
 /*
+|
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| REPOSITORY
+|
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
+$reportRepo = repo('Report');
 
 /*
+|
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
+| PAGE TITLE
+|
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+$pageTitle =
+'Estimator Reports | ' . APP_NAME;
 
 /*
-|--------------------------------------------------------------------------
-| CREATE ESTIMATORS TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS estimators (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        customer_name VARCHAR(255) NOT NULL,
-
-        phone VARCHAR(50) NOT NULL,
-
-        email VARCHAR(255) NOT NULL,
-
-        project_type VARCHAR(255) NOT NULL,
-
-        location VARCHAR(255) NOT NULL,
-
-        plot_size VARCHAR(100) NOT NULL,
-
-        floors INT NOT NULL DEFAULT 1,
-
-        estimated_cost DECIMAL(12,2) NOT NULL,
-
-        estimated_duration VARCHAR(100) NOT NULL,
-
-        status ENUM(
-            'Pending',
-            'Approved',
-            'Rejected'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM estimators
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO estimators
-        (
-
-            customer_name,
-            phone,
-            email,
-            project_type,
-            location,
-            plot_size,
-            floors,
-            estimated_cost,
-            estimated_duration,
-            status
-
-        )
-
-        VALUES
-
-        (
-            'Rahul Sharma',
-            '9876543210',
-            'rahul@gmail.com',
-            'Luxury Villa',
-            'Bangalore',
-            '40x60',
-            2,
-            8500000,
-            '12 Months',
-            'Approved'
-        ),
-
-        (
-            'Sneha Reddy',
-            '9988776655',
-            'sneha@gmail.com',
-            'Duplex House',
-            'Hyderabad',
-            '30x40',
-            2,
-            6200000,
-            '10 Months',
-            'Pending'
-        ),
-
-        (
-            'Arjun Kumar',
-            '9123456789',
-            'arjun@gmail.com',
-            'Commercial Building',
-            'Chennai',
-            '60x80',
-            4,
-            25000000,
-            '18 Months',
-            'Rejected'
-        )
-        "
-    );
-}
-
-/*
+|
 |--------------------------------------------------------------------------
 | ADD ESTIMATION
+|
 |--------------------------------------------------------------------------
 */
 
@@ -213,60 +96,36 @@ if (
 
     if ($error === '') {
 
-        $stmt =
-            $conn->prepare(
-                "
-                INSERT INTO estimators
-                (
-
-                    customer_name,
-                    phone,
-                    email,
-                    project_type,
-                    location,
-                    plot_size,
-                    floors,
-                    estimated_cost,
-                    estimated_duration,
-                    status
-
-                )
-
-                VALUES
-
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                "
-            );
-
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'ssssssidss',
-                $customerName,
-                $phone,
-                $email,
-                $projectType,
-                $location,
-                $plotSize,
-                $floors,
-                $estimatedCost,
-                $estimatedDuration,
-                $status
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+        try {
+            $reportRepo
+                ? $reportRepo->insertEstimatorReport([
+                    'customer_name'     => $customerName,
+                    'phone'             => $phone,
+                    'email'             => $email,
+                    'project_type'      => $projectType,
+                    'location'          => $location,
+                    'plot_size'         => $plotSize,
+                    'floors'            => (int)$floors,
+                    'estimated_cost'    => $estimatedCost,
+                    'estimated_duration'=> $estimatedDuration,
+                    'status'            => $status,
+                ])
+                : false;
 
             $success =
                 'Estimation added successfully.';
+        } catch (Exception $e) {
+            $error =
+                'Failed to add estimation.';
         }
     }
 }
 
 /*
+|
 |--------------------------------------------------------------------------
 | DELETE ESTIMATION
+|
 |--------------------------------------------------------------------------
 */
 
@@ -275,51 +134,44 @@ if (isset($_GET['delete'])) {
     $id =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM estimators
-            WHERE id = ?
-            "
+    try {
+        $reportRepo
+            ? $reportRepo->deleteEstimatorReport($id)
+            : false;
+
+        header(
+            'Location: estimators.php'
         );
 
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $id
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+        exit();
+    } catch (Exception $e) {
+        $error = 'Failed to delete estimation.';
     }
-
-    header(
-        'Location: estimators.php'
-    );
-
-    exit();
 }
 
 /*
+|
 |--------------------------------------------------------------------------
 | FETCH ESTIMATORS
+|
 |--------------------------------------------------------------------------
 */
 
-$estimators =
-    $conn->query(
-        "
-        SELECT *
-        FROM estimators
-        ORDER BY id DESC
-        "
-    );
+$estimators = [];
+
+try {
+    if ($reportRepo) {
+        $estimators = $reportRepo->getEstimatorReports();
+    }
+} catch (Exception $e) {
+    $error = 'Failed to load estimators.';
+}
 
 /*
+|
 |--------------------------------------------------------------------------
 | STATS
+|
 |--------------------------------------------------------------------------
 */
 
@@ -329,40 +181,30 @@ $pendingCount      = 0;
 $rejectedCount     = 0;
 $totalEstimatedAmt = 0;
 
-if ($estimators && $estimators->num_rows() > 0) {
+foreach ($estimators as $calc) {
 
-    while ($calc = $estimators->fetch_assoc()) {
+    $totalEstimations++;
 
-        $totalEstimations++;
+    $totalEstimatedAmt +=
+        (float)$calc['estimated_cost'];
 
-        $totalEstimatedAmt +=
-            (float)$calc['estimated_cost'];
+    if ($calc['status'] === 'Approved') {
 
-        if ($calc['status'] === 'Approved') {
-
-            $approvedCount++;
-        }
-
-        if ($calc['status'] === 'Pending') {
-
-            $pendingCount++;
-        }
-
-        if ($calc['status'] === 'Rejected') {
-
-            $rejectedCount++;
-        }
+        $approvedCount++;
     }
 
-    $estimators->data_seek(0);
+    if ($calc['status'] === 'Pending') {
+
+        $pendingCount++;
+    }
+
+    if ($calc['status'] === 'Rejected') {
+
+        $rejectedCount++;
+    }
 }
 
-require_once '../../app/Services/EstimatorService.php';
-
-$service = new \App\Services\EstimatorService();
-$estimators = $service->getAllEstimations();
 ?>
-
 
 <!DOCTYPE html>
 
@@ -995,9 +837,9 @@ $estimators = $service->getAllEstimations();
 
             <tbody>
 
-            <?php if ($estimators && $estimators->num_rows() > 0): ?>
+            <?php if (!empty($estimators)): ?>
 
-                <?php while ($row = $estimators->fetch_assoc()): ?>
+                <?php foreach ($estimators as $row): ?>
 
                     <tr>
 
@@ -1075,7 +917,7 @@ $estimators = $service->getAllEstimations();
 
                     </tr>
 
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             <?php else: ?>
 
@@ -1112,13 +954,3 @@ $estimators = $service->getAllEstimations();
 </body>
 
 </html>
-<?php foreach ($estimators as $row): ?>
-    <tr>
-        <td><?php echo htmlspecialchars($row['full_name']); ?></td>
-        <!-- ... populate other columns ... -->
-        <td>
-            <a href="../../public/admin/reports/estimators.php?action=delete&id=<?php echo $row['id']; ?>" 
-               onclick="return confirm('Delete?')">Delete</a>
-        </td>
-    </tr>
-<?php endforeach; ?>

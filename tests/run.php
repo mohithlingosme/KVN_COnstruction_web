@@ -11,7 +11,6 @@ if (!defined('CONFIG_PATH')) {
 
 // Load AdminController for admin tests
 require_once ROOT_PATH . '/app/controllers/admin/AdminController.php';
-require_once ROOT_PATH . '/app/models/Lead.php';
 
 
 $testFiles = glob(__DIR__ . '/*Test.php');

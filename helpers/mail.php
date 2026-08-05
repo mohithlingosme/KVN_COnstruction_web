@@ -955,66 +955,24 @@ function logMailActivity(
     string $error = ''
 ): void {
 
-    global $conn;
-
     try {
 
-        if (!isset($conn)) {
+        require_once __DIR__ . '/../app/repositories/MailRepository.php';
 
-            return;
-        }
+        $repo = new \App\Repositories\MailRepository();
 
-        $query = "
-
-            INSERT INTO mail_logs (
-
-                recipient,
-                subject,
-                status,
-                error_message,
-                ip_address,
-                created_at
-
-            )
-
-            VALUES (
-
-                :recipient,
-                :subject,
-                :status,
-                :error_message,
-                :ip_address,
-                NOW()
-            )
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':recipient' =>
+        $repo->log(
             $recipient,
-
-            ':subject' =>
             $subject,
-
-            ':status' =>
             $status,
-
-            ':error_message' =>
             $error,
+            $_SERVER['REMOTE_ADDR'] ?? 'Unknown'
+        );
 
-            ':ip_address' =>
-
-                $_SERVER['REMOTE_ADDR']
-                ?? 'Unknown'
-        ]);
-
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
 
         error_log(
-            'Mail log failed.'
+            'Mail log failed: ' . $e->getMessage()
         );
     }
 }

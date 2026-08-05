@@ -19,7 +19,8 @@ require_once '../../helpers/formatter.php';
 
 require_once '../../helpers/security.php';
 
-require_once '../../app/models/Lead.php';
+require_once '../../app/repositories/LeadRepository.php';
+require_once '../../bootstrap/providers/ServiceProvider.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -38,7 +39,7 @@ $pageTitle =
 
 require_once '../../app/controllers/admin/AdminController.php';
 
-$controller = new AdminController($conn);
+$controller = new AdminController();
 $data = $controller->dashboard();
 
 $totalUsers = $data['totalUsers'];

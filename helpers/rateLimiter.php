@@ -60,8 +60,7 @@ function currentRouteName()
 function checkRateLimit(
     $actionType,
     $maxAttempts = DEFAULT_RATE_LIMIT,
-    $decaySeconds = DEFAULT_RATE_WINDOW,
-    ?PDO $pdo = null
+    $decaySeconds = DEFAULT_RATE_WINDOW
 ) {
     $ident = limiterIdentifier();
     $route = currentRouteName();
@@ -224,5 +223,3 @@ function contactRateLimit()
 */
 
 cleanupExpiredRateLimits();
-</｜DSML｜parameter>
-</create_file>

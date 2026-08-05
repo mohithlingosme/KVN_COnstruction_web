@@ -29,18 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-
 require_once HELPER_PATH . '/csrf.php';
 require_once HELPER_PATH . '/security.php';
 require_once HELPER_PATH . '/rateLimiter.php';
+require_once __DIR__ . '/../app/repositories/EstimatorRepository.php';
 
-$conn = $GLOBALS['conn'] ?? null;
-
-if (!$conn) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database connection unavailable']);
-    exit;
-}
+use App\Repositories\EstimatorRepository;
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -50,14 +44,8 @@ $action = $_GET['action'] ?? '';
 // ============================================
 if ($method === 'GET' && $action === 'packages') {
     try {
-        $stmt = $conn->prepare(
-            "SELECT id, package_name, base_price, material_grade, estimated_timeline, description, features
-             FROM estimator_packages
-             WHERE status = 'Active'
-             ORDER BY id ASC"
-        );
-        $stmt->execute();
-        $packages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $repo = new EstimatorRepository();
+        $packages = $repo->getApiPackages();
 
         // Decode JSON features for each package
         foreach ($packages as &$pkg) {
@@ -112,15 +100,10 @@ if ($method === 'POST' && $action === 'calculate') {
     }
 
     try {
-        // Fetch package pricing
-        $stmt = $conn->prepare(
-            "SELECT id, package_name, base_price, material_grade, estimated_timeline, description
-             FROM estimator_packages
-             WHERE id = ? AND status = 'Active'
-             LIMIT 1"
-        );
-        $stmt->execute([$packageId]);
-        $package = $stmt->fetch(PDO::FETCH_ASSOC);
+        $repo = new EstimatorRepository();
+
+        // Fetch package pricing via repository
+        $package = $repo->getApiPackageById($packageId);
 
         if (!$package) {
             http_response_code(404);
@@ -133,35 +116,22 @@ if ($method === 'POST' && $action === 'calculate') {
         $basePrice = (float) $package['base_price'];
         $estimatedCost = $builtUpArea * $basePrice;
 
-        // Check estimator_pricing table for additional line items
-        // Use column names that match the actual database schema
+        // Check estimator_pricing table for additional line items via repository
         $pricingItems = [];
         $additionalCost = 0;
-        try {
-            $stmt2 = $conn->prepare(
-                "SELECT package_name, price_per_sqft, description
-                 FROM estimator_pricing
-                 WHERE package_id = ? AND status = 'Active'
-                 ORDER BY id ASC"
-            );
-            $stmt2->execute([$packageId]);
-            $pricingRows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+        $pricingRows = $repo->getApiPricingByPackage($packageId);
 
-            foreach ($pricingRows as $row) {
-                $itemTotal = (float) ($row['price_per_sqft'] ?? 0) * $builtUpArea;
-                $additionalCost += $itemTotal;
-                $pricingItems[] = [
-                    'item' => $row['package_name'] ?? 'Additional',
-                    'type' => 'material',
-                    'unit' => 'sqft',
-                    'rate' => (float) ($row['price_per_sqft'] ?? 0),
-                    'quantity' => $builtUpArea,
-                    'total' => $itemTotal
-                ];
-            }
-        } catch (Exception $e) {
-            // estimator_pricing table may not match expected schema; gracefully continue
-            error_log('Estimator pricing lookup warning: ' . $e->getMessage());
+        foreach ($pricingRows as $row) {
+            $itemTotal = (float) ($row['price_per_sqft'] ?? 0) * $builtUpArea;
+            $additionalCost += $itemTotal;
+            $pricingItems[] = [
+                'item' => $row['package_name'] ?? 'Additional',
+                'type' => 'material',
+                'unit' => 'sqft',
+                'rate' => (float) ($row['price_per_sqft'] ?? 0),
+                'quantity' => $builtUpArea,
+                'total' => $itemTotal
+            ];
         }
 
         $totalCost = $estimatedCost + $additionalCost;
@@ -233,11 +203,24 @@ if ($method === 'POST' && $action === 'lead') {
     }
 
     try {
-        $stmt = $conn->prepare(
-            "INSERT INTO estimator_leads (full_name, phone, email, location, plot_area, floors, package_id, estimated_cost, ip_address, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())"
-        );
-        $stmt->execute([$fullName, $phone, $email, $location, $plotSize, $floors, $packageId, $estimatedCost, $_SERVER['REMOTE_ADDR'] ?? null]);
+        $repo = new EstimatorRepository();
+        $leadId = $repo->saveApiLead([
+            'full_name'      => $fullName,
+            'phone'          => $phone,
+            'email'          => $email,
+            'location'       => $location,
+            'plot_area'      => $plotSize,
+            'floors'         => $floors,
+            'package_id'     => $packageId,
+            'estimated_cost' => $estimatedCost,
+            'ip_address'     => $_SERVER['REMOTE_ADDR'] ?? null,
+        ]);
+
+        if ($leadId <= 0) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Failed to save lead']);
+            exit;
+        }
 
         if (function_exists('logSecurityEvent')) {
             logSecurityEvent(null, 'api_estimator_lead', 'info', 'Lead saved via API: ' . $phone);

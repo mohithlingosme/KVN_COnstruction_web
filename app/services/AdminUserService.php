@@ -7,8 +7,6 @@ namespace App\Services;
 use App\Repositories\UserRepository;
 use App\Repositories\AuditRepository;
 use App\Repositories\SessionRepository;
-use App\Core\Database;
-use PDO;
 
 /**
  * Admin User Service - Business logic for admin user management.
@@ -19,7 +17,6 @@ class AdminUserService
     private UserRepository $userRepo;
     private ?AuditRepository $auditRepo;
     private ?SessionRepository $sessionRepo;
-    private PDO $db;
 
     public function __construct(
         ?UserRepository $userRepo = null,
@@ -29,10 +26,6 @@ class AdminUserService
         $this->userRepo = $userRepo ?? new UserRepository();
         $this->auditRepo = $auditRepo;
         $this->sessionRepo = $sessionRepo;
-
-        // Get PDO connection for transactional operations
-        $conn = \App\Core\Database::getInstance()->getConnection();
-        $this->db = $conn;
     }
 
     /**
@@ -167,7 +160,7 @@ class AdminUserService
                 $updateData['password_hash'] = password_hash($data['password'], PASSWORD_BCRYPT);
             }
 
-            // Build and execute UPDATE query
+            // Delegate to repository
             $ok = $this->userRepo->updateUser($id, $updateData);
 
             if (!$ok) {
@@ -240,26 +233,23 @@ class AdminUserService
                 }
             }
 
-            // Start transaction for cleanup
-            $this->db->beginTransaction();
+            // Delete user sessions via SessionRepository
+            if ($this->sessionRepo === null) {
+                $this->sessionRepo = new SessionRepository();
+            }
+            $this->sessionRepo->deleteByUserId($id);
 
-            try {
-                // Delete user sessions
-                $stmt = $this->db->prepare("DELETE FROM user_sessions WHERE user_id = :user_id");
-                $stmt->execute([':user_id' => $id]);
+            // Delete security logs via UserRepository
+            $this->userRepo->deleteSecurityLogsByUserId($id);
 
-                // Delete security logs
-                $stmt = $this->db->prepare("DELETE FROM security_logs WHERE user_id = :user_id");
-                $stmt->execute([':user_id' => $id]);
+            // Delete the user via UserRepository
+            $ok = $this->userRepo->deleteUser($id);
 
-                // Delete the user
-                $stmt = $this->db->prepare("DELETE FROM users WHERE id = :id LIMIT 1");
-                $stmt->execute([':id' => $id]);
-
-                $this->db->commit();
-            } catch (\Throwable $e) {
-                $this->db->rollBack();
-                throw $e;
+            if (!$ok) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to delete user.',
+                ];
             }
 
             // Log security event
@@ -288,18 +278,7 @@ class AdminUserService
      */
     public function getUserActivity(int $userId, int $limit = 10): array
     {
-        try {
-            $stmt = $this->db->prepare(
-                "SELECT * FROM security_logs WHERE user_id = :user_id ORDER BY created_at DESC LIMIT :limit"
-            );
-            $stmt->bindValue(':user_id', $userId, \PDO::PARAM_INT);
-            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll() ?: [];
-        } catch (\Throwable $e) {
-            error_log('AdminUserService::getUserActivity error: ' . $e->getMessage());
-            return [];
-        }
+        return $this->userRepo->getUserActivity($userId, $limit);
     }
 
     /**
@@ -366,4 +345,3 @@ class AdminUserService
         }
     }
 }
-

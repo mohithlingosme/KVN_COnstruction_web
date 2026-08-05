@@ -4,10 +4,10 @@ use PDO;
 use PDOException;
 
 /**
- * Legacy Database connection class (global namespace)
+ * Database connection class (global namespace)
  *
- * Retained for backward compatibility with core/Model.php and
- * legacy procedural code that uses `$GLOBALS['conn']`.
+ * Provides the PDO singleton used by repository classes
+ * via Database::getInstance()->getConnection().
  *
  * NOTE: PSR-4 code should use App\Core\Database (app/Core/Database.php) instead.
  *

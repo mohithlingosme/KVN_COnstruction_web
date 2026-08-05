@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select `kvnc_platform`.`projects`.`id` AS `id`,`kvnc_platform`.`projects`.`project_code` AS `project_code`,`kvnc_platform`.`projects`.`title` AS `title`,`kvnc_platform`.`projects`.`name` AS `name`,`kvnc_platform`.`projects`.`project_name` AS `project_name`,`kvnc_platform`.`projects`.`project_type` AS `project_type`,`kvnc_platform`.`projects`.`slug` AS `slug`,`kvnc_platform`.`projects`.`client_id` AS `client_id`,`kvnc_platform`.`projects`.`client_user_id` AS `client_user_id`,`kvnc_platform`.`projects`.`lead_id` AS `lead_id`,`kvnc_platform`.`projects`.`quotation_id` AS `quotation_id`,`kvnc_platform`.`projects`.`status_id` AS `status_id`,`kvnc_platform`.`projects`.`location` AS `location`,`kvnc_platform`.`projects`.`description` AS `description`,`kvnc_platform`.`projects`.`budget` AS `budget`,`kvnc_platform`.`projects`.`progress` AS `progress`,`kvnc_platform`.`projects`.`start_date` AS `start_date`,`kvnc_platform`.`projects`.`end_date` AS `end_date`,`kvnc_platform`.`projects`.`project_image` AS `project_image`,`kvnc_platform`.`projects`.`created_by` AS `created_by`,`kvnc_platform`.`projects`.`updated_by` AS `updated_by`,`kvnc_platform`.`projects`.`status` AS `status`,`kvnc_platform`.`projects`.`created_at` AS `created_at`,`kvnc_platform`.`projects`.`updated_at` AS `updated_at`,`kvnc_platform`.`projects`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`projects`
+md5=bbd657ea01689e579a1aee2bf04c83a8
+updatable=1
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=2
+with_check_option=0
+timestamp=0001785844015511140
+create-version=2
+source=SELECT * FROM projects
+client_cs_name=utf8mb4
+connection_cl_name=utf8mb4_general_ci
+view_body_utf8=select `kvnc_platform`.`projects`.`id` AS `id`,`kvnc_platform`.`projects`.`project_code` AS `project_code`,`kvnc_platform`.`projects`.`title` AS `title`,`kvnc_platform`.`projects`.`name` AS `name`,`kvnc_platform`.`projects`.`project_name` AS `project_name`,`kvnc_platform`.`projects`.`project_type` AS `project_type`,`kvnc_platform`.`projects`.`slug` AS `slug`,`kvnc_platform`.`projects`.`client_id` AS `client_id`,`kvnc_platform`.`projects`.`client_user_id` AS `client_user_id`,`kvnc_platform`.`projects`.`lead_id` AS `lead_id`,`kvnc_platform`.`projects`.`quotation_id` AS `quotation_id`,`kvnc_platform`.`projects`.`status_id` AS `status_id`,`kvnc_platform`.`projects`.`location` AS `location`,`kvnc_platform`.`projects`.`description` AS `description`,`kvnc_platform`.`projects`.`budget` AS `budget`,`kvnc_platform`.`projects`.`progress` AS `progress`,`kvnc_platform`.`projects`.`start_date` AS `start_date`,`kvnc_platform`.`projects`.`end_date` AS `end_date`,`kvnc_platform`.`projects`.`project_image` AS `project_image`,`kvnc_platform`.`projects`.`created_by` AS `created_by`,`kvnc_platform`.`projects`.`updated_by` AS `updated_by`,`kvnc_platform`.`projects`.`status` AS `status`,`kvnc_platform`.`projects`.`created_at` AS `created_at`,`kvnc_platform`.`projects`.`updated_at` AS `updated_at`,`kvnc_platform`.`projects`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`projects`
+mariadb-version=100432

@@ -2,147 +2,40 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+
+require_once '../../../middleware/admin.php';
+
+require_once '../../../helpers/security.php';
+
+require_once '../../includes/repositories.php';
 
 /*
+|
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| REPOSITORY
+|
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
+$reportRepo = repo('Report');
 
 /*
+|
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
+| PAGE TITLE
+|
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+$pageTitle =
+'Leads Report | ' . APP_NAME;
 
 /*
-|--------------------------------------------------------------------------
-| CREATE LEADS TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS leads (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        full_name VARCHAR(255) NOT NULL,
-
-        phone VARCHAR(50) NOT NULL,
-
-        email VARCHAR(255) NOT NULL,
-
-        project_type VARCHAR(255) NOT NULL,
-
-        project_location VARCHAR(255) NOT NULL,
-
-        budget VARCHAR(100) NOT NULL,
-
-        lead_source VARCHAR(255) NOT NULL,
-
-        status ENUM('New','Contacted','Qualified','Closed')
-        NOT NULL DEFAULT 'New',
-
-        notes TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM leads
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO leads
-        (
-
-            full_name,
-            phone,
-            email,
-            project_type,
-            project_location,
-            budget,
-            lead_source,
-            status,
-            notes
-
-        )
-
-        VALUES
-
-        (
-            'Rahul Sharma',
-            '9876543210',
-            'rahul@gmail.com',
-            'Luxury Villa',
-            'Bangalore',
-            '₹80 Lakhs',
-            'Website',
-            'New',
-            'Interested in turnkey construction.'
-        ),
-
-        (
-            'Sneha Reddy',
-            '9988776655',
-            'sneha@gmail.com',
-            'Duplex House',
-            'Hyderabad',
-            '₹1.2 Crore',
-            'Instagram',
-            'Contacted',
-            'Requested call back next week.'
-        ),
-
-        (
-            'Arjun Kumar',
-            '9123456789',
-            'arjun@gmail.com',
-            'Commercial Building',
-            'Chennai',
-            '₹3 Crore',
-            'Referral',
-            'Qualified',
-            'Ready for project discussion.'
-        )
-        "
-    );
-}
-
-/*
+|
 |--------------------------------------------------------------------------
 | ADD LEAD
+|
 |--------------------------------------------------------------------------
 */
 
@@ -198,58 +91,35 @@ if (
 
     if ($error === '') {
 
-        $stmt =
-            $conn->prepare(
-                "
-                INSERT INTO leads
-                (
-
-                    full_name,
-                    phone,
-                    email,
-                    project_type,
-                    project_location,
-                    budget,
-                    lead_source,
-                    status,
-                    notes
-
-                )
-
-                VALUES
-
-                (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                "
-            );
-
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'sssssssss',
-                $fullName,
-                $phone,
-                $email,
-                $projectType,
-                $projectLocation,
-                $budget,
-                $leadSource,
-                $status,
-                $notes
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+        try {
+            $reportRepo
+                ? $reportRepo->insertLeadReport([
+                    'full_name'         => $fullName,
+                    'phone'             => $phone,
+                    'email'             => $email,
+                    'project_type'      => $projectType,
+                    'project_location'  => $projectLocation,
+                    'budget'            => $budget,
+                    'lead_source'       => $leadSource,
+                    'status'            => $status,
+                    'notes'             => $notes,
+                ])
+                : false;
 
             $success =
                 'Lead added successfully.';
+        } catch (Exception $e) {
+            $error =
+                'Failed to add lead.';
         }
     }
 }
 
 /*
+|
 |--------------------------------------------------------------------------
 | DELETE LEAD
+|
 |--------------------------------------------------------------------------
 */
 
@@ -258,51 +128,44 @@ if (isset($_GET['delete'])) {
     $id =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM leads
-            WHERE id = ?
-            "
+    try {
+        $reportRepo
+            ? $reportRepo->deleteLeadReport($id)
+            : false;
+
+        header(
+            'Location: leads.php'
         );
 
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $id
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+        exit();
+    } catch (Exception $e) {
+        $error = 'Failed to delete lead.';
     }
-
-    header(
-        'Location: leads.php'
-    );
-
-    exit();
 }
 
 /*
+|
 |--------------------------------------------------------------------------
 | FETCH LEADS
+|
 |--------------------------------------------------------------------------
 */
 
-$leads =
-    $conn->query(
-        "
-        SELECT *
-        FROM leads
-        ORDER BY id DESC
-        "
-    );
+$leads = [];
+
+try {
+    if ($reportRepo) {
+        $leads = $reportRepo->getLeadReports();
+    }
+} catch (Exception $e) {
+    $error = 'Failed to load leads.';
+}
 
 /*
+|
 |--------------------------------------------------------------------------
 | LEAD COUNTS
+|
 |--------------------------------------------------------------------------
 */
 
@@ -312,34 +175,29 @@ $contactedLeads  = 0;
 $qualifiedLeads  = 0;
 $closedLeads     = 0;
 
-if ($leads && $leads->num_rows() > 0) {
+foreach ($leads as $calc) {
 
-    while ($calc = $leads->fetch_assoc()) {
+    $totalLeads++;
 
-        $totalLeads++;
+    if ($calc['status'] === 'New') {
 
-        if ($calc['status'] === 'New') {
-
-            $newLeads++;
-        }
-
-        if ($calc['status'] === 'Contacted') {
-
-            $contactedLeads++;
-        }
-
-        if ($calc['status'] === 'Qualified') {
-
-            $qualifiedLeads++;
-        }
-
-        if ($calc['status'] === 'Closed') {
-
-            $closedLeads++;
-        }
+        $newLeads++;
     }
 
-    $leads->data_seek(0);
+    if ($calc['status'] === 'Contacted') {
+
+        $contactedLeads++;
+    }
+
+    if ($calc['status'] === 'Qualified') {
+
+        $qualifiedLeads++;
+    }
+
+    if ($calc['status'] === 'Closed') {
+
+        $closedLeads++;
+    }
 }
 
 ?>
@@ -380,7 +238,7 @@ if ($leads && $leads->num_rows() > 0) {
 
         .container{
 
-            max-width:1500px;
+            max-width:1600px;
 
             margin:auto;
         }
@@ -969,9 +827,9 @@ if ($leads && $leads->num_rows() > 0) {
 
             <tbody>
 
-            <?php if ($leads && $leads->num_rows() > 0): ?>
+            <?php if (!empty($leads)): ?>
 
-                <?php while ($row = $leads->fetch_assoc()): ?>
+                <?php foreach ($leads as $row): ?>
 
                     <tr>
 
@@ -1041,7 +899,7 @@ if ($leads && $leads->num_rows() > 0) {
 
                     </tr>
 
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             <?php else: ?>
 

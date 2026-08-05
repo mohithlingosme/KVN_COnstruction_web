@@ -126,4 +126,260 @@ class SettingsRepository
         }
         return $map;
     }
+
+    // ========================================================================
+    // GENERAL SETTINGS (general_settings table)
+    // ========================================================================
+
+    public function getGeneralSettings(): ?array
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM general_settings LIMIT 1");
+            $stmt->execute();
+            $res = $stmt->fetch();
+            return $res ?: null;
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::getGeneralSettings error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function generalSettingsExist(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT id FROM general_settings LIMIT 1");
+            $stmt->execute();
+            return (bool) $stmt->fetch();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function insertGeneralSettings(array $data): bool
+    {
+        try {
+            $cols = array_keys($data);
+            $placeholders = array_map(fn($c) => ':' . $c, $cols);
+            $sql = "INSERT INTO general_settings (" . implode(', ', $cols) . ")
+                    VALUES (" . implode(', ', $placeholders) . ")";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::insertGeneralSettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateGeneralSettings(array $data): bool
+    {
+        try {
+            $sets = array_map(fn($c) => "{$c} = :{$c}", array_keys($data));
+            $sql = "UPDATE general_settings SET " . implode(', ', $sets) . " WHERE id = 1";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::updateGeneralSettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ========================================================================
+    // SMS SETTINGS (sms_settings table)
+    // ========================================================================
+
+    public function getSmsSettings(): ?array
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM sms_settings LIMIT 1");
+            $stmt->execute();
+            $res = $stmt->fetch();
+            return $res ?: null;
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::getSmsSettings error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function smsSettingsExist(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT id FROM sms_settings LIMIT 1");
+            $stmt->execute();
+            return (bool) $stmt->fetch();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function insertSmsSettings(array $data): bool
+    {
+        try {
+            $cols = array_keys($data);
+            $placeholders = array_map(fn($c) => ':' . $c, $cols);
+            $sql = "INSERT INTO sms_settings (" . implode(', ', $cols) . ")
+                    VALUES (" . implode(', ', $placeholders) . ")";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::insertSmsSettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateSmsSettings(array $data): bool
+    {
+        try {
+            $sets = array_map(fn($c) => "{$c} = :{$c}", array_keys($data));
+            $sql = "UPDATE sms_settings SET " . implode(', ', $sets) . " WHERE id = 1";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::updateSmsSettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ========================================================================
+    // INTEGRATION SETTINGS (integration_settings table)
+    // ========================================================================
+
+    public function getIntegrationSettings(): ?array
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM integration_settings LIMIT 1");
+            $stmt->execute();
+            $res = $stmt->fetch();
+            return $res ?: null;
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::getIntegrationSettings error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function integrationSettingsExist(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT id FROM integration_settings LIMIT 1");
+            $stmt->execute();
+            return (bool) $stmt->fetch();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function insertIntegrationSettings(array $data): bool
+    {
+        try {
+            $cols = array_keys($data);
+            $placeholders = array_map(fn($c) => ':' . $c, $cols);
+            $sql = "INSERT INTO integration_settings (" . implode(', ', $cols) . ")
+                    VALUES (" . implode(', ', $placeholders) . ")";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::insertIntegrationSettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateIntegrationSettings(array $data): bool
+    {
+        try {
+            $sets = array_map(fn($c) => "{$c} = :{$c}", array_keys($data));
+            $sql = "UPDATE integration_settings SET " . implode(', ', $sets) . " WHERE id = 1";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::updateIntegrationSettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ========================================================================
+    // SECURITY SETTINGS (security_settings table)
+    // ========================================================================
+
+    public function getSecuritySettings(): ?array
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM security_settings LIMIT 1");
+            $stmt->execute();
+            $res = $stmt->fetch();
+            return $res ?: null;
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::getSecuritySettings error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function securitySettingsExist(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT id FROM security_settings LIMIT 1");
+            $stmt->execute();
+            return (bool) $stmt->fetch();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function insertSecuritySettings(array $data): bool
+    {
+        try {
+            $cols = array_keys($data);
+            $placeholders = array_map(fn($c) => ':' . $c, $cols);
+            $sql = "INSERT INTO security_settings (" . implode(', ', $cols) . ")
+                    VALUES (" . implode(', ', $placeholders) . ")";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::insertSecuritySettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function updateSecuritySettings(array $data): bool
+    {
+        try {
+            $sets = array_map(fn($c) => "{$c} = :{$c}", array_keys($data));
+            $sql = "UPDATE security_settings SET " . implode(', ', $sets) . " WHERE id = 1";
+            $stmt = $this->db->prepare($sql);
+            $params = [];
+            foreach ($data as $k => $v) {
+                $params[':' . $k] = $v;
+            }
+            return $stmt->execute($params);
+        } catch (\Throwable $e) {
+            error_log('SettingsRepository::updateSecuritySettings error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

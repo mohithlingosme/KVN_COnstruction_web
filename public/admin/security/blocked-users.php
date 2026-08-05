@@ -2,106 +2,44 @@
 
 declare(strict_types=1);
 
-session_start();
-
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| KVN CONSTRUCTION PLATFORM
+|--------------------------------------------------------------------------
+| SECURITY - BLOCKED USERS
+|--------------------------------------------------------------------------
+| REFACTORED: All SQL delegated to SecurityAdminRepository.
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
+require_once '../../../config/app.php';
 
-    header('Location: ../login.php');
-    exit();
-}
+require_once '../../../middleware/admin.php';
 
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
+require_once '../../../helpers/security.php';
 
-require_once '../../includes/db.php';
+require_once '../../../helpers/formatter.php';
+
+require_once '../../../includes/repositories.php';
+
+require_once '../../../bootstrap/providers/ServiceProvider.php';
 
 /*
 |--------------------------------------------------------------------------
-| CREATE BLOCKED USERS TABLE
+| PAGE TITLE
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS blocked_users (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        email VARCHAR(255) NOT NULL,
-
-        ip_address VARCHAR(100) NOT NULL,
-
-        reason TEXT NOT NULL,
-
-        blocked_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP,
-
-        status ENUM('blocked','unblocked')
-        NOT NULL DEFAULT 'blocked'
-
-    )
-    "
-);
+$pageTitle =
+'Blocked Users | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEMO DATA
+| REPOSITORY
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM blocked_users
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO blocked_users
-        (
-
-            email,
-            ip_address,
-            reason,
-            status
-
-        )
-
-        VALUES
-
-        (
-            'hacker@example.com',
-            '192.168.1.100',
-            'Multiple failed login attempts detected.',
-            'blocked'
-        ),
-
-        (
-            'spamuser@gmail.com',
-            '10.0.0.5',
-            'Spam activity detected.',
-            'blocked'
-        )
-        "
-    );
-}
+$securityRepo = repo('SecurityAdmin');
 
 /*
 |--------------------------------------------------------------------------
@@ -136,42 +74,21 @@ if (
             'Please fill all fields.';
     }
 
-    if ($error === '') {
+    if ($error === '' && $securityRepo) {
 
-        $stmt =
-            $conn->prepare(
-                "
-                INSERT INTO blocked_users
-                (
+        $ok = $securityRepo->insertBlockedUser([
+            'email'     => $email,
+            'ip_address'=> $ipAddress,
+            'reason'    => $reason,
+            'status'    => 'blocked',
+        ]);
 
-                    email,
-                    ip_address,
-                    reason,
-                    status
-
-                )
-
-                VALUES
-
-                (?, ?, ?, 'blocked')
-                "
-            );
-
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'sss',
-                $email,
-                $ipAddress,
-                $reason
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
-
+        if ($ok) {
             $success =
                 'User blocked successfully.';
+        } else {
+            $error =
+                'Failed to block user.';
         }
     }
 }
@@ -187,25 +104,8 @@ if (isset($_GET['unblock'])) {
     $id =
         (int) $_GET['unblock'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            UPDATE blocked_users
-            SET status = 'unblocked'
-            WHERE id = ?
-            "
-        );
-
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $id
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+    if ($securityRepo) {
+        $securityRepo->unblockUser($id);
     }
 
     header(
@@ -226,24 +126,8 @@ if (isset($_GET['delete'])) {
     $id =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM blocked_users
-            WHERE id = ?
-            "
-        );
-
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $id
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+    if ($securityRepo) {
+        $securityRepo->deleteBlockedUser($id);
     }
 
     header(
@@ -259,14 +143,11 @@ if (isset($_GET['delete'])) {
 |--------------------------------------------------------------------------
 */
 
-$users =
-    $conn->query(
-        "
-        SELECT *
-        FROM blocked_users
-        ORDER BY id DESC
-        "
-    );
+$users = [];
+
+if ($securityRepo) {
+    $users = $securityRepo->getBlockedUsers();
+}
 
 ?>
 
@@ -679,16 +560,16 @@ $users =
 
         <tbody>
 
-        <?php if ($users && $users->num_rows() > 0): ?>
+        <?php if (!empty($users)): ?>
 
-            <?php while ($row = $users->fetch_assoc()): ?>
+            <?php foreach ($users as $row): ?>
 
                 <tr>
 
                     <td>
 
                         <?php
-                            echo (int)$row['id'];
+                            echo (int)($row['id'] ?? 0);
                         ?>
 
                     </td>
@@ -697,7 +578,7 @@ $users =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['email']
+                                (string)($row['email'] ?? '')
                             );
                         ?>
 
@@ -707,7 +588,7 @@ $users =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['ip_address']
+                                (string)($row['ip_address'] ?? '')
                             );
                         ?>
 
@@ -717,7 +598,7 @@ $users =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['reason']
+                                (string)($row['reason'] ?? '')
                             );
                         ?>
 
@@ -726,13 +607,13 @@ $users =
                     <td>
 
                         <span
-                            class="badge <?php echo htmlspecialchars((string)$row['status']); ?>"
+                            class="badge <?php echo htmlspecialchars((string)($row['status'] ?? '')); ?>"
                         >
 
                             <?php
                                 echo ucfirst(
                                     htmlspecialchars(
-                                        (string)$row['status']
+                                        (string)($row['status'] ?? '')
                                     )
                                 );
                             ?>
@@ -745,7 +626,7 @@ $users =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['blocked_at']
+                                (string)($row['blocked_at'] ?? '')
                             );
                         ?>
 
@@ -753,10 +634,10 @@ $users =
 
                     <td>
 
-                        <?php if ($row['status'] === 'blocked'): ?>
+                        <?php if (($row['status'] ?? '') === 'blocked'): ?>
 
                             <a
-                                href="?unblock=<?php echo (int)$row['id']; ?>"
+                                href="?unblock=<?php echo (int)($row['id'] ?? 0); ?>"
                                 class="action-btn unblock"
                                 onclick="return confirm('Unblock this user?')"
                             >
@@ -766,7 +647,7 @@ $users =
                         <?php endif; ?>
 
                         <a
-                            href="?delete=<?php echo (int)$row['id']; ?>"
+                            href="?delete=<?php echo (int)($row['id'] ?? 0); ?>"
                             class="action-btn delete"
                             onclick="return confirm('Delete this record?')"
                         >
@@ -777,7 +658,7 @@ $users =
 
                 </tr>
 
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         <?php else: ?>
 

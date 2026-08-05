@@ -1,12 +1,18 @@
 <?php
 
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/../../app/repositories/SessionRepository.php';
 
+use App\Repositories\SessionRepository;
+
+/**
+ * SessionManager - Legacy compatibility wrapper.
+ * All SQL delegated to SessionRepository.
+ */
 class SessionManager {
-    private $db;
+    private ?SessionRepository $sessionRepo;
 
-    public function __construct() {
-        $this->db = Database::getInstance()->getConnection();
+    public function __construct(?SessionRepository $sessionRepo = null) {
+        $this->sessionRepo = $sessionRepo ?? new SessionRepository();
     }
 
     public function createSession($userId, $ipAddress, $userAgent) {
@@ -20,17 +26,18 @@ class SessionManager {
         $sessionId = session_id();
         
         try {
-            $stmt = $this->db->prepare("
-                INSERT INTO sessions (id, user_id, ip_address, user_agent, last_activity) 
-                VALUES (:id, :user_id, :ip_address, :user_agent, NOW())
-            ");
+            $fingerprint = hash('sha256', ($ipAddress ?? '') . ($userAgent ?? ''));
+            $deviceHash = hash('sha256', ($ipAddress ?? '') . ($userAgent ?? ''));
             
-            $stmt->execute([
-                ':id' => $sessionId,
-                ':user_id' => $userId,
-                ':ip_address' => $ipAddress,
-                ':user_agent' => $userAgent
-            ]);
+            $this->sessionRepo->create(
+                (int) $userId,
+                $sessionId,
+                $fingerprint,
+                $deviceHash,
+                $ipAddress,
+                $userAgent,
+                false
+            );
             
             // Set basic session variables
             $_SESSION['user_id'] = $userId;
@@ -38,7 +45,7 @@ class SessionManager {
             
             return $sessionId;
             
-        } catch (PDOException $e) {
+        } catch (\Throwable $e) {
             error_log("Session Creation Failed: " . $e->getMessage());
             return false;
         }
@@ -46,9 +53,8 @@ class SessionManager {
 
     public function destroySession($sessionId) {
         try {
-            // Remove from the database
-            $stmt = $this->db->prepare("DELETE FROM sessions WHERE id = :id");
-            $stmt->execute([':id' => $sessionId]);
+            // Remove from the database via SessionRepository
+            $this->sessionRepo->deleteByToken($sessionId);
             
             // Destroy the actual PHP session
             if (session_status() === PHP_SESSION_ACTIVE) {
@@ -58,8 +64,18 @@ class SessionManager {
                 setcookie(session_name(), '', time() - 3600, '/');
             }
             return true;
-        } catch (PDOException $e) {
+        } catch (\Throwable $e) {
             error_log("Session Destruction Failed: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function destroyAllUserSessions($userId) {
+        try {
+            $this->sessionRepo->deleteByUserId((int) $userId);
+            return true;
+        } catch (\Throwable $e) {
+            error_log("Session Destruction (All) Failed: " . $e->getMessage());
             return false;
         }
     }

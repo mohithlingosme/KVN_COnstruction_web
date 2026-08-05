@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select `kvnc_platform`.`blogs`.`id` AS `id`,`kvnc_platform`.`blogs`.`title` AS `title`,`kvnc_platform`.`blogs`.`name` AS `name`,`kvnc_platform`.`blogs`.`slug` AS `slug`,`kvnc_platform`.`blogs`.`category_id` AS `category_id`,`kvnc_platform`.`blogs`.`category` AS `category`,`kvnc_platform`.`blogs`.`excerpt` AS `excerpt`,`kvnc_platform`.`blogs`.`content` AS `content`,`kvnc_platform`.`blogs`.`featured_image` AS `featured_image`,`kvnc_platform`.`blogs`.`meta_title` AS `meta_title`,`kvnc_platform`.`blogs`.`meta_description` AS `meta_description`,`kvnc_platform`.`blogs`.`tags` AS `tags`,`kvnc_platform`.`blogs`.`status` AS `status`,`kvnc_platform`.`blogs`.`is_featured` AS `is_featured`,`kvnc_platform`.`blogs`.`author_id` AS `author_id`,`kvnc_platform`.`blogs`.`views_count` AS `views_count`,`kvnc_platform`.`blogs`.`published_at` AS `published_at`,`kvnc_platform`.`blogs`.`created_at` AS `created_at`,`kvnc_platform`.`blogs`.`updated_at` AS `updated_at`,`kvnc_platform`.`blogs`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`blogs`
+md5=13e31c776b0ab21dc74931d861faaaae
+updatable=1
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=2
+with_check_option=0
+timestamp=0001785844015505300
+create-version=2
+source=SELECT * FROM blogs
+client_cs_name=utf8mb4
+connection_cl_name=utf8mb4_general_ci
+view_body_utf8=select `kvnc_platform`.`blogs`.`id` AS `id`,`kvnc_platform`.`blogs`.`title` AS `title`,`kvnc_platform`.`blogs`.`name` AS `name`,`kvnc_platform`.`blogs`.`slug` AS `slug`,`kvnc_platform`.`blogs`.`category_id` AS `category_id`,`kvnc_platform`.`blogs`.`category` AS `category`,`kvnc_platform`.`blogs`.`excerpt` AS `excerpt`,`kvnc_platform`.`blogs`.`content` AS `content`,`kvnc_platform`.`blogs`.`featured_image` AS `featured_image`,`kvnc_platform`.`blogs`.`meta_title` AS `meta_title`,`kvnc_platform`.`blogs`.`meta_description` AS `meta_description`,`kvnc_platform`.`blogs`.`tags` AS `tags`,`kvnc_platform`.`blogs`.`status` AS `status`,`kvnc_platform`.`blogs`.`is_featured` AS `is_featured`,`kvnc_platform`.`blogs`.`author_id` AS `author_id`,`kvnc_platform`.`blogs`.`views_count` AS `views_count`,`kvnc_platform`.`blogs`.`published_at` AS `published_at`,`kvnc_platform`.`blogs`.`created_at` AS `created_at`,`kvnc_platform`.`blogs`.`updated_at` AS `updated_at`,`kvnc_platform`.`blogs`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`blogs`
+mariadb-version=100432

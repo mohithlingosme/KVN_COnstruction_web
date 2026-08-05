@@ -57,7 +57,7 @@ function registerSqliteNow(PDO $pdo): void
 
 // Ensure base helpers / models are loaded for non-namespaced controller usage
 
-require_once ROOT_PATH . '/app/models/User.php';
+
 
 // AuthController refers to User class without namespace; create an alias if needed.
 if (!class_exists('User') && class_exists('App\Models\User')) {
@@ -155,5 +155,6 @@ if (!function_exists('sanitize')) {
         return trim($value);
     }
 }
+
 
 

@@ -9,20 +9,15 @@ require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
  * AdminController - Thin controller
  * Provides dashboard data by delegating to services and repositories
  * No SQL, no business logic - pure orchestration
+ * Repositories self-inject their PDO connection via Database::getInstance().
  */
 class AdminController
 {
-    private PDO $conn;
     private UserRepository $userRepo;
 
-    public function __construct(?PDO $database = null)
+    public function __construct()
     {
-        if ($database instanceof PDO) {
-            $this->conn = $database;
-        } else {
-            $this->conn = ServiceProvider::getDatabase();
-        }
-        $this->userRepo = new UserRepository($this->conn);
+        $this->userRepo = new UserRepository();
     }
 
     /**
@@ -49,7 +44,7 @@ class AdminController
         }
 
         try {
-            $leadRepo = new LeadRepository($this->conn);
+            $leadRepo = new LeadRepository();
             $data['totalLeads'] = $leadRepo->count();
             $data['recentLeads'] = $leadRepo->findLatest(5);
         } catch (\Throwable $e) {
@@ -58,14 +53,14 @@ class AdminController
         }
 
         try {
-            $projectRepo = new ProjectRepository($this->conn);
+            $projectRepo = new ProjectRepository();
             $data['recentProjects'] = $projectRepo->findAllWithClient('projects.id DESC', 5);
         } catch (\Throwable $e) {
             $data['recentProjects'] = [];
         }
 
         try {
-            $blogRepo = new BlogRepository($this->conn);
+            $blogRepo = new BlogRepository();
             $data['recentBlogs'] = $blogRepo->findAll('id DESC', 5);
         } catch (\Throwable $e) {
             $data['recentBlogs'] = [];
@@ -81,7 +76,7 @@ class AdminController
     private function getLatest(string $table, int $limit = 5): array
     {
         try {
-            $dashboardRepo = new \App\Repositories\DashboardRepository($this->conn);
+            $dashboardRepo = new \App\Repositories\DashboardRepository();
             return $dashboardRepo->getRecent($table, $limit);
         } catch (\Throwable $e) {
             error_log("AdminController getLatest({$table}) failed: " . $e->getMessage());

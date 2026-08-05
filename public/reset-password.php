@@ -33,15 +33,13 @@ require_once ROOT_PATH . '/helpers/csrf.php';
 
 require_once ROOT_PATH . '/helpers/rateLimiter.php';
 
-require_once ROOT_PATH . '/app/models/User.php';
+require_once ROOT_PATH . '/app/repositories/UserRepository.php';
 
-require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
 
 require_once ROOT_PATH . '/middleware/guest.php';
 
 require_once ROOT_PATH . '/app/security/SessionManager.php';
-
-use App\Security\SessionManager;
 
 /*
 |--------------------------------------------------------------------------
@@ -219,14 +217,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    $userModel = new \App\Models\User($GLOBALS['conn']);
+    $userRepo = ServiceProvider::get('UserRepository');
 
     $updated =
-    $userModel->updatePassword(
-
+    $userRepo->updateUser(
         $userId,
-
-        $password
+        ['password' => $password]
     );
 
     if (!$updated) {
@@ -243,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    $userModel->expireOtp($userId, 'password_reset');
+    $userRepo->expireOtp($userId, 'password_reset');
 
     /*
     |--------------------------------------------------------------------------
@@ -270,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    $sessionManager = new SessionManager($GLOBALS['conn']);
+    $sessionManager = new SessionManager();
     $sessionManager->destroyAllUserSessions($userId);
 
     unset(

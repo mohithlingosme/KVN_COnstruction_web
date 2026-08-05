@@ -23,6 +23,8 @@ require_once '../../../helpers/session.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -42,33 +44,11 @@ $quotations = [];
 
 try {
 
-    $query = "
+    $quotationRepo = repo('Quotation');
 
-        SELECT
-            q.*,
-
-            u.full_name AS client_name,
-
-            p.project_name
-
-        FROM quotations q
-
-        LEFT JOIN users u
-        ON q.client_id = u.id
-
-        LEFT JOIN projects p
-        ON q.project_id = p.id
-
-        ORDER BY q.id DESC
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute();
-
-    $quotations =
-    $stmt->fetchAll();
+    if ($quotationRepo) {
+        $quotations = $quotationRepo->findAllWithDetails();
+    }
 
 } catch(Exception $e){
 

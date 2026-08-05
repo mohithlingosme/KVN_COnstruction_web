@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 require_once '../../config/app.php';
 require_once ROOT_PATH . '/helpers/security.php';
-require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
+require_once ROOT_PATH . '/app/repositories/UserRepository.php';
+require_once ROOT_PATH . '/app/repositories/SessionRepository.php';
+require_once ROOT_PATH . '/app/repositories/AuditRepository.php';
+require_once ROOT_PATH . '/app/services/AuthService.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
 
 header('Content-Type: application/json');
 
@@ -28,10 +32,19 @@ if (!verifyCsrfToken($_POST['_token'] ?? $_POST['csrf_token'] ?? null)) {
 
 $phone = (string) ($_SESSION['otp_phone'] ?? '');
 
-$controller = new AuthController($conn);
-$result = $controller->sendLoginOtp($phone);
+if (empty($phone)) {
+    http_response_code(400);
+    echo json_encode([
+        'success' => false,
+        'message' => 'No OTP session found.'
+    ]);
+    exit;
+}
+
+$authService = ServiceProvider::get('AuthService');
+$result = $authService->sendOtp($phone);
 
 echo json_encode([
-    'success' => (bool) $result['status'],
+    'success' => (bool) $result['success'],
     'message' => $result['message']
 ]);

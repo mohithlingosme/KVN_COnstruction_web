@@ -4,20 +4,26 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../core/Service.php';
 
+use App\Repositories\UserRepository;
+use App\Repositories\SessionRepository;
+use App\Repositories\AuditRepository;
+
 /**
  * AuthService - All authentication business logic
  * Replaces: helpers/auth.php, helpers/session.php, helpers/otp.php partial
- * SQL queries delegated to UserRepository
+ * SQL queries delegated to UserRepository, SessionRepository, AuditRepository
  */
 class AuthService extends Service
 {
     private UserRepository $userRepo;
-    private PDO $db;
+    private ?SessionRepository $sessionRepo;
+    private ?AuditRepository $auditRepo;
 
-    public function __construct(UserRepository $userRepo, PDO $db)
+    public function __construct(UserRepository $userRepo, ?SessionRepository $sessionRepo = null, ?AuditRepository $auditRepo = null)
     {
         $this->userRepo = $userRepo;
-        $this->db = $db;
+        $this->sessionRepo = $sessionRepo ?? new SessionRepository();
+        $this->auditRepo = $auditRepo ?? new AuditRepository();
     }
 
     /**
@@ -58,19 +64,18 @@ class AuthService extends Service
         }
 
         try {
-            $userId = $this->userRepo->create([
+            $userId = $this->userRepo->createUser([
                 'full_name' => $fullName,
-                'name' => $fullName,
                 'email' => $email,
                 'phone' => $phone,
                 'password' => password_hash($password, PASSWORD_DEFAULT),
                 'role' => 'client',
                 'status' => 'active',
-                'email_verified' => 0,
-                'phone_verified' => 0,
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
             ]);
+
+            if ($userId <= 0) {
+                return $this->error('Registration failed. Please try again.');
+            }
 
             $this->logEvent('USER_REGISTERED', "User registered: {$email}");
 
@@ -100,7 +105,7 @@ class AuthService extends Service
             return $this->error('Account temporarily locked. Try again later.');
         }
 
-        if (!password_verify($password, $user['password'])) {
+        if (!password_verify($password, $user['password'] ?? $user['password_hash'] ?? '')) {
             $this->userRepo->incrementFailedAttempts((int) $user['id']);
             $this->logEvent('LOGIN_FAILED', "Failed login attempt: {$identifier}");
             return $this->error('Invalid credentials.');
@@ -147,14 +152,14 @@ class AuthService extends Service
             return $this->error('Account temporarily locked.');
         }
 
-        if (!password_verify($password, $admin['password'])) {
+        if (!password_verify($password, $admin['password'] ?? $admin['password_hash'] ?? '')) {
             $this->userRepo->incrementFailedAttempts((int) $admin['id']);
             $this->logEvent('ADMIN_LOGIN_FAILED', "Failed admin login: {$email}");
             return $this->error('Invalid credentials.');
         }
 
         $this->userRepo->resetFailedAttempts((int) $admin['id']);
-        $this->initializeAdminSession($admin);
+        $this->initializeSession($admin);
         $this->userRepo->updateLastLogin((int) $admin['id']);
 
         $this->logEvent('ADMIN_LOGIN', "Admin logged in: {$email}");
@@ -189,23 +194,8 @@ class AuthService extends Service
             $otp = $this->generateSecureOtp();
             $hashedOtp = password_hash($otp, PASSWORD_DEFAULT);
 
-            // Expire old OTPs
-            $this->db->prepare(
-                "UPDATE user_otps SET is_used = 1, deleted_at = NOW() WHERE user_id = :user_id AND purpose = 'login' AND is_used = 0"
-            )->execute([':user_id' => $user['id']]);
-
-            // Insert new OTP
-            $stmt = $this->db->prepare(
-                "INSERT INTO user_otps (user_id, otp, purpose, attempts, resend_count, ip_address, user_agent, expires_at, created_at)
-                 VALUES (:user_id, :otp, 'login', 0, 0, :ip, :ua, :expires_at, NOW())"
-            );
-            $stmt->execute([
-                ':user_id' => $user['id'],
-                ':otp' => $hashedOtp,
-                ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-                ':ua' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-                ':expires_at' => date('Y-m-d H:i:s', time() + 300), // 5 minutes
-            ]);
+            // Expire old OTPs and insert new one via repository
+            $this->userRepo->saveOtp((int) $user['id'], $otp, 'login', 5);
 
             // Store OTP in session for verification
             $_SESSION['otp_user_id'] = (int) $user['id'];
@@ -227,14 +217,7 @@ class AuthService extends Service
      */
     public function verifyOtpAndLogin(int $userId, string $otp, string $purpose = 'login'): array
     {
-        $stmt = $this->db->prepare(
-            "SELECT * FROM user_otps 
-             WHERE user_id = :user_id AND purpose = :purpose AND is_used = 0 
-             AND expires_at > NOW() 
-             ORDER BY id DESC LIMIT 1"
-        );
-        $stmt->execute([':user_id' => $userId, ':purpose' => $purpose]);
-        $otpRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        $otpRow = $this->userRepo->findActiveOtp($userId, $purpose);
 
         if (!$otpRow) {
             return $this->error('OTP expired or not found.');
@@ -246,14 +229,12 @@ class AuthService extends Service
         }
 
         if (!password_verify($otp, $otpRow['otp'])) {
-            $this->db->prepare("UPDATE user_otps SET attempts = attempts + 1 WHERE id = :id")
-                ->execute([':id' => $otpRow['id']]);
+            $this->userRepo->incrementOtpAttempts((int) $otpRow['id']);
             return $this->error('Invalid OTP.');
         }
 
         // Mark OTP as used
-        $this->db->prepare("UPDATE user_otps SET is_used = 1 WHERE id = :id")
-            ->execute([':id' => $otpRow['id']]);
+        $this->userRepo->markOtpUsed((int) $otpRow['id']);
 
         $user = $this->userRepo->findById($userId);
         if (!$user) {
@@ -304,31 +285,20 @@ class AuthService extends Service
         $_SESSION['login_time'] = time();
         $_SESSION['is_admin'] = in_array($user['role'], ['admin', 'super_admin'], true);
 
-        // Store session in database
+        // Store session in database via SessionRepository
         try {
-            $this->db->prepare(
-                "INSERT INTO user_sessions (user_id, session_token, fingerprint_hash, device_hash, ip_address, user_agent, is_admin_session, last_activity, created_at)
-                 VALUES (:user_id, :token, :fingerprint, :device, :ip, :ua, :is_admin, NOW(), NOW())"
-            )->execute([
-                ':user_id' => $user['id'],
-                ':token' => $sessionToken,
-                ':fingerprint' => $this->generateFingerprint(),
-                ':device' => $this->generateDeviceHash(),
-                ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-                ':ua' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-                ':is_admin' => in_array($user['role'], ['admin', 'super_admin'], true) ? 1 : 0,
-            ]);
+            $this->sessionRepo->create(
+                (int) $user['id'],
+                $sessionToken,
+                $this->generateFingerprint(),
+                $this->generateDeviceHash(),
+                $_SERVER['REMOTE_ADDR'] ?? null,
+                $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown Device',
+                in_array($user['role'], ['admin', 'super_admin'], true)
+            );
         } catch (\Throwable $e) {
             error_log('Session storage error: ' . $e->getMessage());
         }
-    }
-
-    /**
-     * Initialize admin session
-     */
-    private function initializeAdminSession(array $user): void
-    {
-        $this->initializeSession($user);
     }
 
     /**
@@ -340,16 +310,13 @@ class AuthService extends Service
         $tokenHash = hash('sha256', $token);
 
         try {
-            $this->db->prepare(
-                "INSERT INTO remember_tokens (user_id, token_hash, ip_address, user_agent, expires_at, created_at)
-                 VALUES (:user_id, :hash, :ip, :ua, :expires, NOW())"
-            )->execute([
-                ':user_id' => $userId,
-                ':hash' => $tokenHash,
-                ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-                ':ua' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-                ':expires' => date('Y-m-d H:i:s', time() + 86400 * 30),
-            ]);
+            $this->sessionRepo->createRememberToken(
+                $userId,
+                $tokenHash,
+                $_SERVER['REMOTE_ADDR'] ?? null,
+                $_SERVER['HTTP_USER_AGENT'] ?? null,
+                date('Y-m-d H:i:s', time() + 86400 * 30)
+            );
 
             setcookie('remember_token', $token, [
                 'expires' => time() + 86400 * 30,
@@ -370,8 +337,7 @@ class AuthService extends Service
     {
         if (isset($_SESSION['session_token'])) {
             try {
-                $this->db->prepare("DELETE FROM user_sessions WHERE session_token = :token")
-                    ->execute([':token' => $_SESSION['session_token']]);
+                $this->sessionRepo->deleteByToken($_SESSION['session_token']);
             } catch (\Throwable $e) {
                 error_log('Session destroy error: ' . $e->getMessage());
             }
@@ -451,20 +417,15 @@ class AuthService extends Service
      */
     private function logEvent(string $event, string $details): void
     {
-        if (!isset($GLOBALS['conn'])) return;
-
         try {
-            $stmt = $this->db->prepare(
-                "INSERT INTO security_logs (user_id, event_type, severity, details, ip_address, user_agent, created_at)
-                 VALUES (:user_id, :event, 'info', :details, :ip, :ua, NOW())"
+            $this->auditRepo->logEvent(
+                $_SESSION['user_id'] ?? 0,
+                $event,
+                'info',
+                $details,
+                $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN',
+                $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN'
             );
-            $stmt->execute([
-                ':user_id' => $_SESSION['user_id'] ?? null,
-                ':event' => $event,
-                ':details' => $details,
-                ':ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-                ':ua' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            ]);
         } catch (\Throwable $e) {
             error_log('Security log error: ' . $e->getMessage());
         }

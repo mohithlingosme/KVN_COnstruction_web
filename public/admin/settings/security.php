@@ -2,150 +2,21 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+require_once '../../../middleware/admin.php';
+require_once '../../../helpers/security.php';
+require_once '../../../helpers/csrf.php';
+require_once '../../../helpers/session.php';
+require_once '../../../helpers/functions.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| ADMIN SETTINGS SERVICE
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE SECURITY TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS security_settings (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        admin_username VARCHAR(100) NOT NULL,
-
-        admin_email VARCHAR(150) NOT NULL,
-
-        admin_password VARCHAR(255) NOT NULL,
-
-        session_timeout INT NOT NULL DEFAULT 30,
-
-        login_attempt_limit INT NOT NULL DEFAULT 5,
-
-        two_factor_auth ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'disabled',
-
-        maintenance_lock ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'disabled',
-
-        updated_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEFAULT SETTINGS
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM security_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $defaultPassword =
-        password_hash(
-            'admin123',
-            PASSWORD_DEFAULT
-        );
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO security_settings
-            (
-
-                admin_username,
-                admin_email,
-                admin_password,
-
-                session_timeout,
-                login_attempt_limit,
-
-                two_factor_auth,
-                maintenance_lock
-
-            )
-            VALUES
-            (
-                ?, ?, ?, ?, ?, ?, ?
-            )
-            "
-        );
-
-    if ($stmt) {
-
-        $username =
-            'admin';
-
-        $email =
-            'admin@kvnconstruction.com';
-
-        $sessionTimeout =
-            30;
-
-        $loginLimit =
-            5;
-
-        $twoFactor =
-            'disabled';
-
-        $maintenanceLock =
-            'disabled';
-
-        $stmt->bind_param(
-            'sssisss',
-            $username,
-            $email,
-            $defaultPassword,
-            $sessionTimeout,
-            $loginLimit,
-            $twoFactor,
-            $maintenanceLock
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-    }
-}
+$settingsService = new \App\Services\AdminSettingsService();
 
 /*
 |--------------------------------------------------------------------------
@@ -164,165 +35,12 @@ $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $adminUsername =
-        trim($_POST['admin_username'] ?? '');
+    $result = $settingsService->saveSecuritySettings($_POST);
 
-    $adminEmail =
-        trim($_POST['admin_email'] ?? '');
-
-    $newPassword =
-        trim($_POST['new_password'] ?? '');
-
-    $confirmPassword =
-        trim($_POST['confirm_password'] ?? '');
-
-    $sessionTimeout =
-        (int) ($_POST['session_timeout'] ?? 30);
-
-    $loginAttemptLimit =
-        (int) ($_POST['login_attempt_limit'] ?? 5);
-
-    $twoFactor =
-        trim($_POST['two_factor_auth'] ?? 'disabled');
-
-    $maintenanceLock =
-        trim($_POST['maintenance_lock'] ?? 'disabled');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $adminUsername === '' ||
-        $adminEmail === ''
-
-    ) {
-
-        $error =
-            'Please fill all required fields.';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | PASSWORD VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $newPassword !== '' &&
-        $newPassword !== $confirmPassword
-
-    ) {
-
-        $error =
-            'Passwords do not match.';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | FETCH CURRENT PASSWORD
-    |--------------------------------------------------------------------------
-    */
-
-    $currentPassword = '';
-
-    $result =
-        $conn->query(
-            "
-            SELECT admin_password
-            FROM security_settings
-            WHERE id = 1
-            LIMIT 1
-            "
-        );
-
-    if (
-        $result &&
-        $result->num_rows() > 0
-    ) {
-
-        $row =
-            $result->fetch_assoc();
-
-        $currentPassword =
-            (string) $row['admin_password'];
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | HASH NEW PASSWORD
-    |--------------------------------------------------------------------------
-    */
-
-    if ($newPassword !== '') {
-
-        $currentPassword =
-            password_hash(
-                $newPassword,
-                PASSWORD_DEFAULT
-            );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DATABASE
-    |--------------------------------------------------------------------------
-    */
-
-    if ($error === '') {
-
-        try {
-
-            $stmt =
-                $conn->prepare(
-                    "
-                    UPDATE security_settings
-                    SET
-
-                        admin_username     = ?,
-                        admin_email        = ?,
-                        admin_password     = ?,
-
-                        session_timeout    = ?,
-                        login_attempt_limit = ?,
-
-                        two_factor_auth    = ?,
-                        maintenance_lock   = ?
-
-                    WHERE id = 1
-                    "
-                );
-
-            if ($stmt) {
-
-                $stmt->bind_param(
-                    'sssisss',
-                    $adminUsername,
-                    $adminEmail,
-                    $currentPassword,
-                    $sessionTimeout,
-                    $loginAttemptLimit,
-                    $twoFactor,
-                    $maintenanceLock
-                );
-
-                $stmt->execute();
-
-                $stmt->close();
-
-                $success =
-                    'Security settings updated successfully.';
-            }
-
-        } catch (Throwable $e) {
-
-            $error =
-                $e->getMessage();
-        }
+    if ($result['success']) {
+        $success = $result['message'];
+    } else {
+        $error = $result['message'];
     }
 }
 
@@ -332,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 |--------------------------------------------------------------------------
 */
 
-$data = [
+$data = array_merge([
 
     'admin_username'      => '',
     'admin_email'         => '',
@@ -343,25 +61,7 @@ $data = [
     'two_factor_auth'     => 'disabled',
     'maintenance_lock'    => 'disabled'
 
-];
-
-$result =
-    $conn->query(
-        "
-        SELECT *
-        FROM security_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $result &&
-    $result->num_rows() > 0
-) {
-
-    $data =
-        $result->fetch_assoc();
-}
+], $settingsService->getSecuritySettings());
 
 ?>
 
@@ -766,3 +466,4 @@ if (
 </body>
 
 </html>
+

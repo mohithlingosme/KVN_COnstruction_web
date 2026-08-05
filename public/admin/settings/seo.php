@@ -2,192 +2,21 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+require_once '../../../middleware/admin.php';
+require_once '../../../helpers/security.php';
+require_once '../../../helpers/csrf.php';
+require_once '../../../helpers/session.php';
+require_once '../../../helpers/functions.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| ADMIN SETTINGS SERVICE
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE SEO TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS seo_settings (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        meta_title VARCHAR(255) NOT NULL,
-
-        meta_description TEXT NOT NULL,
-
-        meta_keywords TEXT NOT NULL,
-
-        canonical_url VARCHAR(255) NOT NULL,
-
-        robots_meta VARCHAR(100) NOT NULL,
-
-        google_analytics TEXT NOT NULL,
-
-        google_search_console TEXT NOT NULL,
-
-        facebook_meta_title VARCHAR(255) NOT NULL,
-
-        facebook_meta_description TEXT NOT NULL,
-
-        twitter_meta_title VARCHAR(255) NOT NULL,
-
-        twitter_meta_description TEXT NOT NULL,
-
-        sitemap_status ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'enabled',
-
-        seo_status ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'enabled',
-
-        updated_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEFAULT SETTINGS
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM seo_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO seo_settings
-            (
-
-                meta_title,
-                meta_description,
-                meta_keywords,
-
-                canonical_url,
-                robots_meta,
-
-                google_analytics,
-                google_search_console,
-
-                facebook_meta_title,
-                facebook_meta_description,
-
-                twitter_meta_title,
-                twitter_meta_description,
-
-                sitemap_status,
-                seo_status
-
-            )
-            VALUES
-            (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            "
-        );
-
-    if ($stmt) {
-
-        $metaTitle =
-            'KVN Construction | Home Construction Experts';
-
-        $metaDescription =
-            'KVN Construction provides complete turnkey and home construction solutions with premium quality and timely delivery.';
-
-        $metaKeywords =
-            'KVN Construction, Home Construction, Builders, Architects, Turnkey Projects';
-
-        $canonicalUrl =
-            'https://www.kvnconstruction.com';
-
-        $robotsMeta =
-            'index, follow';
-
-        $googleAnalytics =
-            'UA-XXXXXXXXX-X';
-
-        $googleSearchConsole =
-            '<meta name="google-site-verification" content="">';
-
-        $facebookTitle =
-            'KVN Construction';
-
-        $facebookDescription =
-            'Premium home construction and turnkey services.';
-
-        $twitterTitle =
-            'KVN Construction';
-
-        $twitterDescription =
-            'Expert home construction solutions with quality assurance.';
-
-        $sitemapStatus =
-            'enabled';
-
-        $seoStatus =
-            'enabled';
-
-        $stmt->bind_param(
-            'sssssssssssss',
-            $metaTitle,
-            $metaDescription,
-            $metaKeywords,
-            $canonicalUrl,
-            $robotsMeta,
-            $googleAnalytics,
-            $googleSearchConsole,
-            $facebookTitle,
-            $facebookDescription,
-            $twitterTitle,
-            $twitterDescription,
-            $sitemapStatus,
-            $seoStatus
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-    }
-}
+$settingsService = new \App\Services\AdminSettingsService();
 
 /*
 |--------------------------------------------------------------------------
@@ -206,135 +35,12 @@ $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $metaTitle =
-        trim($_POST['meta_title'] ?? '');
+    $result = $settingsService->saveSeoSettings($_POST);
 
-    $metaDescription =
-        trim($_POST['meta_description'] ?? '');
-
-    $metaKeywords =
-        trim($_POST['meta_keywords'] ?? '');
-
-    $canonicalUrl =
-        trim($_POST['canonical_url'] ?? '');
-
-    $robotsMeta =
-        trim($_POST['robots_meta'] ?? '');
-
-    $googleAnalytics =
-        trim($_POST['google_analytics'] ?? '');
-
-    $googleSearchConsole =
-        trim($_POST['google_search_console'] ?? '');
-
-    $facebookTitle =
-        trim($_POST['facebook_meta_title'] ?? '');
-
-    $facebookDescription =
-        trim($_POST['facebook_meta_description'] ?? '');
-
-    $twitterTitle =
-        trim($_POST['twitter_meta_title'] ?? '');
-
-    $twitterDescription =
-        trim($_POST['twitter_meta_description'] ?? '');
-
-    $sitemapStatus =
-        trim($_POST['sitemap_status'] ?? 'enabled');
-
-    $seoStatus =
-        trim($_POST['seo_status'] ?? 'enabled');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $metaTitle === '' ||
-        $metaDescription === '' ||
-        $metaKeywords === '' ||
-        $canonicalUrl === ''
-
-    ) {
-
-        $error =
-            'Please fill all required fields.';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DATABASE
-    |--------------------------------------------------------------------------
-    */
-
-    if ($error === '') {
-
-        try {
-
-            $stmt =
-                $conn->prepare(
-                    "
-                    UPDATE seo_settings
-                    SET
-
-                        meta_title                 = ?,
-                        meta_description           = ?,
-                        meta_keywords              = ?,
-
-                        canonical_url              = ?,
-                        robots_meta                = ?,
-
-                        google_analytics           = ?,
-                        google_search_console      = ?,
-
-                        facebook_meta_title        = ?,
-                        facebook_meta_description  = ?,
-
-                        twitter_meta_title         = ?,
-                        twitter_meta_description   = ?,
-
-                        sitemap_status             = ?,
-                        seo_status                 = ?
-
-                    WHERE id = 1
-                    "
-                );
-
-            if ($stmt) {
-
-                $stmt->bind_param(
-                    'sssssssssssss',
-                    $metaTitle,
-                    $metaDescription,
-                    $metaKeywords,
-                    $canonicalUrl,
-                    $robotsMeta,
-                    $googleAnalytics,
-                    $googleSearchConsole,
-                    $facebookTitle,
-                    $facebookDescription,
-                    $twitterTitle,
-                    $twitterDescription,
-                    $sitemapStatus,
-                    $seoStatus
-                );
-
-                $stmt->execute();
-
-                $stmt->close();
-
-                $success =
-                    'SEO settings updated successfully.';
-            }
-
-        } catch (Throwable $e) {
-
-            $error =
-                $e->getMessage();
-        }
+    if ($result['success']) {
+        $success = $result['message'];
+    } else {
+        $error = $result['message'];
     }
 }
 
@@ -344,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 |--------------------------------------------------------------------------
 */
 
-$data = [
+$data = array_merge([
 
     'meta_title'                => '',
     'meta_description'          => '',
@@ -365,25 +71,7 @@ $data = [
     'sitemap_status'            => 'enabled',
     'seo_status'                => 'enabled'
 
-];
-
-$result =
-    $conn->query(
-        "
-        SELECT *
-        FROM seo_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $result &&
-    $result->num_rows() > 0
-) {
-
-    $data =
-        $result->fetch_assoc();
-}
+], $settingsService->getSeoSettings());
 
 ?>
 
@@ -866,3 +554,4 @@ if (
 </body>
 
 </html>
+

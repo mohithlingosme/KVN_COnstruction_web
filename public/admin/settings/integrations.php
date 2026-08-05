@@ -2,186 +2,21 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+require_once '../../../middleware/admin.php';
+require_once '../../../helpers/security.php';
+require_once '../../../helpers/csrf.php';
+require_once '../../../helpers/session.php';
+require_once '../../../helpers/functions.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| ADMIN SETTINGS SERVICE
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE INTEGRATIONS TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS integration_settings (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        google_maps_api VARCHAR(255) NOT NULL,
-
-        google_recaptcha_site_key VARCHAR(255) NOT NULL,
-
-        google_recaptcha_secret_key VARCHAR(255) NOT NULL,
-
-        facebook_pixel_id VARCHAR(255) NOT NULL,
-
-        whatsapp_number VARCHAR(30) NOT NULL,
-
-        youtube_channel VARCHAR(255) NOT NULL,
-
-        instagram_url VARCHAR(255) NOT NULL,
-
-        linkedin_url VARCHAR(255) NOT NULL,
-
-        telegram_url VARCHAR(255) NOT NULL,
-
-        chatbot_status ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'disabled',
-
-        recaptcha_status ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'enabled',
-
-        whatsapp_chat_status ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'enabled',
-
-        updated_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEFAULT SETTINGS
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM integration_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO integration_settings
-            (
-
-                google_maps_api,
-
-                google_recaptcha_site_key,
-                google_recaptcha_secret_key,
-
-                facebook_pixel_id,
-
-                whatsapp_number,
-
-                youtube_channel,
-                instagram_url,
-                linkedin_url,
-                telegram_url,
-
-                chatbot_status,
-                recaptcha_status,
-                whatsapp_chat_status
-
-            )
-            VALUES
-            (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            "
-        );
-
-    if ($stmt) {
-
-        $googleMapsApi =
-            '';
-
-        $siteKey =
-            '';
-
-        $secretKey =
-            '';
-
-        $facebookPixel =
-            '';
-
-        $whatsapp =
-            '+919876543210';
-
-        $youtube =
-            'https://youtube.com/';
-
-        $instagram =
-            'https://instagram.com/';
-
-        $linkedin =
-            'https://linkedin.com/';
-
-        $telegram =
-            'https://t.me/';
-
-        $chatbot =
-            'disabled';
-
-        $recaptcha =
-            'enabled';
-
-        $whatsappStatus =
-            'enabled';
-
-        $stmt->bind_param(
-            'ssssssssssss',
-            $googleMapsApi,
-            $siteKey,
-            $secretKey,
-            $facebookPixel,
-            $whatsapp,
-            $youtube,
-            $instagram,
-            $linkedin,
-            $telegram,
-            $chatbot,
-            $recaptcha,
-            $whatsappStatus
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-    }
-}
+$settingsService = new \App\Services\AdminSettingsService();
 
 /*
 |--------------------------------------------------------------------------
@@ -200,130 +35,12 @@ $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $googleMapsApi =
-        trim($_POST['google_maps_api'] ?? '');
+    $result = $settingsService->saveIntegrationSettings($_POST);
 
-    $siteKey =
-        trim($_POST['google_recaptcha_site_key'] ?? '');
-
-    $secretKey =
-        trim($_POST['google_recaptcha_secret_key'] ?? '');
-
-    $facebookPixel =
-        trim($_POST['facebook_pixel_id'] ?? '');
-
-    $whatsapp =
-        trim($_POST['whatsapp_number'] ?? '');
-
-    $youtube =
-        trim($_POST['youtube_channel'] ?? '');
-
-    $instagram =
-        trim($_POST['instagram_url'] ?? '');
-
-    $linkedin =
-        trim($_POST['linkedin_url'] ?? '');
-
-    $telegram =
-        trim($_POST['telegram_url'] ?? '');
-
-    $chatbot =
-        trim($_POST['chatbot_status'] ?? 'disabled');
-
-    $recaptcha =
-        trim($_POST['recaptcha_status'] ?? 'enabled');
-
-    $whatsappStatus =
-        trim($_POST['whatsapp_chat_status'] ?? 'enabled');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $whatsapp === '' ||
-        $youtube === '' ||
-        $instagram === '' ||
-        $linkedin === ''
-
-    ) {
-
-        $error =
-            'Please fill all required fields.';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DATABASE
-    |--------------------------------------------------------------------------
-    */
-
-    if ($error === '') {
-
-        try {
-
-            $stmt =
-                $conn->prepare(
-                    "
-                    UPDATE integration_settings
-                    SET
-
-                        google_maps_api                = ?,
-
-                        google_recaptcha_site_key     = ?,
-                        google_recaptcha_secret_key   = ?,
-
-                        facebook_pixel_id             = ?,
-
-                        whatsapp_number               = ?,
-
-                        youtube_channel               = ?,
-                        instagram_url                 = ?,
-                        linkedin_url                  = ?,
-                        telegram_url                  = ?,
-
-                        chatbot_status                = ?,
-                        recaptcha_status              = ?,
-                        whatsapp_chat_status          = ?
-
-                    WHERE id = 1
-                    "
-                );
-
-            if ($stmt) {
-
-                $stmt->bind_param(
-                    'ssssssssssss',
-                    $googleMapsApi,
-                    $siteKey,
-                    $secretKey,
-                    $facebookPixel,
-                    $whatsapp,
-                    $youtube,
-                    $instagram,
-                    $linkedin,
-                    $telegram,
-                    $chatbot,
-                    $recaptcha,
-                    $whatsappStatus
-                );
-
-                $stmt->execute();
-
-                $stmt->close();
-
-                $success =
-                    'Integration settings updated successfully.';
-            }
-
-        } catch (Throwable $e) {
-
-            $error =
-                $e->getMessage();
-        }
+    if ($result['success']) {
+        $success = $result['message'];
+    } else {
+        $error = $result['message'];
     }
 }
 
@@ -333,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 |--------------------------------------------------------------------------
 */
 
-$data = [
+$data = array_merge([
 
     'google_maps_api'              => '',
 
@@ -353,25 +70,7 @@ $data = [
     'recaptcha_status'            => 'enabled',
     'whatsapp_chat_status'        => 'enabled'
 
-];
-
-$result =
-    $conn->query(
-        "
-        SELECT *
-        FROM integration_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $result &&
-    $result->num_rows() > 0
-) {
-
-    $data =
-        $result->fetch_assoc();
-}
+], $settingsService->getIntegrationSettings());
 
 ?>
 
@@ -836,3 +535,4 @@ if (
 </body>
 
 </html>
+

@@ -15,9 +15,10 @@ require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/session.php';
 require_once ROOT_PATH . '/helpers/csrf.php';
 require_once ROOT_PATH . '/helpers/rateLimiter.php';
-require_once ROOT_PATH . '/app/models/User.php';
+require_once ROOT_PATH . '/app/repositories/UserRepository.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
 
-use App\Models\User;
+use App\Repositories\UserRepository;
 
 /*
 |--------------------------------------------------------------------------
@@ -106,9 +107,9 @@ if ($attempts >= $maxAttempts) {
 |--------------------------------------------------------------------------
 */
 
-$userModel = new User($GLOBALS['conn']);
+$userRepo = ServiceProvider::get('UserRepository');
 
-if ($userModel->verifyOtp($userId, $otp, 'password_reset')) {
+if ($userRepo->verifyOtp($userId, $otp, 'password_reset')) {
     // Success
     unset($_SESSION['password_reset_attempts']);
     $_SESSION['password_reset_verified'] = true;

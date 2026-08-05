@@ -2,207 +2,21 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+require_once '../../../middleware/admin.php';
+require_once '../../../helpers/security.php';
+require_once '../../../helpers/csrf.php';
+require_once '../../../helpers/session.php';
+require_once '../../../helpers/functions.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| ADMIN SETTINGS SERVICE
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE SETTINGS TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS general_settings (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        site_name VARCHAR(255) NOT NULL,
-
-        site_tagline VARCHAR(255) NOT NULL,
-
-        admin_email VARCHAR(150) NOT NULL,
-
-        support_email VARCHAR(150) NOT NULL,
-
-        phone VARCHAR(50) NOT NULL,
-
-        whatsapp VARCHAR(50) NOT NULL,
-
-        address TEXT NOT NULL,
-
-        facebook_link VARCHAR(255) NOT NULL,
-
-        instagram_link VARCHAR(255) NOT NULL,
-
-        youtube_link VARCHAR(255) NOT NULL,
-
-        linkedin_link VARCHAR(255) NOT NULL,
-
-        logo VARCHAR(255) NOT NULL,
-
-        favicon VARCHAR(255) NOT NULL,
-
-        footer_text TEXT NOT NULL,
-
-        maintenance_mode ENUM('on','off')
-        NOT NULL DEFAULT 'off',
-
-        updated_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEFAULT SETTINGS
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM general_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO general_settings
-            (
-
-                site_name,
-                site_tagline,
-
-                admin_email,
-                support_email,
-
-                phone,
-                whatsapp,
-
-                address,
-
-                facebook_link,
-                instagram_link,
-                youtube_link,
-                linkedin_link,
-
-                logo,
-                favicon,
-
-                footer_text,
-
-                maintenance_mode
-
-            )
-            VALUES
-            (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            "
-        );
-
-    if ($stmt) {
-
-        $siteName =
-            'KVN Construction';
-
-        $siteTagline =
-            'Dream Homes Built with Quality';
-
-        $adminEmail =
-            'admin@kvnconstruction.com';
-
-        $supportEmail =
-            'support@kvnconstruction.com';
-
-        $phone =
-            '+91 9876543210';
-
-        $whatsapp =
-            '+91 9876543210';
-
-        $address =
-            'Bangalore, Karnataka, India';
-
-        $facebook =
-            'https://facebook.com';
-
-        $instagram =
-            'https://instagram.com';
-
-        $youtube =
-            'https://youtube.com';
-
-        $linkedin =
-            'https://linkedin.com';
-
-        $logo =
-            'uploads/logo.png';
-
-        $favicon =
-            'uploads/favicon.ico';
-
-        $footer =
-            '© 2026 KVN Construction. All Rights Reserved.';
-
-        $maintenance =
-            'off';
-
-        $stmt->bind_param(
-            'sssssssssssssss',
-            $siteName,
-            $siteTagline,
-            $adminEmail,
-            $supportEmail,
-            $phone,
-            $whatsapp,
-            $address,
-            $facebook,
-            $instagram,
-            $youtube,
-            $linkedin,
-            $logo,
-            $favicon,
-            $footer,
-            $maintenance
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-    }
-}
+$settingsService = new \App\Services\AdminSettingsService();
 
 /*
 |--------------------------------------------------------------------------
@@ -221,157 +35,12 @@ $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $siteName =
-        trim($_POST['site_name'] ?? '');
+    $result = $settingsService->saveGeneralSettings($_POST);
 
-    $siteTagline =
-        trim($_POST['site_tagline'] ?? '');
-
-    $adminEmail =
-        trim($_POST['admin_email'] ?? '');
-
-    $supportEmail =
-        trim($_POST['support_email'] ?? '');
-
-    $phone =
-        trim($_POST['phone'] ?? '');
-
-    $whatsapp =
-        trim($_POST['whatsapp'] ?? '');
-
-    $address =
-        trim($_POST['address'] ?? '');
-
-    $facebook =
-        trim($_POST['facebook_link'] ?? '');
-
-    $instagram =
-        trim($_POST['instagram_link'] ?? '');
-
-    $youtube =
-        trim($_POST['youtube_link'] ?? '');
-
-    $linkedin =
-        trim($_POST['linkedin_link'] ?? '');
-
-    $logo =
-        trim($_POST['logo'] ?? '');
-
-    $favicon =
-        trim($_POST['favicon'] ?? '');
-
-    $footer =
-        trim($_POST['footer_text'] ?? '');
-
-    $maintenance =
-        trim($_POST['maintenance_mode'] ?? 'off');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $siteName === '' ||
-        $siteTagline === '' ||
-        $adminEmail === '' ||
-        $supportEmail === '' ||
-        $phone === '' ||
-        $whatsapp === '' ||
-        $address === '' ||
-        $facebook === '' ||
-        $instagram === '' ||
-        $youtube === '' ||
-        $linkedin === '' ||
-        $logo === '' ||
-        $favicon === '' ||
-        $footer === ''
-
-    ) {
-
-        $error =
-            'Please fill all fields.';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DATABASE
-    |--------------------------------------------------------------------------
-    */
-
-    if ($error === '') {
-
-        try {
-
-            $stmt =
-                $conn->prepare(
-                    "
-                    UPDATE general_settings
-                    SET
-
-                        site_name        = ?,
-                        site_tagline     = ?,
-
-                        admin_email      = ?,
-                        support_email    = ?,
-
-                        phone            = ?,
-                        whatsapp         = ?,
-
-                        address          = ?,
-
-                        facebook_link    = ?,
-                        instagram_link   = ?,
-                        youtube_link     = ?,
-                        linkedin_link    = ?,
-
-                        logo             = ?,
-                        favicon          = ?,
-
-                        footer_text      = ?,
-
-                        maintenance_mode = ?
-
-                    WHERE id = 1
-                    "
-                );
-
-            if ($stmt) {
-
-                $stmt->bind_param(
-                    'sssssssssssssss',
-                    $siteName,
-                    $siteTagline,
-                    $adminEmail,
-                    $supportEmail,
-                    $phone,
-                    $whatsapp,
-                    $address,
-                    $facebook,
-                    $instagram,
-                    $youtube,
-                    $linkedin,
-                    $logo,
-                    $favicon,
-                    $footer,
-                    $maintenance
-                );
-
-                $stmt->execute();
-
-                $stmt->close();
-
-                $success =
-                    'General settings updated successfully.';
-            }
-
-        } catch (Throwable $e) {
-
-            $error =
-                $e->getMessage();
-        }
+    if ($result['success']) {
+        $success = $result['message'];
+    } else {
+        $error = $result['message'];
     }
 }
 
@@ -381,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 |--------------------------------------------------------------------------
 */
 
-$data = [
+$data = array_merge([
 
     'site_name'        => '',
     'site_tagline'     => '',
@@ -406,25 +75,7 @@ $data = [
 
     'maintenance_mode' => 'off'
 
-];
-
-$result =
-    $conn->query(
-        "
-        SELECT *
-        FROM general_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $result &&
-    $result->num_rows() > 0
-) {
-
-    $data =
-        $result->fetch_assoc();
-}
+], $settingsService->getGeneralSettings());
 
 ?>
 
@@ -951,3 +602,4 @@ if (
 </body>
 
 </html>
+

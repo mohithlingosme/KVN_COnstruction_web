@@ -11,7 +11,8 @@ file_put_contents(__DIR__ . '/debug_step4.txt', 'step4');
 file_put_contents(__DIR__ . '/debug_step4a.txt', 'step4a');
 require_once ROOT_PATH . '/config/app.php';
 file_put_contents(__DIR__ . '/debug_step4b.txt', 'step4b');
-require_once ROOT_PATH . '/app/models/Lead.php';
+
 file_put_contents(__DIR__ . '/debug_step5.txt', 'step5');
 file_put_contents(__DIR__ . '/debug_done.txt', 'ALL DONE');
 echo "OK\n";
+

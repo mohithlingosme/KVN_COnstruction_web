@@ -97,11 +97,16 @@ class LeadRepository extends Repository
              FROM leads 
              LEFT JOIN users ON leads.assigned_to = users.id 
              WHERE leads.deleted_at IS NULL 
-             AND (leads.full_name LIKE :query OR leads.email LIKE :query OR leads.phone LIKE :query OR leads.location LIKE :query)
+             AND (leads.full_name LIKE :query_name OR leads.email LIKE :query_email OR leads.phone LIKE :query_phone OR leads.location LIKE :query_location)
              ORDER BY leads.id DESC 
              LIMIT 20"
         );
-        $stmt->execute([':query' => $searchTerm]);
+        $stmt->execute([
+            ':query_name' => $searchTerm,
+            ':query_email' => $searchTerm,
+            ':query_phone' => $searchTerm,
+            ':query_location' => $searchTerm,
+        ]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

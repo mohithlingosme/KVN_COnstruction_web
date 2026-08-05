@@ -10,12 +10,17 @@ declare(strict_types=1);
 |--------------------------------------------------------------------------
 | File: /public/admin/settings/smtp.php
 |--------------------------------------------------------------------------
+| REFACTORED: All SQL delegated to SettingsRepository.
+|--------------------------------------------------------------------------
 */
 
 require_once '../../../config/app.php';
 require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 require_once '../../../helpers/csrf.php';
+require_once '../../../helpers/session.php';
+require_once '../../../helpers/functions.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -27,23 +32,19 @@ $pageTitle = 'SMTP Settings | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
+| ADMIN SETTINGS SERVICE
+|--------------------------------------------------------------------------
+*/
+
+$settingsService = new \App\Services\AdminSettingsService();
+
+/*
+|--------------------------------------------------------------------------
 | FETCH CURRENT SETTINGS
 |--------------------------------------------------------------------------
 */
 
-$settings = [];
-try {
-    $query = "SELECT * FROM settings WHERE `group` = 'smtp' ORDER BY `key` ASC";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-    $rows = $stmt->fetchAll();
-    
-    foreach ($rows as $row) {
-        $settings[$row['key']] = $row['value'];
-    }
-} catch (Exception $e) {
-    error_log('SMTP settings fetch error: ' . $e->getMessage());
-}
+$settings = $settingsService->getSmtpSettings();
 
 /*
 |--------------------------------------------------------------------------
@@ -57,62 +58,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('admin/settings/smtp.php');
     }
 
-    $smtpHost = trim(sanitize($_POST['smtp_host'] ?? ''));
-    $smtpPort = (int) ($_POST['smtp_port'] ?? 587);
-    $smtpEncryption = trim(sanitize($_POST['smtp_encryption'] ?? 'tls'));
-    $smtpUsername = trim(sanitize($_POST['smtp_username'] ?? ''));
-    $smtpPassword = trim($_POST['smtp_password'] ?? '');
-    $smtpFromEmail = trim(sanitize($_POST['smtp_from_email'] ?? ''));
-    $smtpFromName = trim(sanitize($_POST['smtp_from_name'] ?? ''));
+    $result = $settingsService->saveSmtpSettings($_POST);
 
-    try {
-        $conn->beginTransaction();
-
-        $settingsData = [
-            'smtp_host' => $smtpHost,
-            'smtp_port' => (string) $smtpPort,
-            'smtp_encryption' => $smtpEncryption,
-            'smtp_username' => $smtpUsername,
-            'smtp_from_email' => $smtpFromEmail,
-            'smtp_from_name' => $smtpFromName,
-        ];
-
-        // Only update password if provided
-        if (!empty($smtpPassword)) {
-            $settingsData['smtp_password'] = $smtpPassword;
-        }
-
-        foreach ($settingsData as $key => $value) {
-            $checkQuery = "SELECT id FROM settings WHERE `group` = 'smtp' AND `key` = :key LIMIT 1";
-            $checkStmt = $conn->prepare($checkQuery);
-            $checkStmt->execute([':key' => $key]);
-            $existing = $checkStmt->fetch();
-
-            if ($existing) {
-                $updateQuery = "UPDATE settings SET `value` = :value, updated_at = NOW() WHERE `group` = 'smtp' AND `key` = :key";
-                $updateStmt = $conn->prepare($updateQuery);
-                $updateStmt->execute([':value' => $value, ':key' => $key]);
-            } else {
-                $insertQuery = "INSERT INTO settings (`group`, `key`, `value`, created_at) VALUES ('smtp', :key, :value, NOW())";
-                $insertStmt = $conn->prepare($insertQuery);
-                $insertStmt->execute([':key' => $key, ':value' => $value]);
-            }
-        }
-
-        $conn->commit();
-        $_SESSION['success'] = 'SMTP settings saved successfully.';
+    if ($result['success']) {
+        $_SESSION['success'] = $result['message'];
 
         // Update config constants for current request
-        define('SMTP_HOST', $smtpHost);
-        define('SMTP_PORT', $smtpPort);
-        define('SMTP_ENCRYPTION', $smtpEncryption);
-        define('SMTP_USERNAME', $smtpUsername);
-        define('SMTP_FROM_EMAIL', $smtpFromEmail);
-        define('SMTP_FROM_NAME', $smtpFromName);
-
-    } catch (Exception $e) {
-        $conn->rollBack();
-        $_SESSION['error'] = 'Failed to save settings: ' . $e->getMessage();
+        define('SMTP_HOST', (string) ($_POST['smtp_host'] ?? ''));
+        define('SMTP_PORT', (int) ($_POST['smtp_port'] ?? 587));
+        define('SMTP_ENCRYPTION', (string) ($_POST['smtp_encryption'] ?? 'tls'));
+        define('SMTP_USERNAME', (string) ($_POST['smtp_username'] ?? ''));
+        define('SMTP_FROM_EMAIL', (string) ($_POST['smtp_from_email'] ?? ''));
+        define('SMTP_FROM_NAME', (string) ($_POST['smtp_from_name'] ?? ''));
+    } else {
+        $_SESSION['error'] = $result['message'];
     }
 
     redirect('admin/settings/smtp.php');
@@ -285,3 +244,4 @@ function runSmtpConnectionTest() {
 </script>
 </body>
 </html>
+

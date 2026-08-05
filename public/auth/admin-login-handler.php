@@ -16,7 +16,7 @@ if (!verifyCsrfToken($_POST['_token'] ?? $_POST['csrf_token'] ?? null)) {
     redirect('admin/login.php');
 }
 
-$controller = new AdminAuthController($conn);
+$controller = new AdminAuthController();
 $result = $controller->login(
     (string) ($_POST['email'] ?? ''),
     (string) ($_POST['password'] ?? '')

@@ -5,7 +5,11 @@ declare(strict_types=1);
 require_once '../../config/app.php';
 require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/session.php';
-require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
+require_once ROOT_PATH . '/app/repositories/UserRepository.php';
+require_once ROOT_PATH . '/app/repositories/SessionRepository.php';
+require_once ROOT_PATH . '/app/repositories/AuditRepository.php';
+require_once ROOT_PATH . '/app/services/AuthService.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect('login.php');
@@ -21,12 +25,18 @@ if (!empty($_POST['website'])) {
     redirect('login.php');
 }
 
-$phone = (string) ($_SESSION['otp_phone'] ?? '');
+$userId = (int) ($_SESSION['otp_user_id'] ?? 0);
+$otp = sanitize($_POST['otp'] ?? '');
 
-$controller = new AuthController($conn);
-$result = $controller->verifyPhoneOtp($phone, (string) ($_POST['otp'] ?? ''));
+if ($userId <= 0 || empty($otp)) {
+    $_SESSION['error'] = 'Invalid OTP session.';
+    redirect('verify-phone-otp.php');
+}
 
-if (!$result['status']) {
+$authService = ServiceProvider::get('AuthService');
+$result = $authService->verifyOtpAndLogin($userId, $otp, 'login');
+
+if (!$result['success']) {
     $_SESSION['error'] = $result['message'];
     redirect('verify-phone-otp.php');
 }

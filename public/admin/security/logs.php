@@ -2,125 +2,44 @@
 
 declare(strict_types=1);
 
-session_start();
-
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| KVN CONSTRUCTION PLATFORM
+|--------------------------------------------------------------------------
+| SECURITY - SECURITY LOGS
+|--------------------------------------------------------------------------
+| REFACTORED: All SQL delegated to SecurityAdminRepository.
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
+require_once '../../../config/app.php';
 
-    header('Location: ../login.php');
-    exit();
-}
+require_once '../../../middleware/admin.php';
 
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
+require_once '../../../helpers/security.php';
 
-require_once '../../includes/db.php';
+require_once '../../../helpers/formatter.php';
+
+require_once '../../../includes/repositories.php';
+
+require_once '../../../bootstrap/providers/ServiceProvider.php';
 
 /*
 |--------------------------------------------------------------------------
-| CREATE SECURITY LOGS TABLE
+| PAGE TITLE
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS security_logs (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        admin_id INT DEFAULT NULL,
-
-        admin_name VARCHAR(255) NOT NULL,
-
-        action_type VARCHAR(255) NOT NULL,
-
-        ip_address VARCHAR(100) NOT NULL,
-
-        user_agent TEXT NOT NULL,
-
-        status ENUM('success','failed','warning')
-        NOT NULL DEFAULT 'success',
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
+$pageTitle =
+'Security Logs | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEMO LOGS
+| REPOSITORY
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM security_logs
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO security_logs
-        (
-
-            admin_id,
-            admin_name,
-            action_type,
-            ip_address,
-            user_agent,
-            status
-
-        )
-
-        VALUES
-
-        (
-            1,
-            'Admin',
-            'Admin Login',
-            '127.0.0.1',
-            'Chrome Browser',
-            'success'
-        ),
-
-        (
-            1,
-            'Admin',
-            'Password Changed',
-            '127.0.0.1',
-            'Chrome Browser',
-            'warning'
-        ),
-
-        (
-            0,
-            'Unknown User',
-            'Failed Login Attempt',
-            '192.168.1.10',
-            'Firefox Browser',
-            'failed'
-        )
-        "
-    );
-}
+$securityRepo = repo('SecurityAdmin');
 
 /*
 |--------------------------------------------------------------------------
@@ -128,31 +47,13 @@ if (
 |--------------------------------------------------------------------------
 */
 
-if (
-    isset($_GET['delete'])
-) {
+if (isset($_GET['delete'])) {
 
     $deleteId =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM security_logs
-            WHERE id = ?
-            "
-        );
-
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $deleteId
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+    if ($securityRepo) {
+        $securityRepo->deleteSecurityLog($deleteId);
     }
 
     header(
@@ -168,15 +69,11 @@ if (
 |--------------------------------------------------------------------------
 */
 
-if (
-    isset($_POST['clear_logs'])
-) {
+if (isset($_POST['clear_logs'])) {
 
-    $conn->query(
-        "
-        TRUNCATE TABLE security_logs
-        "
-    );
+    if ($securityRepo) {
+        $securityRepo->clearSecurityLogs();
+    }
 
     header(
         'Location: logs.php'
@@ -191,14 +88,11 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$logs =
-    $conn->query(
-        "
-        SELECT *
-        FROM security_logs
-        ORDER BY id DESC
-        "
-    );
+$logs = [];
+
+if ($securityRepo) {
+    $logs = $securityRepo->getSecurityLogs();
+}
 
 ?>
 
@@ -474,16 +368,16 @@ $logs =
 
         <tbody>
 
-        <?php if ($logs && $logs->num_rows() > 0): ?>
+        <?php if (!empty($logs)): ?>
 
-            <?php while ($row = $logs->fetch_assoc()): ?>
+            <?php foreach ($logs as $row): ?>
 
                 <tr>
 
                     <td>
 
                         <?php
-                            echo (int)$row['id'];
+                            echo (int)($row['id'] ?? 0);
                         ?>
 
                     </td>
@@ -492,7 +386,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['admin_name']
+                                (string)($row['admin_name'] ?? '')
                             );
                         ?>
 
@@ -502,7 +396,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['action_type']
+                                (string)($row['action_type'] ?? '')
                             );
                         ?>
 
@@ -512,7 +406,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['ip_address']
+                                (string)($row['ip_address'] ?? '')
                             );
                         ?>
 
@@ -522,7 +416,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['user_agent']
+                                (string)($row['user_agent'] ?? '')
                             );
                         ?>
 
@@ -531,13 +425,13 @@ $logs =
                     <td>
 
                         <span
-                            class="badge <?php echo htmlspecialchars((string)$row['status']); ?>"
+                            class="badge <?php echo htmlspecialchars((string)($row['status'] ?? '')); ?>"
                         >
 
                             <?php
                                 echo ucfirst(
                                     htmlspecialchars(
-                                        (string)$row['status']
+                                        (string)($row['status'] ?? '')
                                     )
                                 );
                             ?>
@@ -550,7 +444,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['created_at']
+                                (string)($row['created_at'] ?? '')
                             );
                         ?>
 
@@ -559,7 +453,7 @@ $logs =
                     <td>
 
                         <a
-                            href="?delete=<?php echo (int)$row['id']; ?>"
+                            href="?delete=<?php echo (int)($row['id'] ?? 0); ?>"
                             class="delete-btn"
                             onclick="return confirm('Delete this log?')"
                         >
@@ -570,7 +464,7 @@ $logs =
 
                 </tr>
 
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         <?php else: ?>
 

@@ -19,10 +19,10 @@ require_once ROOT_PATH . '/helpers/session.php';
 $_SESSION['success'] = 'Logged out successfully.';
 
 // Destroy the session via AuthController if available
-$authControllerPath = ROOT_PATH . '/app/controllers/auth/AuthController.php';
+$authControllerPath = ROOT_PATH . '/app/controllers/AuthController.php';
 if (file_exists($authControllerPath)) {
     require_once $authControllerPath;
-    $controller = new AuthController($conn);
+    $controller = new AuthController();
     $controller->logout();
 } else {
     // Fallback: destroy session directly

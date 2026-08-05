@@ -2,162 +2,21 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+require_once '../../../middleware/admin.php';
+require_once '../../../helpers/security.php';
+require_once '../../../helpers/csrf.php';
+require_once '../../../helpers/session.php';
+require_once '../../../helpers/functions.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| ADMIN SETTINGS SERVICE
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
-
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE SMS TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS sms_settings (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        sms_provider VARCHAR(100) NOT NULL,
-
-        api_key VARCHAR(255) NOT NULL,
-
-        sender_id VARCHAR(100) NOT NULL,
-
-        auth_token VARCHAR(255) NOT NULL,
-
-        api_url VARCHAR(255) NOT NULL,
-
-        admin_mobile VARCHAR(20) NOT NULL,
-
-        sms_status ENUM('enabled','disabled')
-        NOT NULL DEFAULT 'enabled',
-
-        notify_contact_form ENUM('yes','no')
-        NOT NULL DEFAULT 'yes',
-
-        notify_new_lead ENUM('yes','no')
-        NOT NULL DEFAULT 'yes',
-
-        updated_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-        ON UPDATE CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEFAULT SETTINGS
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM sms_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $stmt =
-        $conn->prepare(
-            "
-            INSERT INTO sms_settings
-            (
-
-                sms_provider,
-                api_key,
-                sender_id,
-                auth_token,
-                api_url,
-
-                admin_mobile,
-
-                sms_status,
-                notify_contact_form,
-                notify_new_lead
-
-            )
-            VALUES
-            (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            "
-        );
-
-    if ($stmt) {
-
-        $provider =
-            'Twilio';
-
-        $apiKey =
-            'your-api-key';
-
-        $senderId =
-            'KVNCON';
-
-        $authToken =
-            'your-auth-token';
-
-        $apiUrl =
-            'https://api.twilio.com';
-
-        $adminMobile =
-            '+919876543210';
-
-        $smsStatus =
-            'enabled';
-
-        $notifyContact =
-            'yes';
-
-        $notifyLead =
-            'yes';
-
-        $stmt->bind_param(
-            'sssssssss',
-            $provider,
-            $apiKey,
-            $senderId,
-            $authToken,
-            $apiUrl,
-            $adminMobile,
-            $smsStatus,
-            $notifyContact,
-            $notifyLead
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
-    }
-}
+$settingsService = new \App\Services\AdminSettingsService();
 
 /*
 |--------------------------------------------------------------------------
@@ -176,114 +35,12 @@ $error   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $provider =
-        trim($_POST['sms_provider'] ?? '');
+    $result = $settingsService->saveSmsSettings($_POST);
 
-    $apiKey =
-        trim($_POST['api_key'] ?? '');
-
-    $senderId =
-        trim($_POST['sender_id'] ?? '');
-
-    $authToken =
-        trim($_POST['auth_token'] ?? '');
-
-    $apiUrl =
-        trim($_POST['api_url'] ?? '');
-
-    $adminMobile =
-        trim($_POST['admin_mobile'] ?? '');
-
-    $smsStatus =
-        trim($_POST['sms_status'] ?? 'enabled');
-
-    $notifyContact =
-        trim($_POST['notify_contact_form'] ?? 'yes');
-
-    $notifyLead =
-        trim($_POST['notify_new_lead'] ?? 'yes');
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-
-        $provider === '' ||
-        $apiKey === '' ||
-        $senderId === '' ||
-        $authToken === '' ||
-        $apiUrl === '' ||
-        $adminMobile === ''
-
-    ) {
-
-        $error =
-            'Please fill all required fields.';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE DATABASE
-    |--------------------------------------------------------------------------
-    */
-
-    if ($error === '') {
-
-        try {
-
-            $stmt =
-                $conn->prepare(
-                    "
-                    UPDATE sms_settings
-                    SET
-
-                        sms_provider       = ?,
-                        api_key            = ?,
-                        sender_id          = ?,
-                        auth_token         = ?,
-                        api_url            = ?,
-
-                        admin_mobile       = ?,
-
-                        sms_status         = ?,
-                        notify_contact_form = ?,
-                        notify_new_lead    = ?
-
-                    WHERE id = 1
-                    "
-                );
-
-            if ($stmt) {
-
-                $stmt->bind_param(
-                    'sssssssss',
-                    $provider,
-                    $apiKey,
-                    $senderId,
-                    $authToken,
-                    $apiUrl,
-                    $adminMobile,
-                    $smsStatus,
-                    $notifyContact,
-                    $notifyLead
-                );
-
-                $stmt->execute();
-
-                $stmt->close();
-
-                $success =
-                    'SMS settings updated successfully.';
-            }
-
-        } catch (Throwable $e) {
-
-            $error =
-                $e->getMessage();
-        }
+    if ($result['success']) {
+        $success = $result['message'];
+    } else {
+        $error = $result['message'];
     }
 }
 
@@ -293,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 |--------------------------------------------------------------------------
 */
 
-$data = [
+$data = array_merge([
 
     'sms_provider'        => '',
     'api_key'             => '',
@@ -307,25 +64,7 @@ $data = [
     'notify_contact_form' => 'yes',
     'notify_new_lead'     => 'yes'
 
-];
-
-$result =
-    $conn->query(
-        "
-        SELECT *
-        FROM sms_settings
-        LIMIT 1
-        "
-    );
-
-if (
-    $result &&
-    $result->num_rows() > 0
-) {
-
-    $data =
-        $result->fetch_assoc();
-}
+], $settingsService->getSmsSettings());
 
 ?>
 
@@ -750,3 +489,4 @@ if (
 </body>
 
 </html>
+

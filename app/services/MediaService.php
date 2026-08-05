@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Core\Service;
-use App\Repositories\MediaRepository;
 
 /**
  * MediaService - Handles secure file uploads and database persistence for project assets.
+ *
+ * Uses global class \MediaRepository (defined in app/repositories/MediaRepository.php,
+ * no namespace declaration).
  */
 class MediaService extends Service
 {
-    private MediaRepository $mediaRepo;
+    private \MediaRepository $mediaRepo;
     private string $uploadPath = __DIR__ . '/../../storage/uploads/projects/';
 
-    public function __construct(MediaRepository $mediaRepo)
+    public function __construct(\MediaRepository $mediaRepo)
     {
         $this->mediaRepo = $mediaRepo;
         
@@ -49,13 +51,14 @@ class MediaService extends Service
         $targetPath = $this->uploadPath . $newFileName;
 
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            $mediaId = $this->mediaRepo->save([
-                'project_id' => $projectId,
-                'uploaded_by' => $userId,
-                'file_name' => $file['name'],
-                'file_type' => ($ext === 'pdf' || $ext === 'dwg') ? 'document' : 'photo',
-                'file_path' => $newFileName
-            ]);
+            $mediaId = $this->mediaRepo->createProjectMedia(
+                $projectId,
+                $newFileName,
+                $file['name'],
+                $newFileName,
+                ($ext === 'pdf' || $ext === 'dwg') ? 'document' : 'photo',
+                (int) $file['size']
+            );
             
             return $this->success(['id' => $mediaId, 'path' => $newFileName], 'File uploaded successfully.');
         }
@@ -74,7 +77,7 @@ class MediaService extends Service
             unlink($filePath);
         }
 
-        $this->mediaRepo->delete($id);
+        $this->mediaRepo->deleteById($id);
         return $this->success(null, 'File deleted successfully.');
     }
 }

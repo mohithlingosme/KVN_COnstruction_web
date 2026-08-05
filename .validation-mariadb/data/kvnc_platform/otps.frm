@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select `kvnc_platform`.`user_otps`.`id` AS `id`,`kvnc_platform`.`user_otps`.`user_id` AS `user_id`,`kvnc_platform`.`user_otps`.`phone_number` AS `phone_number`,`kvnc_platform`.`user_otps`.`otp` AS `otp`,`kvnc_platform`.`user_otps`.`otp_hash` AS `otp_hash`,`kvnc_platform`.`user_otps`.`purpose` AS `purpose`,`kvnc_platform`.`user_otps`.`attempts` AS `attempts`,`kvnc_platform`.`user_otps`.`resend_count` AS `resend_count`,`kvnc_platform`.`user_otps`.`ip_address` AS `ip_address`,`kvnc_platform`.`user_otps`.`user_agent` AS `user_agent`,`kvnc_platform`.`user_otps`.`is_used` AS `is_used`,`kvnc_platform`.`user_otps`.`expires_at` AS `expires_at`,`kvnc_platform`.`user_otps`.`verified_at` AS `verified_at`,`kvnc_platform`.`user_otps`.`created_at` AS `created_at`,`kvnc_platform`.`user_otps`.`updated_at` AS `updated_at`,`kvnc_platform`.`user_otps`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`user_otps`
+md5=88223a438a8a9b7c8554a3ea8c79e322
+updatable=1
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=2
+with_check_option=0
+timestamp=0001785844665682841
+create-version=2
+source=SELECT * FROM user_otps
+client_cs_name=cp850
+connection_cl_name=cp850_general_ci
+view_body_utf8=select `kvnc_platform`.`user_otps`.`id` AS `id`,`kvnc_platform`.`user_otps`.`user_id` AS `user_id`,`kvnc_platform`.`user_otps`.`phone_number` AS `phone_number`,`kvnc_platform`.`user_otps`.`otp` AS `otp`,`kvnc_platform`.`user_otps`.`otp_hash` AS `otp_hash`,`kvnc_platform`.`user_otps`.`purpose` AS `purpose`,`kvnc_platform`.`user_otps`.`attempts` AS `attempts`,`kvnc_platform`.`user_otps`.`resend_count` AS `resend_count`,`kvnc_platform`.`user_otps`.`ip_address` AS `ip_address`,`kvnc_platform`.`user_otps`.`user_agent` AS `user_agent`,`kvnc_platform`.`user_otps`.`is_used` AS `is_used`,`kvnc_platform`.`user_otps`.`expires_at` AS `expires_at`,`kvnc_platform`.`user_otps`.`verified_at` AS `verified_at`,`kvnc_platform`.`user_otps`.`created_at` AS `created_at`,`kvnc_platform`.`user_otps`.`updated_at` AS `updated_at`,`kvnc_platform`.`user_otps`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`user_otps`
+mariadb-version=100432

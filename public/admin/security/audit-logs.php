@@ -2,133 +2,44 @@
 
 declare(strict_types=1);
 
-session_start();
-
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| KVN CONSTRUCTION PLATFORM
+|--------------------------------------------------------------------------
+| SECURITY - AUDIT LOGS
+|--------------------------------------------------------------------------
+| REFACTORED: All SQL delegated to SecurityAdminRepository.
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
+require_once '../../../config/app.php';
 
-    header('Location: ../login.php');
-    exit();
-}
+require_once '../../../middleware/admin.php';
 
-/*
-|--------------------------------------------------------------------------
-| DATABASE CONNECTION
-|--------------------------------------------------------------------------
-*/
+require_once '../../../helpers/security.php';
 
-require_once '../../includes/db.php';
+require_once '../../../helpers/formatter.php';
+
+require_once '../../../includes/repositories.php';
+
+require_once '../../../bootstrap/providers/ServiceProvider.php';
 
 /*
 |--------------------------------------------------------------------------
-| CREATE AUDIT LOGS TABLE
+| PAGE TITLE
 |--------------------------------------------------------------------------
 */
 
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS audit_logs (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        admin_id INT DEFAULT NULL,
-
-        admin_name VARCHAR(255) NOT NULL,
-
-        module_name VARCHAR(255) NOT NULL,
-
-        action_performed VARCHAR(255) NOT NULL,
-
-        affected_record VARCHAR(255) NOT NULL,
-
-        ip_address VARCHAR(100) NOT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
+$pageTitle =
+'Audit Logs | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
-| INSERT DEMO DATA
+| REPOSITORY
 |--------------------------------------------------------------------------
 */
 
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM audit_logs
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO audit_logs
-        (
-
-            admin_id,
-            admin_name,
-            module_name,
-            action_performed,
-            affected_record,
-            ip_address
-
-        )
-
-        VALUES
-
-        (
-            1,
-            'Admin',
-            'Services',
-            'Created New Service',
-            'Premium Villa Construction',
-            '127.0.0.1'
-        ),
-
-        (
-            1,
-            'Admin',
-            'Portfolio',
-            'Updated Portfolio Item',
-            'Luxury Duplex Project',
-            '127.0.0.1'
-        ),
-
-        (
-            1,
-            'Admin',
-            'Testimonials',
-            'Deleted Testimonial',
-            'Client Review #5',
-            '192.168.1.5'
-        ),
-
-        (
-            1,
-            'Admin',
-            'CMS',
-            'Updated Homepage Content',
-            'Homepage Hero Section',
-            '10.0.0.2'
-        )
-        "
-    );
-}
+$securityRepo = repo('SecurityAdmin');
 
 /*
 |--------------------------------------------------------------------------
@@ -141,24 +52,8 @@ if (isset($_GET['delete'])) {
     $deleteId =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM audit_logs
-            WHERE id = ?
-            "
-        );
-
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $deleteId
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+    if ($securityRepo) {
+        $securityRepo->deleteAuditLog($deleteId);
     }
 
     header(
@@ -176,11 +71,9 @@ if (isset($_GET['delete'])) {
 
 if (isset($_POST['clear_logs'])) {
 
-    $conn->query(
-        "
-        TRUNCATE TABLE audit_logs
-        "
-    );
+    if ($securityRepo) {
+        $securityRepo->clearAuditLogs();
+    }
 
     header(
         'Location: audit-logs.php'
@@ -195,14 +88,11 @@ if (isset($_POST['clear_logs'])) {
 |--------------------------------------------------------------------------
 */
 
-$logs =
-    $conn->query(
-        "
-        SELECT *
-        FROM audit_logs
-        ORDER BY id DESC
-        "
-    );
+$logs = [];
+
+if ($securityRepo) {
+    $logs = $securityRepo->getAuditLogs();
+}
 
 ?>
 
@@ -461,16 +351,16 @@ $logs =
 
         <tbody>
 
-        <?php if ($logs && $logs->num_rows() > 0): ?>
+        <?php if (!empty($logs)): ?>
 
-            <?php while ($row = $logs->fetch_assoc()): ?>
+            <?php foreach ($logs as $row): ?>
 
                 <tr>
 
                     <td>
 
                         <?php
-                            echo (int)$row['id'];
+                            echo (int)($row['id'] ?? 0);
                         ?>
 
                     </td>
@@ -479,7 +369,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['admin_name']
+                                (string)($row['admin_name'] ?? '')
                             );
                         ?>
 
@@ -491,7 +381,7 @@ $logs =
 
                             <?php
                                 echo htmlspecialchars(
-                                    (string)$row['module_name']
+                                    (string)($row['module_name'] ?? '')
                                 );
                             ?>
 
@@ -503,7 +393,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['action_performed']
+                                (string)($row['action_performed'] ?? '')
                             );
                         ?>
 
@@ -513,7 +403,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['affected_record']
+                                (string)($row['affected_record'] ?? '')
                             );
                         ?>
 
@@ -523,7 +413,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['ip_address']
+                                (string)($row['ip_address'] ?? '')
                             );
                         ?>
 
@@ -533,7 +423,7 @@ $logs =
 
                         <?php
                             echo htmlspecialchars(
-                                (string)$row['created_at']
+                                (string)($row['created_at'] ?? '')
                             );
                         ?>
 
@@ -542,7 +432,7 @@ $logs =
                     <td>
 
                         <a
-                            href="?delete=<?php echo (int)$row['id']; ?>"
+                            href="?delete=<?php echo (int)($row['id'] ?? 0); ?>"
                             class="delete-btn"
                             onclick="return confirm('Delete this log?')"
                         >
@@ -553,7 +443,7 @@ $logs =
 
                 </tr>
 
-            <?php endwhile; ?>
+            <?php endforeach; ?>
 
         <?php else: ?>
 

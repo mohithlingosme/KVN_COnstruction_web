@@ -23,9 +23,10 @@ if (function_exists('requireOtpHelpers')) {
     require_once ROOT_PATH . '/helpers/mail.php';
 }
 
-require_once ROOT_PATH . '/app/models/User.php';
+require_once ROOT_PATH . '/app/repositories/UserRepository.php';
+require_once ROOT_PATH . '/bootstrap/providers/ServiceProvider.php';
 
-use App\Models\User;
+use App\Repositories\UserRepository;
 
 /*
 |--------------------------------------------------------------------------
@@ -91,9 +92,9 @@ if ((time() - $lastResend) < 60) {
 
 $otp = random_int(100000, 999999);
 
-$userModel = new User($GLOBALS['conn']);
+$userRepo = ServiceProvider::get('UserRepository');
 
-$saved = $userModel->saveOtp($userId, (string)$otp, 'password_reset', 5);
+$saved = $userRepo->saveOtp($userId, (string)$otp, 'password_reset', 5);
 
 if (!$saved) {
     echo json_encode(['success' => false, 'error' => 'Unable to generate new OTP.']);
@@ -107,7 +108,7 @@ if (!$saved) {
 */
 
 if (function_exists('sendPasswordResetEmail')) {
-    $user = $userModel->findById($userId);
+    $user = $userRepo->findById($userId);
     $name = $user['full_name'] ?? 'User';
     sendPasswordResetEmail($email, (string)$otp, $name);
 }

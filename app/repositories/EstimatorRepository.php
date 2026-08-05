@@ -44,6 +44,95 @@ class EstimatorRepository
         }
     }
 
+    /**
+     * Get active API packages from estimator_packages table.
+     */
+    public function getApiPackages(): array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id, package_name, base_price, material_grade, estimated_timeline, description, features
+                 FROM estimator_packages
+                 WHERE status = 'Active'
+                 ORDER BY id ASC"
+            );
+            $stmt->execute();
+            return $stmt->fetchAll() ?: [];
+        } catch (\Throwable $e) {
+            error_log('EstimatorRepository::getApiPackages error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get a single active API package by ID.
+     */
+    public function getApiPackageById(int $id): ?array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id, package_name, base_price, material_grade, estimated_timeline, description
+                 FROM estimator_packages
+                 WHERE id = :id AND status = 'Active'
+                 LIMIT 1"
+            );
+            $stmt->execute([':id' => $id]);
+            $res = $stmt->fetch();
+            return $res ?: null;
+        } catch (\Throwable $e) {
+            error_log('EstimatorRepository::getApiPackageById error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get active pricing items for a package.
+     */
+    public function getApiPricingByPackage(int $packageId): array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT package_name, price_per_sqft, description
+                 FROM estimator_pricing
+                 WHERE package_id = :package_id AND status = 'Active'
+                 ORDER BY id ASC"
+            );
+            $stmt->execute([':package_id' => $packageId]);
+            return $stmt->fetchAll() ?: [];
+        } catch (\Throwable $e) {
+            error_log('EstimatorRepository::getApiPricingByPackage error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Save an estimator lead from the API.
+     */
+    public function saveApiLead(array $data): int
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO estimator_leads (full_name, phone, email, location, plot_area, floors, package_id, estimated_cost, ip_address, created_at)
+                 VALUES (:full_name, :phone, :email, :location, :plot_area, :floors, :package_id, :estimated_cost, :ip_address, NOW())"
+            );
+            $stmt->execute([
+                ':full_name'      => $data['full_name'],
+                ':phone'          => $data['phone'],
+                ':email'          => $data['email'] ?? null,
+                ':location'       => $data['location'] ?? null,
+                ':plot_area'      => $data['plot_area'],
+                ':floors'         => $data['floors'],
+                ':package_id'     => $data['package_id'],
+                ':estimated_cost' => $data['estimated_cost'],
+                ':ip_address'     => $data['ip_address'] ?? null,
+            ]);
+            return (int)$this->db->lastInsertId();
+        } catch (\Throwable $e) {
+            error_log('EstimatorRepository::saveApiLead error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
     public function getPackageById(int $id): ?array
     {
         try {

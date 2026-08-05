@@ -2,149 +2,30 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+
+require_once '../../../middleware/admin.php';
+
+require_once '../../../helpers/security.php';
+
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| REPOSITORY
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
+$reportRepo = repo('Report');
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
+| PAGE TITLE
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE PROJECTS TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS project_reports (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        client_name VARCHAR(255) NOT NULL,
-
-        project_type VARCHAR(255) NOT NULL,
-
-        location VARCHAR(255) NOT NULL,
-
-        budget DECIMAL(12,2) NOT NULL,
-
-        start_date DATE NOT NULL,
-
-        expected_completion DATE NOT NULL,
-
-        progress INT NOT NULL DEFAULT 0,
-
-        status ENUM('Planning','In Progress','Completed','On Hold')
-        NOT NULL DEFAULT 'Planning',
-
-        site_engineer VARCHAR(255) NOT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM project_reports
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO project_reports
-        (
-
-            project_name,
-            client_name,
-            project_type,
-            location,
-            budget,
-            start_date,
-            expected_completion,
-            progress,
-            status,
-            site_engineer
-
-        )
-
-        VALUES
-
-        (
-            'Luxury Villa',
-            'Rahul Sharma',
-            'Residential',
-            'Bangalore',
-            8500000,
-            '2026-01-10',
-            '2026-12-20',
-            45,
-            'In Progress',
-            'Arjun Kumar'
-        ),
-
-        (
-            'Modern Duplex',
-            'Sneha Reddy',
-            'Residential',
-            'Hyderabad',
-            6200000,
-            '2026-02-15',
-            '2026-10-30',
-            70,
-            'In Progress',
-            'Vikram Rao'
-        ),
-
-        (
-            'Commercial Complex',
-            'TechBuild Pvt Ltd',
-            'Commercial',
-            'Chennai',
-            25000000,
-            '2025-08-01',
-            '2026-05-01',
-            100,
-            'Completed',
-            'Suresh Naik'
-        )
-        "
-    );
-}
+$pageTitle =
+'Project Reports | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
@@ -209,53 +90,27 @@ if (
 
     if ($error === '') {
 
-        $stmt =
-            $conn->prepare(
-                "
-                INSERT INTO project_reports
-                (
-
-                    project_name,
-                    client_name,
-                    project_type,
-                    location,
-                    budget,
-                    start_date,
-                    expected_completion,
-                    progress,
-                    status,
-                    site_engineer
-
-                )
-
-                VALUES
-
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                "
-            );
-
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'ssssdssiss',
-                $projectName,
-                $clientName,
-                $projectType,
-                $location,
-                $budget,
-                $startDate,
-                $expectedCompletion,
-                $progress,
-                $status,
-                $siteEngineer
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+        try {
+            $reportRepo
+                ? $reportRepo->insertProjectReport([
+                    'project_name'            => $projectName,
+                    'client_name'             => $clientName,
+                    'project_type'            => $projectType,
+                    'location'                => $location,
+                    'budget'                  => $budget,
+                    'start_date'              => $startDate,
+                    'expected_completion'     => $expectedCompletion,
+                    'progress'                => (int)$progress,
+                    'status'                  => $status,
+                    'site_engineer'           => $siteEngineer,
+                ])
+                : false;
 
             $success =
                 'Project added successfully.';
+        } catch (Exception $e) {
+            $error =
+                'Failed to add project.';
         }
     }
 }
@@ -271,31 +126,19 @@ if (isset($_GET['delete'])) {
     $id =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM project_reports
-            WHERE id = ?
-            "
+    try {
+        $reportRepo
+            ? $reportRepo->deleteProjectReport($id)
+            : false;
+
+        header(
+            'Location: projects.php'
         );
 
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $id
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+        exit();
+    } catch (Exception $e) {
+        $error = 'Failed to delete project.';
     }
-
-    header(
-        'Location: projects.php'
-    );
-
-    exit();
 }
 
 /*
@@ -304,14 +147,15 @@ if (isset($_GET['delete'])) {
 |--------------------------------------------------------------------------
 */
 
-$projects =
-    $conn->query(
-        "
-        SELECT *
-        FROM project_reports
-        ORDER BY id DESC
-        "
-    );
+$projects = [];
+
+try {
+    if ($reportRepo) {
+        $projects = $reportRepo->getProjectReports();
+    }
+} catch (Exception $e) {
+    $error = 'Failed to load projects.';
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -325,34 +169,29 @@ $progressProjects  = 0;
 $completedProjects = 0;
 $holdProjects      = 0;
 
-if ($projects && $projects->num_rows() > 0) {
+foreach ($projects as $calc) {
 
-    while ($calc = $projects->fetch_assoc()) {
+    $totalProjects++;
 
-        $totalProjects++;
+    if ($calc['status'] === 'Planning') {
 
-        if ($calc['status'] === 'Planning') {
-
-            $planningProjects++;
-        }
-
-        if ($calc['status'] === 'In Progress') {
-
-            $progressProjects++;
-        }
-
-        if ($calc['status'] === 'Completed') {
-
-            $completedProjects++;
-        }
-
-        if ($calc['status'] === 'On Hold') {
-
-            $holdProjects++;
-        }
+        $planningProjects++;
     }
 
-    $projects->data_seek(0);
+    if ($calc['status'] === 'In Progress') {
+
+        $progressProjects++;
+    }
+
+    if ($calc['status'] === 'Completed') {
+
+        $completedProjects++;
+    }
+
+    if ($calc['status'] === 'On Hold') {
+
+        $holdProjects++;
+    }
 }
 
 ?>
@@ -680,15 +519,6 @@ if ($projects && $projects->num_rows() > 0) {
             background:#b02a37;
         }
 
-        .empty{
-
-            text-align:center;
-
-            padding:40px;
-
-            color:#777;
-        }
-
         .back{
 
             display:inline-block;
@@ -700,6 +530,15 @@ if ($projects && $projects->num_rows() > 0) {
             font-weight:bold;
 
             color:#333;
+        }
+
+        .empty{
+
+            text-align:center;
+
+            padding:40px;
+
+            color:#777;
         }
 
         @media(max-width:992px){
@@ -1020,9 +859,9 @@ if ($projects && $projects->num_rows() > 0) {
 
             <tbody>
 
-            <?php if ($projects && $projects->num_rows() > 0): ?>
+            <?php if (!empty($projects)): ?>
 
-                <?php while ($row = $projects->fetch_assoc()): ?>
+                <?php foreach ($projects as $row): ?>
 
                     <tr>
 
@@ -1105,7 +944,7 @@ if ($projects && $projects->num_rows() > 0) {
 
                     </tr>
 
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             <?php else: ?>
 

@@ -1,7 +1,6 @@
 <?php
 
 require_once '../config/app.php';
-require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/repositories.php';
 
 // =====================================

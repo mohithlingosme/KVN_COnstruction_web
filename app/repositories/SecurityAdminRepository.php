@@ -76,6 +76,28 @@ class SecurityAdminRepository
         }
     }
 
+    public function terminateSession(int $id): bool
+    {
+        try {
+            $stmt = $this->db->prepare("UPDATE admin_sessions SET status = 'expired' WHERE id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (\Throwable $e) {
+            error_log('SecurityAdminRepository::terminateSession error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function terminateAllSessions(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("UPDATE admin_sessions SET status = 'expired'");
+            return $stmt->execute();
+        } catch (\Throwable $e) {
+            error_log('SecurityAdminRepository::terminateAllSessions error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     // ========================================================================
     // SECURITY LOGS
     // ========================================================================
@@ -122,6 +144,17 @@ class SecurityAdminRepository
         }
     }
 
+    public function clearSecurityLogs(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("TRUNCATE TABLE security_logs");
+            return $stmt->execute();
+        } catch (\Throwable $e) {
+            error_log('SecurityAdminRepository::clearSecurityLogs error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     // ========================================================================
     // LOGIN ATTEMPTS
     // ========================================================================
@@ -164,6 +197,17 @@ class SecurityAdminRepository
             return $stmt->execute([':id' => $id]);
         } catch (\Throwable $e) {
             error_log('SecurityAdminRepository::deleteLoginAttempt error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function clearLoginAttempts(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("TRUNCATE TABLE login_attempts");
+            return $stmt->execute();
+        } catch (\Throwable $e) {
+            error_log('SecurityAdminRepository::clearLoginAttempts error: ' . $e->getMessage());
             return false;
         }
     }
@@ -267,6 +311,17 @@ public function deleteBlockedUser(int $id): bool
             return $stmt->execute([':id' => $id]);
         } catch (\Throwable $e) {
             error_log('SecurityAdminRepository::deleteAuditLog error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function clearAuditLogs(): bool
+    {
+        try {
+            $stmt = $this->db->prepare("TRUNCATE TABLE audit_logs");
+            return $stmt->execute();
+        } catch (\Throwable $e) {
+            error_log('SecurityAdminRepository::clearAuditLogs error: ' . $e->getMessage());
             return false;
         }
     }

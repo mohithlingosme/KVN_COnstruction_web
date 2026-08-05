@@ -24,7 +24,7 @@ class QuotationRepository extends Repository
         }
     }
 
-    public function findAllWithDetails(string $orderBy = 'quotations.id DESC', ?int $limit = null, int $offset = 0): array
+    public function findAllWithDetails(string $orderBy = 'q.id DESC', ?int $limit = null, int $offset = 0): array
     {
         $sql = "SELECT q.*, u.full_name AS client_name, u.phone AS client_phone, p.project_name
                 FROM quotations q

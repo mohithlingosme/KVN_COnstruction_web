@@ -506,34 +506,13 @@ function canResendSms(
     string $phone
 ): bool {
 
-    global $conn;
-
     try {
 
-        $query = "
+        require_once __DIR__ . '/../app/repositories/SmsRepository.php';
 
-            SELECT created_at
+        $repo = new \App\Repositories\SmsRepository();
 
-            FROM sms_logs
-
-            WHERE phone = :phone
-
-            ORDER BY id DESC
-
-            LIMIT 1
-        ";
-
-        $stmt =
-        $conn->prepare($query);
-
-        $stmt->execute([
-
-            ':phone' =>
-            $phone
-        ]);
-
-        $last =
-        $stmt->fetch();
+        $last = $repo->getLastSent($phone);
 
         /*
         |--------------------------------------------------------------------------
@@ -568,10 +547,10 @@ function canResendSms(
 
         SMS_RESEND_COOLDOWN;
 
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
 
         error_log(
-            $e->getMessage()
+            'canResendSms error: ' . $e->getMessage()
         );
 
         return false;
@@ -591,70 +570,24 @@ function logSmsDelivery(
     string $response = ''
 ): void {
 
-    global $conn;
-
     try {
 
-        /*
-        |--------------------------------------------------------------------------
-        | DATABASE LOG
-        |--------------------------------------------------------------------------
-        */
+        require_once __DIR__ . '/../app/repositories/SmsRepository.php';
 
-        if (isset($conn)) {
+        $repo = new \App\Repositories\SmsRepository();
 
-            $query = "
+        $repo->log(
+            $phone,
+            $message,
+            $status,
+            'helper',
+            $response ?: null
+        );
 
-                INSERT INTO sms_logs (
-
-                    phone,
-                    message,
-                    status,
-                    response,
-                    ip_address,
-                    created_at
-
-                )
-
-                VALUES (
-
-                    :phone,
-                    :message,
-                    :status,
-                    :response,
-                    :ip_address,
-                    NOW()
-                )
-            ";
-
-            $stmt =
-            $conn->prepare($query);
-
-            $stmt->execute([
-
-                ':phone' =>
-                $phone,
-
-                ':message' =>
-                $message,
-
-                ':status' =>
-                $status,
-
-                ':response' =>
-                $response,
-
-                ':ip_address' =>
-
-                    $_SERVER['REMOTE_ADDR']
-                    ?? null
-            ]);
-        }
-
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
 
         error_log(
-            $e->getMessage()
+            'logSmsDelivery error: ' . $e->getMessage()
         );
     }
 }

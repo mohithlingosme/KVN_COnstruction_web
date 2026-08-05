@@ -1,0 +1,16 @@
+TYPE=VIEW
+query=select `kvnc_platform`.`media`.`id` AS `id`,`kvnc_platform`.`media`.`uploaded_by` AS `uploaded_by`,`kvnc_platform`.`media`.`file_name` AS `file_name`,`kvnc_platform`.`media`.`original_name` AS `original_name`,`kvnc_platform`.`media`.`file_path` AS `file_path`,`kvnc_platform`.`media`.`file_type` AS `file_type`,`kvnc_platform`.`media`.`mime_type` AS `mime_type`,`kvnc_platform`.`media`.`file_size` AS `file_size`,`kvnc_platform`.`media`.`alt_text` AS `alt_text`,`kvnc_platform`.`media`.`caption` AS `caption`,`kvnc_platform`.`media`.`status` AS `status`,`kvnc_platform`.`media`.`created_at` AS `created_at`,`kvnc_platform`.`media`.`updated_at` AS `updated_at`,`kvnc_platform`.`media`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`media`
+md5=bcca3015319ce4ca013926afbad6ba83
+updatable=1
+algorithm=0
+definer_user=root
+definer_host=localhost
+suid=2
+with_check_option=0
+timestamp=0001785844015526141
+create-version=2
+source=SELECT * FROM media
+client_cs_name=utf8mb4
+connection_cl_name=utf8mb4_general_ci
+view_body_utf8=select `kvnc_platform`.`media`.`id` AS `id`,`kvnc_platform`.`media`.`uploaded_by` AS `uploaded_by`,`kvnc_platform`.`media`.`file_name` AS `file_name`,`kvnc_platform`.`media`.`original_name` AS `original_name`,`kvnc_platform`.`media`.`file_path` AS `file_path`,`kvnc_platform`.`media`.`file_type` AS `file_type`,`kvnc_platform`.`media`.`mime_type` AS `mime_type`,`kvnc_platform`.`media`.`file_size` AS `file_size`,`kvnc_platform`.`media`.`alt_text` AS `alt_text`,`kvnc_platform`.`media`.`caption` AS `caption`,`kvnc_platform`.`media`.`status` AS `status`,`kvnc_platform`.`media`.`created_at` AS `created_at`,`kvnc_platform`.`media`.`updated_at` AS `updated_at`,`kvnc_platform`.`media`.`deleted_at` AS `deleted_at` from `kvnc_platform`.`media`
+mariadb-version=100432

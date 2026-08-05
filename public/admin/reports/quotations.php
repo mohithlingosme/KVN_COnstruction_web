@@ -2,151 +2,40 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+
+require_once '../../../middleware/admin.php';
+
+require_once '../../../helpers/security.php';
+
+require_once '../../includes/repositories.php';
 
 /*
+|
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| REPOSITORY
+|
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
+$reportRepo = repo('Report');
 
 /*
+|
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
+| PAGE TITLE
+|
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
+$pageTitle =
+'Quotation Reports | ' . APP_NAME;
 
 /*
-|--------------------------------------------------------------------------
-| CREATE QUOTATIONS TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS quotations (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        quotation_no VARCHAR(100) NOT NULL,
-
-        client_name VARCHAR(255) NOT NULL,
-
-        client_phone VARCHAR(50) NOT NULL,
-
-        project_type VARCHAR(255) NOT NULL,
-
-        project_location VARCHAR(255) NOT NULL,
-
-        estimated_cost DECIMAL(12,2) NOT NULL,
-
-        quotation_status ENUM(
-            'Pending',
-            'Approved',
-            'Rejected'
-        )
-        NOT NULL DEFAULT 'Pending',
-
-        valid_until DATE NOT NULL,
-
-        notes TEXT DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM quotations
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO quotations
-        (
-
-            quotation_no,
-            client_name,
-            client_phone,
-            project_type,
-            project_location,
-            estimated_cost,
-            quotation_status,
-            valid_until,
-            notes
-
-        )
-
-        VALUES
-
-        (
-            'KVN-QT-1001',
-            'Rahul Sharma',
-            '9876543210',
-            'Luxury Villa',
-            'Bangalore',
-            8500000,
-            'Approved',
-            '2026-07-15',
-            'Turnkey construction package.'
-        ),
-
-        (
-            'KVN-QT-1002',
-            'Sneha Reddy',
-            '9988776655',
-            'Modern Duplex',
-            'Hyderabad',
-            6200000,
-            'Pending',
-            '2026-06-30',
-            'Interior excluded from package.'
-        ),
-
-        (
-            'KVN-QT-1003',
-            'TechBuild Pvt Ltd',
-            '9123456780',
-            'Commercial Complex',
-            'Chennai',
-            25000000,
-            'Rejected',
-            '2026-05-28',
-            'Client requested revised costing.'
-        )
-        "
-    );
-}
-
-/*
+|
 |--------------------------------------------------------------------------
 | ADD QUOTATION
+|
 |--------------------------------------------------------------------------
 */
 
@@ -202,58 +91,35 @@ if (
 
     if ($error === '') {
 
-        $stmt =
-            $conn->prepare(
-                "
-                INSERT INTO quotations
-                (
-
-                    quotation_no,
-                    client_name,
-                    client_phone,
-                    project_type,
-                    project_location,
-                    estimated_cost,
-                    quotation_status,
-                    valid_until,
-                    notes
-
-                )
-
-                VALUES
-
-                (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                "
-            );
-
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'sssssisss',
-                $quotationNo,
-                $clientName,
-                $clientPhone,
-                $projectType,
-                $projectLocation,
-                $estimatedCost,
-                $quotationStatus,
-                $validUntil,
-                $notes
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+        try {
+            $reportRepo
+                ? $reportRepo->insertQuotationReport([
+                    'quotation_no'     => $quotationNo,
+                    'client_name'      => $clientName,
+                    'client_phone'     => $clientPhone,
+                    'project_type'     => $projectType,
+                    'project_location' => $projectLocation,
+                    'estimated_cost'   => $estimatedCost,
+                    'quotation_status' => $quotationStatus,
+                    'valid_until'      => $validUntil,
+                    'notes'            => $notes,
+                ])
+                : false;
 
             $success =
                 'Quotation added successfully.';
+        } catch (Exception $e) {
+            $error =
+                'Failed to add quotation.';
         }
     }
 }
 
 /*
+|
 |--------------------------------------------------------------------------
 | DELETE QUOTATION
+|
 |--------------------------------------------------------------------------
 */
 
@@ -262,51 +128,44 @@ if (isset($_GET['delete'])) {
     $id =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM quotations
-            WHERE id = ?
-            "
+    try {
+        $reportRepo
+            ? $reportRepo->deleteQuotationReport($id)
+            : false;
+
+        header(
+            'Location: quotations.php'
         );
 
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $id
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+        exit();
+    } catch (Exception $e) {
+        $error = 'Failed to delete quotation.';
     }
-
-    header(
-        'Location: quotations.php'
-    );
-
-    exit();
 }
 
 /*
+|
 |--------------------------------------------------------------------------
 | FETCH QUOTATIONS
+|
 |--------------------------------------------------------------------------
 */
 
-$quotations =
-    $conn->query(
-        "
-        SELECT *
-        FROM quotations
-        ORDER BY id DESC
-        "
-    );
+$quotations = [];
+
+try {
+    if ($reportRepo) {
+        $quotations = $reportRepo->getQuotationReports();
+    }
+} catch (Exception $e) {
+    $error = 'Failed to load quotations.';
+}
 
 /*
+|
 |--------------------------------------------------------------------------
 | STATS
+|
 |--------------------------------------------------------------------------
 */
 
@@ -316,41 +175,36 @@ $pendingQuotes     = 0;
 $rejectedQuotes    = 0;
 $totalQuotationAmt = 0;
 
-if ($quotations && $quotations->num_rows() > 0) {
+foreach ($quotations as $calc) {
 
-    while ($calc = $quotations->fetch_assoc()) {
+    $totalQuotations++;
 
-        $totalQuotations++;
+    $totalQuotationAmt +=
+        (float)$calc['estimated_cost'];
 
-        $totalQuotationAmt +=
-            (float)$calc['estimated_cost'];
+    if (
+        $calc['quotation_status']
+        === 'Approved'
+    ) {
 
-        if (
-            $calc['quotation_status']
-            === 'Approved'
-        ) {
-
-            $approvedQuotes++;
-        }
-
-        if (
-            $calc['quotation_status']
-            === 'Pending'
-        ) {
-
-            $pendingQuotes++;
-        }
-
-        if (
-            $calc['quotation_status']
-            === 'Rejected'
-        ) {
-
-            $rejectedQuotes++;
-        }
+        $approvedQuotes++;
     }
 
-    $quotations->data_seek(0);
+    if (
+        $calc['quotation_status']
+        === 'Pending'
+    ) {
+
+        $pendingQuotes++;
+    }
+
+    if (
+        $calc['quotation_status']
+        === 'Rejected'
+    ) {
+
+        $rejectedQuotes++;
+    }
 }
 
 ?>
@@ -974,9 +828,9 @@ if ($quotations && $quotations->num_rows() > 0) {
 
             <tbody>
 
-            <?php if ($quotations && $quotations->num_rows() > 0): ?>
+            <?php if (!empty($quotations)): ?>
 
-                <?php while ($row = $quotations->fetch_assoc()): ?>
+                <?php foreach ($quotations as $row): ?>
 
                     <tr>
 
@@ -1046,7 +900,7 @@ if ($quotations && $quotations->num_rows() > 0) {
 
                     </tr>
 
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             <?php else: ?>
 

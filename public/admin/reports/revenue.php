@@ -2,125 +2,30 @@
 
 declare(strict_types=1);
 
-session_start();
+require_once '../../../config/app.php';
+
+require_once '../../../middleware/admin.php';
+
+require_once '../../../helpers/security.php';
+
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
-| AUTH CHECK
+| REPOSITORY
 |--------------------------------------------------------------------------
 */
 
-if (!isset($_SESSION['admin_id'])) {
-
-    header('Location: ../login.php');
-    exit();
-}
+$reportRepo = repo('Report');
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE CONNECTION
+| PAGE TITLE
 |--------------------------------------------------------------------------
 */
 
-require_once '../../includes/db.php';
-
-/*
-|--------------------------------------------------------------------------
-| CREATE REVENUE TABLE
-|--------------------------------------------------------------------------
-*/
-
-$conn->query(
-    "
-    CREATE TABLE IF NOT EXISTS revenue_reports (
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        project_name VARCHAR(255) NOT NULL,
-
-        client_name VARCHAR(255) NOT NULL,
-
-        project_type VARCHAR(255) NOT NULL,
-
-        amount DECIMAL(12,2) NOT NULL,
-
-        payment_status ENUM('Paid','Pending','Partial')
-        NOT NULL DEFAULT 'Pending',
-
-        payment_date DATE DEFAULT NULL,
-
-        created_at TIMESTAMP
-        DEFAULT CURRENT_TIMESTAMP
-
-    )
-    "
-);
-
-/*
-|--------------------------------------------------------------------------
-| INSERT DEMO DATA
-|--------------------------------------------------------------------------
-*/
-
-$check =
-    $conn->query(
-        "
-        SELECT id
-        FROM revenue_reports
-        LIMIT 1
-        "
-    );
-
-if (
-    $check &&
-    $check->num_rows() === 0
-) {
-
-    $conn->query(
-        "
-        INSERT INTO revenue_reports
-        (
-
-            project_name,
-            client_name,
-            project_type,
-            amount,
-            payment_status,
-            payment_date
-
-        )
-
-        VALUES
-
-        (
-            'Luxury Villa Construction',
-            'Ramesh Kumar',
-            'Residential',
-            4500000,
-            'Paid',
-            '2026-05-01'
-        ),
-
-        (
-            'Modern Duplex Project',
-            'Anita Sharma',
-            'Residential',
-            3200000,
-            'Partial',
-            '2026-05-12'
-        ),
-
-        (
-            'Commercial Complex',
-            'TechBuild Pvt Ltd',
-            'Commercial',
-            8500000,
-            'Pending',
-            NULL
-        )
-        "
-    );
-}
+$pageTitle =
+'Revenue Reports | ' . APP_NAME;
 
 /*
 |--------------------------------------------------------------------------
@@ -168,45 +73,23 @@ if (
 
     if ($error === '') {
 
-        $stmt =
-            $conn->prepare(
-                "
-                INSERT INTO revenue_reports
-                (
-
-                    project_name,
-                    client_name,
-                    project_type,
-                    amount,
-                    payment_status,
-                    payment_date
-
-                )
-
-                VALUES
-
-                (?, ?, ?, ?, ?, ?)
-                "
-            );
-
-        if ($stmt) {
-
-            $stmt->bind_param(
-                'sssiss',
-                $projectName,
-                $clientName,
-                $projectType,
-                $amount,
-                $paymentStatus,
-                $paymentDate
-            );
-
-            $stmt->execute();
-
-            $stmt->close();
+        try {
+            $reportRepo
+                ? $reportRepo->insertRevenueReport([
+                    'project_name'   => $projectName,
+                    'client_name'    => $clientName,
+                    'project_type'   => $projectType,
+                    'amount'         => $amount,
+                    'payment_status' => $paymentStatus,
+                    'payment_date'   => $paymentDate !== '' ? $paymentDate : null,
+                ])
+                : false;
 
             $success =
                 'Revenue record added successfully.';
+        } catch (Exception $e) {
+            $error =
+                'Failed to add revenue record.';
         }
     }
 }
@@ -222,31 +105,20 @@ if (isset($_GET['delete'])) {
     $id =
         (int) $_GET['delete'];
 
-    $stmt =
-        $conn->prepare(
-            "
-            DELETE FROM revenue_reports
-            WHERE id = ?
-            "
+    try {
+        $reportRepo
+            ? $reportRepo->deleteRevenueReport($id)
+            : false;
+
+        header(
+            'Location: revenue.php'
         );
 
-    if ($stmt) {
-
-        $stmt->bind_param(
-            'i',
-            $id
-        );
-
-        $stmt->execute();
-
-        $stmt->close();
+        exit();
+    } catch (Exception $e) {
+        $error =
+            'Failed to delete record.';
     }
-
-    header(
-        'Location: revenue.php'
-    );
-
-    exit();
 }
 
 /*
@@ -255,14 +127,15 @@ if (isset($_GET['delete'])) {
 |--------------------------------------------------------------------------
 */
 
-$revenues =
-    $conn->query(
-        "
-        SELECT *
-        FROM revenue_reports
-        ORDER BY id DESC
-        "
-    );
+$revenues = [];
+
+try {
+    if ($reportRepo) {
+        $revenues = $reportRepo->getRevenueReports();
+    }
+} catch (Exception $e) {
+    $error = 'Failed to load revenue records.';
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -282,36 +155,31 @@ $totalPending =
 $totalPartial =
     0;
 
-if ($revenues && $revenues->num_rows() > 0) {
+foreach ($revenues as $calc) {
 
-    while ($calc = $revenues->fetch_assoc()) {
+    $amount =
+        (float) $calc['amount'];
 
-        $amount =
-            (float) $calc['amount'];
+    $totalRevenue +=
+        $amount;
 
-        $totalRevenue +=
+    if ($calc['payment_status'] === 'Paid') {
+
+        $totalPaid +=
             $amount;
-
-        if ($calc['payment_status'] === 'Paid') {
-
-            $totalPaid +=
-                $amount;
-        }
-
-        if ($calc['payment_status'] === 'Pending') {
-
-            $totalPending +=
-                $amount;
-        }
-
-        if ($calc['payment_status'] === 'Partial') {
-
-            $totalPartial +=
-                $amount;
-        }
     }
 
-    $revenues->data_seek(0);
+    if ($calc['payment_status'] === 'Pending') {
+
+        $totalPending +=
+            $amount;
+    }
+
+    if ($calc['payment_status'] === 'Partial') {
+
+        $totalPartial +=
+            $amount;
+    }
 }
 
 ?>
@@ -865,9 +733,9 @@ if ($revenues && $revenues->num_rows() > 0) {
 
             <tbody>
 
-            <?php if ($revenues && $revenues->num_rows() > 0): ?>
+            <?php if (!empty($revenues)): ?>
 
-                <?php while ($row = $revenues->fetch_assoc()): ?>
+                <?php foreach ($revenues as $row): ?>
 
                     <tr>
 
@@ -968,7 +836,7 @@ if ($revenues && $revenues->num_rows() > 0) {
 
                     </tr>
 
-                <?php endwhile; ?>
+                <?php endforeach; ?>
 
             <?php else: ?>
 
@@ -1004,4 +872,4 @@ if ($revenues && $revenues->num_rows() > 0) {
 
 </body>
 
-</html>
+</html></arg_value></tool_call>

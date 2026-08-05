@@ -1,0 +1,1133 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * KVN Platform - Full Repository Smoke Matrix
+ *
+ * Exercises every major repository against the live MariaDB instance.
+ * Reports pass/fail for each method tested.
+ */
+
+require_once __DIR__ . '/bootstrap.php';
+
+$pdo = smoke_pdo();
+$tables = smoke_tables($pdo);
+
+$results = [];
+$passCount = 0;
+$failCount = 0;
+$totalCount = 0;
+
+function record(string $area, string $method, bool $ok, string $detail = ''): void
+{
+    global $results, $passCount, $failCount, $totalCount;
+    $totalCount++;
+    if ($ok) {
+        $passCount++;
+    } else {
+        $failCount++;
+    }
+    $results[] = [
+        'area' => $area,
+        'method' => $method,
+        'ok' => $ok,
+        'detail' => $detail,
+    ];
+    $status = $ok ? 'PASS' : 'FAIL';
+    echo "[{$status}] {$area}::{$method}" . ($detail ? " - {$detail}" : '') . "\n";
+}
+
+function tableExists(array $tables, string $name): bool
+{
+    return in_array($name, $tables, true);
+}
+
+echo "=== KVN Platform Full Repository Smoke Matrix ===\n";
+echo "Connected to: " . $pdo->query('SELECT DATABASE()')->fetchColumn() . "\n";
+echo "Tables found: " . count($tables) . "\n\n";
+
+// ============================================================================
+// 1. DATABASE CONNECTIVITY & SCHEMA
+// ============================================================================
+echo "--- 1. Database Connectivity & Schema ---\n";
+
+$requiredTables = [
+    'users', 'clients', 'roles', 'permissions', 'user_roles', 'role_permissions',
+    'user_sessions', 'remember_tokens', 'user_otps', 'rate_limits', 'login_attempts',
+    'blocked_users', 'admin_sessions', 'security_logs', 'audit_logs', 'mail_logs',
+    'sms_logs', 'email_verification_tokens', 'password_history', 'suspicious_activity',
+    'session_history', 'user_devices', 'settings', 'general_settings', 'sms_settings',
+    'integration_settings', 'security_settings', 'about_page', 'about_advantages',
+    'about_process_steps', 'about_specifications', 'contact_page', 'contact_page_features',
+    'homepage_content', 'seo_settings', 'faqs', 'services', 'portfolio', 'blog_categories',
+    'blog_tags', 'blogs', 'blog_comments', 'testimonials', 'testimonial_videos',
+    'video_categories', 'videos', 'construction_packages', 'package_features',
+    'package_specifications', 'lead_statuses', 'leads', 'lead_activities', 'lead_followups',
+    'estimator_requests', 'estimator_packages', 'estimator_pricing', 'estimator_materials',
+    'estimator_calculation_log', 'project_statuses', 'projects', 'project_milestones',
+    'project_timelines', 'project_updates', 'project_gallery', 'project_media',
+    'project_files', 'project_tasks', 'payments', 'client_invoices', 'payment_transactions',
+    'payment_receipts', 'quotations', 'quotation_items', 'quotation_versions',
+    'quotation_downloads', 'support_tickets', 'support_messages', 'client_messages',
+    'client_notifications', 'client_feedback', 'client_documents', 'client_permits',
+    'client_agreements', 'client_downloads', 'client_quotations', 'client_uploaded_images',
+    'client_uploaded_videos', 'client_testimonials', 'project_reports', 'revenue_reports',
+    'media', 'media_derivatives',
+];
+
+$missingTables = [];
+foreach ($requiredTables as $t) {
+    if (!tableExists($tables, $t)) {
+        $missingTables[] = $t;
+    }
+}
+record('Schema', 'required_tables', empty($missingTables), empty($missingTables) ? '' : 'Missing: ' . implode(', ', $missingTables));
+
+// Compatibility views
+$requiredViews = [
+    'blog_posts', 'portfolio_projects', 'client_projects', 'client_payments',
+    'project_schedules', 'client_schedules', 'media_library', 'client_files',
+    'otps', 'estimators', 'estimator_leads', 'active_sessions_view',
+    'failed_login_attempts_view', 'security_overview', 'suspicious_activity_view',
+    'blogs_view', 'portfolio_view', 'projects_view', 'estimators_view',
+];
+
+$missingViews = [];
+foreach ($requiredViews as $v) {
+    if (!tableExists($tables, $v)) {
+        $missingViews[] = $v;
+    }
+}
+record('Schema', 'compatibility_views', empty($missingViews), empty($missingViews) ? '' : 'Missing: ' . implode(', ', $missingViews));
+
+// ============================================================================
+// 2. USER REPOSITORY
+// ============================================================================
+echo "\n--- 2. UserRepository ---\n";
+$userRepo = smoke_repo('UserRepository', $pdo);
+
+// Create a persistent test user for all subsequent tests
+$testEmail = 'smoke_' . time() . '@test.com';
+$testPhone = '98765' . substr((string)time(), -5);
+$testUserId = $userRepo->createUser([
+    'full_name' => 'Smoke Test User',
+    'email' => $testEmail,
+    'phone' => $testPhone,
+    'password_hash' => password_hash('Test@12345', PASSWORD_DEFAULT),
+    'role' => 'client',
+    'status' => 'active',
+]);
+record('UserRepository', 'createUser', $testUserId > 0, $testUserId > 0 ? "id={$testUserId}" : 'insert failed');
+
+// findByPhone
+$user = $userRepo->findByPhone($testPhone);
+record('UserRepository', 'findByPhone', $user === null || is_array($user));
+
+// findByEmail
+$user = $userRepo->findByEmail($testEmail);
+record('UserRepository', 'findByEmail', $user === null || is_array($user));
+
+// findById
+$user = $userRepo->findById($testUserId);
+record('UserRepository', 'findById', $user === null || is_array($user));
+
+// findClientByUserId
+$client = $userRepo->findClientByUserId($testUserId);
+record('UserRepository', 'findClientByUserId', $client === null || is_array($client));
+
+// createGuestUser
+$guestId = $userRepo->createGuestUser('98765' . substr((string)(time() + 1), -5), 'Smoke Guest');
+record('UserRepository', 'createGuestUser', $guestId > 0, $guestId > 0 ? "id={$guestId}" : 'insert failed');
+
+// getAllUsers
+$users = $userRepo->getAllUsers();
+record('UserRepository', 'getAllUsers', is_array($users));
+
+// getClients
+$clients = $userRepo->getClients();
+record('UserRepository', 'getClients', is_array($clients));
+
+// findClientById
+$client = $userRepo->findClientById($testUserId);
+record('UserRepository', 'findClientById', $client === null || is_array($client));
+
+// updateUser
+$updated = $userRepo->updateUser($testUserId, ['full_name' => 'Smoke Updated']);
+record('UserRepository', 'updateUser', $updated);
+
+// getUserActivity
+$activity = $userRepo->getUserActivity($testUserId, 5);
+record('UserRepository', 'getUserActivity', is_array($activity));
+
+// saveOtp
+$otpSaved = $userRepo->saveOtp($testUserId, '123456', 'login', 5);
+record('UserRepository', 'saveOtp', $otpSaved);
+
+// findActiveOtp
+$activeOtp = $userRepo->findActiveOtp($testUserId, 'login');
+record('UserRepository', 'findActiveOtp', $activeOtp === null || is_array($activeOtp));
+
+// verifyOtp (should fail with wrong OTP)
+$otpVerified = $userRepo->verifyOtp($testUserId, '000000', 'login');
+record('UserRepository', 'verifyOtp', $otpVerified === false, 'expected false for wrong OTP');
+
+// expireOtp
+$otpExpired = $userRepo->expireOtp($testUserId, 'login');
+record('UserRepository', 'expireOtp', $otpExpired);
+
+// findByIdentifier
+$found = $userRepo->findByIdentifier($testEmail);
+record('UserRepository', 'findByIdentifier', $found === null || is_array($found));
+
+// incrementFailedAttempts
+$incFailed = $userRepo->incrementFailedAttempts($testUserId);
+record('UserRepository', 'incrementFailedAttempts', $incFailed);
+
+// resetFailedAttempts
+$resetFailed = $userRepo->resetFailedAttempts($testUserId);
+record('UserRepository', 'resetFailedAttempts', $resetFailed);
+
+// updateLastLogin
+$lastLogin = $userRepo->updateLastLogin($testUserId);
+record('UserRepository', 'updateLastLogin', $lastLogin);
+
+// getDashboardCounts
+$counts = $userRepo->getDashboardCounts();
+record('UserRepository', 'getDashboardCounts', is_array($counts) && isset($counts['total_users']));
+
+// Cleanup guest user (keep test user for subsequent tests)
+if ($guestId > 0) {
+    $userRepo->deleteUser($guestId);
+}
+
+// ============================================================================
+// 3. SESSION REPOSITORY
+// ============================================================================
+echo "\n--- 3. SessionRepository ---\n";
+$sessionRepo = smoke_repo('SessionRepository', $pdo);
+
+$testToken = 'smoke_' . bin2hex(random_bytes(16));
+$sessionCreated = $sessionRepo->create($testUserId, $testToken, 'fingerprint', 'device', '127.0.0.1', 'Smoke Test', false);
+record('SessionRepository', 'create', $sessionCreated);
+
+$session = $sessionRepo->findByToken($testToken);
+record('SessionRepository', 'findByToken', $session !== null);
+
+if ($session) {
+    $updated = $sessionRepo->updateActivity((int)$session['id']);
+    record('SessionRepository', 'updateActivity', $updated);
+
+    $updatedByToken = $sessionRepo->updateActivityByToken($testToken);
+    record('SessionRepository', 'updateActivityByToken', $updatedByToken);
+}
+
+$sessions = $sessionRepo->findByUserId($testUserId);
+record('SessionRepository', 'findByUserId', is_array($sessions));
+
+$rememberCreated = $sessionRepo->createRememberToken($testUserId, hash('sha256', 'smoke_token_' . bin2hex(random_bytes(8))), '127.0.0.1', 'Smoke', date('Y-m-d H:i:s', time() + 86400));
+record('SessionRepository', 'createRememberToken', $rememberCreated);
+
+$deleted = $sessionRepo->deleteByToken($testToken);
+record('SessionRepository', 'deleteByToken', $deleted);
+
+// ============================================================================
+// 4. OTP REPOSITORY
+// ============================================================================
+echo "\n--- 4. OtpRepository ---\n";
+$otpRepo = smoke_repo('OtpRepository', $pdo);
+
+$otpHash = password_hash('654321', PASSWORD_DEFAULT);
+$otpCreated = $otpRepo->create('9876500000', null, $otpHash, date('Y-m-d H:i:s', time() + 600), '127.0.0.1');
+record('OtpRepository', 'create', $otpCreated);
+
+$activeOtp = $otpRepo->findActiveByPhone('9876500000');
+record('OtpRepository', 'findActiveByPhone', $activeOtp !== null);
+
+if ($activeOtp) {
+    $marked = $otpRepo->markUsed((int)$activeOtp['id']);
+    record('OtpRepository', 'markUsed', $marked);
+}
+
+$invalidated = $otpRepo->invalidateByPhone('9876500000');
+record('OtpRepository', 'invalidateByPhone', $invalidated);
+
+// ============================================================================
+// 5. AUDIT REPOSITORY
+// ============================================================================
+echo "\n--- 5. AuditRepository ---\n";
+$auditRepo = smoke_repo('AuditRepository', $pdo);
+
+$logged = $auditRepo->logEvent($testUserId, 'SMOKE_TEST', 'info', 'Smoke test event', '127.0.0.1', 'Smoke Test');
+record('AuditRepository', 'logEvent', $logged);
+
+$auditLogged = $auditRepo->logAudit($testUserId, 'SMOKE_TEST', 'test', 0, 'Smoke audit', '127.0.0.1');
+record('AuditRepository', 'logAudit', $auditLogged);
+
+$securityLogs = $auditRepo->getSecurityLogs(5);
+record('AuditRepository', 'getSecurityLogs', is_array($securityLogs));
+
+$auditLogs = $auditRepo->getAuditLogs(5);
+record('AuditRepository', 'getAuditLogs', is_array($auditLogs));
+
+$userLogs = $auditRepo->getSecurityLogsByUserId($testUserId, 5);
+record('AuditRepository', 'getSecurityLogsByUserId', is_array($userLogs));
+
+// ============================================================================
+// 6. RATE LIMIT REPOSITORY
+// ============================================================================
+echo "\n--- 6. RateLimitRepository ---\n";
+$rateRepo = smoke_repo('RateLimitRepository', $pdo);
+
+$key = 'smoke_' . time();
+$attempts = $rateRepo->getAttempts($key);
+record('RateLimitRepository', 'getAttempts', is_int($attempts));
+
+$incremented = $rateRepo->increment($key, 1);
+record('RateLimitRepository', 'increment', $incremented);
+
+$blocked = $rateRepo->block($key, 1);
+record('RateLimitRepository', 'block', $blocked);
+
+$blockedUntil = $rateRepo->getBlockedUntil($key);
+record('RateLimitRepository', 'getBlockedUntil', $blockedUntil === null || is_string($blockedUntil));
+
+$reset = $rateRepo->reset($key);
+record('RateLimitRepository', 'reset', $reset);
+
+$cleaned = $rateRepo->cleanExpired();
+record('RateLimitRepository', 'cleanExpired', is_int($cleaned));
+
+// ============================================================================
+// 7. LEAD REPOSITORY
+// ============================================================================
+echo "\n--- 7. LeadRepository ---\n";
+$leadRepo = smoke_repo('LeadRepository', $pdo);
+
+$leads = $leadRepo->findAllWithAssignee();
+record('LeadRepository', 'findAllWithAssignee', is_array($leads));
+
+$latest = $leadRepo->findLatest(5);
+record('LeadRepository', 'findLatest', is_array($latest));
+
+$byStatus = $leadRepo->findByStatus('new');
+record('LeadRepository', 'findByStatus', is_array($byStatus));
+
+$stats = $leadRepo->getStats();
+record('LeadRepository', 'getStats', is_array($stats));
+
+// CRITICAL: Test search with distinct placeholders
+$searchResults = $leadRepo->search('test');
+record('LeadRepository', 'search', is_array($searchResults), is_array($searchResults) ? 'distinct placeholders OK' : 'search failed');
+
+// createLead
+$leadId = $leadRepo->createLead([
+    'full_name' => 'Smoke Lead',
+    'phone' => '98765' . substr((string)(time() + 2), -5),
+    'email' => 'smoke_lead_' . time() . '@test.com',
+    'location' => 'Test City',
+    'project_type' => 'Residential',
+    'budget_range' => '50-75 Lakhs',
+    'message' => 'Smoke test lead',
+]);
+record('LeadRepository', 'createLead', $leadId > 0, $leadId > 0 ? "id={$leadId}" : 'insert failed');
+
+if ($leadId > 0) {
+    $activities = $leadRepo->getLeadActivities($leadId);
+    record('LeadRepository', 'getLeadActivities', is_array($activities));
+
+    // Cleanup
+    $leadRepo->hardDelete($leadId);
+}
+
+// ============================================================================
+// 8. PROJECT REPOSITORY
+// ============================================================================
+echo "\n--- 8. ProjectRepository ---\n";
+$projectRepo = smoke_repo('ProjectRepository', $pdo);
+
+$projects = $projectRepo->findAllWithClient();
+record('ProjectRepository', 'findAllWithClient', is_array($projects));
+
+$projectById = $projectRepo->findByIdWithClient(1);
+record('ProjectRepository', 'findByIdWithClient', $projectById === null || is_array($projectById));
+
+$byStatus = $projectRepo->findByStatus('pending');
+record('ProjectRepository', 'findByStatus', is_array($byStatus));
+
+$byClient = $projectRepo->findByClient(1);
+record('ProjectRepository', 'findByClient', is_array($byClient));
+
+$stats = $projectRepo->getStats();
+record('ProjectRepository', 'getStats', is_array($stats));
+
+$milestones = $projectRepo->getMilestones(1);
+record('ProjectRepository', 'getMilestones', is_array($milestones));
+
+$media = $projectRepo->getMedia(1);
+record('ProjectRepository', 'getMedia', is_array($media));
+
+$tasks = $projectRepo->getTasks(1);
+record('ProjectRepository', 'getTasks', is_array($tasks));
+
+$updates = $projectRepo->getUpdates(1);
+record('ProjectRepository', 'getUpdates', is_array($updates));
+
+$payments = $projectRepo->getPayments(1);
+record('ProjectRepository', 'getPayments', is_array($payments));
+
+$files = $projectRepo->getFiles(1);
+record('ProjectRepository', 'getFiles', is_array($files));
+
+$byLead = $projectRepo->findByLeadId(1);
+record('ProjectRepository', 'findByLeadId', is_array($byLead));
+
+// ============================================================================
+// 9. QUOTATION REPOSITORY
+// ============================================================================
+echo "\n--- 9. QuotationRepository ---\n";
+$quotationRepo = smoke_repo('QuotationRepository', $pdo);
+
+$quotations = $quotationRepo->findAllWithDetails();
+record('QuotationRepository', 'findAllWithDetails', is_array($quotations));
+
+$quotation = $quotationRepo->findByIdWithDetails(1);
+record('QuotationRepository', 'findByIdWithDetails', $quotation === null || is_array($quotation));
+
+$items = $quotationRepo->getItems(1);
+record('QuotationRepository', 'getItems', is_array($items));
+
+$byStatus = $quotationRepo->findByStatus('pending');
+record('QuotationRepository', 'findByStatus', is_array($byStatus));
+
+$byClient = $quotationRepo->findByClient(1);
+record('QuotationRepository', 'findByClient', is_array($byClient));
+
+$stats = $quotationRepo->getStats();
+record('QuotationRepository', 'getStats', is_array($stats));
+
+$approvals = $quotationRepo->findAllWithApprovals();
+record('QuotationRepository', 'findAllWithApprovals', is_array($approvals));
+
+$clientOptions = $quotationRepo->getClientOptions();
+record('QuotationRepository', 'getClientOptions', is_array($clientOptions));
+
+$projectOptions = $quotationRepo->getProjectOptions();
+record('QuotationRepository', 'getProjectOptions', is_array($projectOptions));
+
+$withClientInfo = $quotationRepo->findByIdWithClientInfo(1);
+record('QuotationRepository', 'findByIdWithClientInfo', $withClientInfo === null || is_array($withClientInfo));
+
+// ============================================================================
+// 10. MEDIA REPOSITORY
+// ============================================================================
+echo "\n--- 10. MediaRepository ---\n";
+$mediaRepo = smoke_repo('MediaRepository', $pdo);
+
+$allMedia = $mediaRepo->getAll();
+record('MediaRepository', 'getAll', is_array($allMedia));
+
+$byType = $mediaRepo->getByType('image');
+record('MediaRepository', 'getByType', is_array($byType));
+
+$mediaById = $mediaRepo->findById(1);
+record('MediaRepository', 'findById', $mediaById === null || is_array($mediaById));
+
+$projectMedia = $mediaRepo->getProjectMedia(1);
+record('MediaRepository', 'getProjectMedia', is_array($projectMedia));
+
+$byUploader = $mediaRepo->findByUploader(1);
+record('MediaRepository', 'findByUploader', is_array($byUploader));
+
+// ============================================================================
+// 11. BLOG REPOSITORY
+// ============================================================================
+echo "\n--- 11. BlogRepository ---\n";
+$blogRepo = smoke_repo('BlogRepository', $pdo);
+
+$published = $blogRepo->findPublished();
+record('BlogRepository', 'findPublished', is_array($published));
+
+$bySlug = $blogRepo->findBySlug('test');
+record('BlogRepository', 'findBySlug', $bySlug === null || is_array($bySlug));
+
+$featured = $blogRepo->findFeatured();
+record('BlogRepository', 'findFeatured', is_array($featured));
+
+$byCategory = $blogRepo->findByCategory(1);
+record('BlogRepository', 'findByCategory', is_array($byCategory));
+
+$search = $blogRepo->search('test');
+record('BlogRepository', 'search', is_array($search));
+
+$categories = $blogRepo->getCategories();
+record('BlogRepository', 'getCategories', is_array($categories));
+
+$tags = $blogRepo->getTags();
+record('BlogRepository', 'getTags', is_array($tags));
+
+$withAuthor = $blogRepo->findAllWithAuthor();
+record('BlogRepository', 'findAllWithAuthor', is_array($withAuthor));
+
+$adminById = $blogRepo->findByIdAdmin(1);
+record('BlogRepository', 'findByIdAdmin', $adminById === null || is_array($adminById));
+
+$allCategories = $blogRepo->getAllCategories();
+record('BlogRepository', 'getAllCategories', is_array($allCategories));
+
+$allTags = $blogRepo->getAllTags();
+record('BlogRepository', 'getAllTags', is_array($allTags));
+
+$comments = $blogRepo->getAllComments();
+record('BlogRepository', 'getAllComments', is_array($comments));
+
+// ============================================================================
+// 12. PORTFOLIO REPOSITORY
+// ============================================================================
+echo "\n--- 12. PortfolioRepository ---\n";
+$portfolioRepo = smoke_repo('PortfolioRepository', $pdo);
+
+$active = $portfolioRepo->findAllActive();
+record('PortfolioRepository', 'findAllActive', is_array($active));
+
+$bySlug = $portfolioRepo->findBySlug('test');
+record('PortfolioRepository', 'findBySlug', $bySlug === null || is_array($bySlug));
+
+$byId = $portfolioRepo->findById(1);
+record('PortfolioRepository', 'findById', $byId === null || is_array($byId));
+
+$all = $portfolioRepo->findAll();
+record('PortfolioRepository', 'findAll', is_array($all));
+
+$featured = $portfolioRepo->findFeatured();
+record('PortfolioRepository', 'findFeatured', is_array($featured));
+
+// ============================================================================
+// 13. SERVICE REPOSITORY
+// ============================================================================
+echo "\n--- 13. ServiceRepository ---\n";
+$serviceRepo = smoke_repo('ServiceRepository', $pdo);
+
+$services = $serviceRepo->getAll();
+record('ServiceRepository', 'getAll', is_array($services));
+
+$serviceById = $serviceRepo->findById(1);
+record('ServiceRepository', 'findById', $serviceById === null || is_array($serviceById));
+
+// ============================================================================
+// 14. TESTIMONIAL REPOSITORY
+// ============================================================================
+echo "\n--- 14. TestimonialRepository ---\n";
+$testimonialRepo = smoke_repo('TestimonialRepository', $pdo);
+
+$testimonials = $testimonialRepo->getAll();
+record('TestimonialRepository', 'getAll', is_array($testimonials));
+
+$pending = $testimonialRepo->getPendingApprovals();
+record('TestimonialRepository', 'getPendingApprovals', is_array($pending));
+
+$featured = $testimonialRepo->getFeatured();
+record('TestimonialRepository', 'getFeatured', is_array($featured));
+
+$videoTestimonials = $testimonialRepo->getVideoTestimonials();
+record('TestimonialRepository', 'getVideoTestimonials', is_array($videoTestimonials));
+
+$byId = $testimonialRepo->findById(1);
+record('TestimonialRepository', 'findById', $byId === null || is_array($byId));
+
+$allVideos = $testimonialRepo->getAllVideos();
+record('TestimonialRepository', 'getAllVideos', is_array($allVideos));
+
+// ============================================================================
+// 15. VIDEO REPOSITORY
+// ============================================================================
+echo "\n--- 15. VideoRepository ---\n";
+$videoRepo = smoke_repo('VideoRepository', $pdo);
+
+$videos = $videoRepo->getAll();
+record('VideoRepository', 'getAll', is_array($videos));
+
+$videoById = $videoRepo->findById(1);
+record('VideoRepository', 'findById', $videoById === null || is_array($videoById));
+
+$videoCategories = $videoRepo->getCategories();
+record('VideoRepository', 'getCategories', is_array($videoCategories));
+
+// ============================================================================
+// 16. ESTIMATOR REPOSITORY
+// ============================================================================
+echo "\n--- 16. EstimatorRepository ---\n";
+$estimatorRepo = smoke_repo('EstimatorRepository', $pdo);
+
+$packages = $estimatorRepo->getPackages();
+record('EstimatorRepository', 'getPackages', is_array($packages));
+
+$apiPackages = $estimatorRepo->getApiPackages();
+record('EstimatorRepository', 'getApiPackages', is_array($apiPackages));
+
+$apiPackage = $estimatorRepo->getApiPackageById(1);
+record('EstimatorRepository', 'getApiPackageById', $apiPackage === null || is_array($apiPackage));
+
+$apiPricing = $estimatorRepo->getApiPricingByPackage(1);
+record('EstimatorRepository', 'getApiPricingByPackage', is_array($apiPricing));
+
+$packageById = $estimatorRepo->getPackageById(1);
+record('EstimatorRepository', 'getPackageById', $packageById === null || is_array($packageById));
+
+$allRequests = $estimatorRepo->getAllRequests();
+record('EstimatorRepository', 'getAllRequests', is_array($allRequests));
+
+$allPackages = $estimatorRepo->getAllPackages();
+record('EstimatorRepository', 'getAllPackages', is_array($allPackages));
+
+$allPricing = $estimatorRepo->getAllPricing();
+record('EstimatorRepository', 'getAllPricing', is_array($allPricing));
+
+$allMaterials = $estimatorRepo->getAllMaterials();
+record('EstimatorRepository', 'getAllMaterials', is_array($allMaterials));
+
+$allEstimators = $estimatorRepo->getAllEstimators();
+record('EstimatorRepository', 'getAllEstimators', is_array($allEstimators));
+
+// ============================================================================
+// 17. SETTINGS REPOSITORY
+// ============================================================================
+echo "\n--- 17. SettingsRepository ---\n";
+$settingsRepo = smoke_repo('SettingsRepository', $pdo);
+
+$byGroup = $settingsRepo->findByGroup('general');
+record('SettingsRepository', 'findByGroup', is_array($byGroup));
+
+$byKey = $settingsRepo->findByKey('site_name', 'general');
+record('SettingsRepository', 'findByKey', $byKey === null || is_array($byKey));
+
+$exists = $settingsRepo->exists('site_name', 'general');
+record('SettingsRepository', 'exists', is_bool($exists));
+
+$set = $settingsRepo->set('smoke_test_key', 'smoke_value', 'general');
+record('SettingsRepository', 'set', $set);
+
+$setMultiple = $settingsRepo->setMultiple(['smoke_key_1' => 'val1', 'smoke_key_2' => 'val2'], 'general');
+record('SettingsRepository', 'setMultiple', $setMultiple);
+
+$allMap = $settingsRepo->getAllAsMap('general');
+record('SettingsRepository', 'getAllAsMap', is_array($allMap));
+
+$general = $settingsRepo->getGeneralSettings();
+record('SettingsRepository', 'getGeneralSettings', $general === null || is_array($general));
+
+$generalExists = $settingsRepo->generalSettingsExist();
+record('SettingsRepository', 'generalSettingsExist', is_bool($generalExists));
+
+$sms = $settingsRepo->getSmsSettings();
+record('SettingsRepository', 'getSmsSettings', $sms === null || is_array($sms));
+
+$smsExists = $settingsRepo->smsSettingsExist();
+record('SettingsRepository', 'smsSettingsExist', is_bool($smsExists));
+
+$integration = $settingsRepo->getIntegrationSettings();
+record('SettingsRepository', 'getIntegrationSettings', $integration === null || is_array($integration));
+
+$integrationExists = $settingsRepo->integrationSettingsExist();
+record('SettingsRepository', 'integrationSettingsExist', is_bool($integrationExists));
+
+$security = $settingsRepo->getSecuritySettings();
+record('SettingsRepository', 'getSecuritySettings', $security === null || is_array($security));
+
+$securityExists = $settingsRepo->securitySettingsExist();
+record('SettingsRepository', 'securitySettingsExist', is_bool($securityExists));
+
+// Cleanup test keys
+$settingsRepo->delete('smoke_test_key', 'general');
+$settingsRepo->delete('smoke_key_1', 'general');
+$settingsRepo->delete('smoke_key_2', 'general');
+
+// ============================================================================
+// 18. CMS REPOSITORY
+// ============================================================================
+echo "\n--- 18. CmsRepository ---\n";
+$cmsRepo = smoke_repo('CmsRepository', $pdo);
+
+$about = $cmsRepo->getAboutPage();
+record('CmsRepository', 'getAboutPage', $about === null || is_array($about));
+
+$aboutExists = $cmsRepo->aboutPageExists();
+record('CmsRepository', 'aboutPageExists', is_bool($aboutExists));
+
+$advantages = $cmsRepo->getAboutAdvantages();
+record('CmsRepository', 'getAboutAdvantages', is_array($advantages));
+
+$processSteps = $cmsRepo->getAboutProcessSteps();
+record('CmsRepository', 'getAboutProcessSteps', is_array($processSteps));
+
+$specs = $cmsRepo->getAboutSpecifications();
+record('CmsRepository', 'getAboutSpecifications', is_array($specs));
+
+$contact = $cmsRepo->getContactPage();
+record('CmsRepository', 'getContactPage', $contact === null || is_array($contact));
+
+$contactExists = $cmsRepo->contactPageExists();
+record('CmsRepository', 'contactPageExists', is_bool($contactExists));
+
+$contactFeatures = $cmsRepo->getContactFeatures();
+record('CmsRepository', 'getContactFeatures', is_array($contactFeatures));
+
+$homepage = $cmsRepo->getHomepageContent();
+record('CmsRepository', 'getHomepageContent', $homepage === null || is_array($homepage));
+
+$homepageExists = $cmsRepo->homepageContentExists();
+record('CmsRepository', 'homepageContentExists', is_bool($homepageExists));
+
+$seo = $cmsRepo->getSeoSettings();
+record('CmsRepository', 'getSeoSettings', $seo === null || is_array($seo));
+
+$seoExists = $cmsRepo->seoSettingsExists();
+record('CmsRepository', 'seoSettingsExists', is_bool($seoExists));
+
+$allSeo = $cmsRepo->getAllSeoSettings();
+record('CmsRepository', 'getAllSeoSettings', is_array($allSeo));
+
+$faqs = $cmsRepo->getAllFaqs();
+record('CmsRepository', 'getAllFaqs', is_array($faqs));
+
+$faqById = $cmsRepo->getFaqById(1);
+record('CmsRepository', 'getFaqById', $faqById === null || is_array($faqById));
+
+// ============================================================================
+// 19. CONTENT REPOSITORY
+// ============================================================================
+echo "\n--- 19. ContentRepository ---\n";
+$contentRepo = smoke_repo('ContentRepository', $pdo);
+
+$featuredProjects = $contentRepo->getFeaturedProjects();
+record('ContentRepository', 'getFeaturedProjects', is_array($featuredProjects));
+
+$publishedBlogs = $contentRepo->getPublishedBlogs();
+record('ContentRepository', 'getPublishedBlogs', is_array($publishedBlogs));
+
+$blogBySlug = $contentRepo->getBlogBySlug('test');
+record('ContentRepository', 'getBlogBySlug', $blogBySlug === null || is_array($blogBySlug));
+
+$projectBySlug = $contentRepo->getProjectBySlug('test');
+record('ContentRepository', 'getProjectBySlug', $projectBySlug === null || is_array($projectBySlug));
+
+$testimonials = $contentRepo->getActiveTestimonials();
+record('ContentRepository', 'getActiveTestimonials', is_array($testimonials));
+
+$packages = $contentRepo->getActivePackages();
+record('ContentRepository', 'getActivePackages', is_array($packages));
+
+$services = $contentRepo->getActiveServices();
+record('ContentRepository', 'getActiveServices', is_array($services));
+
+$faqs = $contentRepo->getActiveFaqs();
+record('ContentRepository', 'getActiveFaqs', is_array($faqs));
+
+$videos = $contentRepo->getActiveVideos();
+record('ContentRepository', 'getActiveVideos', is_array($videos));
+
+$relatedProjects = $contentRepo->getRelatedProjects(1);
+record('ContentRepository', 'getRelatedProjects', is_array($relatedProjects));
+
+$relatedBlogs = $contentRepo->getRelatedBlogs(1);
+record('ContentRepository', 'getRelatedBlogs', is_array($relatedBlogs));
+
+// ============================================================================
+// 20. CLIENT REPOSITORY
+// ============================================================================
+echo "\n--- 20. ClientRepository ---\n";
+$clientRepo = smoke_repo('ClientRepository', $pdo);
+
+$clientById = $clientRepo->findClientById(1);
+record('ClientRepository', 'findClientById', $clientById === null || is_array($clientById));
+
+$clientExists = $clientRepo->clientExists(1);
+record('ClientRepository', 'clientExists', is_bool($clientExists));
+
+$notifications = $clientRepo->getNotificationsByClientId(1);
+record('ClientRepository', 'getNotificationsByClientId', is_array($notifications));
+
+$feedback = $clientRepo->getFeedbackByClientId(1);
+record('ClientRepository', 'getFeedbackByClientId', is_array($feedback));
+
+$documents = $clientRepo->getDocumentsByClientId(1);
+record('ClientRepository', 'getDocumentsByClientId', is_array($documents));
+
+$permits = $clientRepo->getPermitsByClientId(1);
+record('ClientRepository', 'getPermitsByClientId', is_array($permits));
+
+$agreements = $clientRepo->getAgreementsByClientId(1);
+record('ClientRepository', 'getAgreementsByClientId', is_array($agreements));
+
+$downloads = $clientRepo->getDownloadsByClientId(1);
+record('ClientRepository', 'getDownloadsByClientId', is_array($downloads));
+
+$quotations = $clientRepo->getQuotationsByClientId(1);
+record('ClientRepository', 'getQuotationsByClientId', is_array($quotations));
+
+$quotationById = $clientRepo->getQuotationById(1);
+record('ClientRepository', 'getQuotationById', $quotationById === null || is_array($quotationById));
+
+$quotationDownloads = $clientRepo->getQuotationDownloadsByClientId(1);
+record('ClientRepository', 'getQuotationDownloadsByClientId', is_array($quotationDownloads));
+
+$timelines = $clientRepo->getProjectTimelinesByClientId(1);
+record('ClientRepository', 'getProjectTimelinesByClientId', is_array($timelines));
+
+$schedules = $clientRepo->getProjectSchedulesByClientId(1);
+record('ClientRepository', 'getProjectSchedulesByClientId', is_array($schedules));
+
+$gallery = $clientRepo->getProjectGalleryByProjectId(1);
+record('ClientRepository', 'getProjectGalleryByProjectId', is_array($gallery));
+
+$updates = $clientRepo->getProjectUpdatesByProjectId(1);
+record('ClientRepository', 'getProjectUpdatesByProjectId', is_array($updates));
+
+$milestones = $clientRepo->getProjectMilestonesByProjectId(1);
+record('ClientRepository', 'getProjectMilestonesByProjectId', is_array($milestones));
+
+$transactions = $clientRepo->getPaymentTransactionsByClientId(1);
+record('ClientRepository', 'getPaymentTransactionsByClientId', is_array($transactions));
+
+$receipts = $clientRepo->getPaymentReceiptsByClientId(1);
+record('ClientRepository', 'getPaymentReceiptsByClientId', is_array($receipts));
+
+$tickets = $clientRepo->getSupportTicketsByClientId(1);
+record('ClientRepository', 'getSupportTicketsByClientId', is_array($tickets));
+
+$messages = $clientRepo->getSupportMessagesByTicketId(1);
+record('ClientRepository', 'getSupportMessagesByTicketId', is_array($messages));
+
+// ============================================================================
+// 21. DASHBOARD REPOSITORY
+// ============================================================================
+echo "\n--- 21. DashboardRepository ---\n";
+$dashboardRepo = smoke_repo('DashboardRepository', $pdo);
+
+$counts = $dashboardRepo->getCounts();
+record('DashboardRepository', 'getCounts', is_array($counts));
+
+$recent = $dashboardRepo->getRecent('projects', 5);
+record('DashboardRepository', 'getRecent', is_array($recent));
+
+$clientProjects = $dashboardRepo->getClientProjects(1);
+record('DashboardRepository', 'getClientProjects', is_array($clientProjects));
+
+$clientPayments = $dashboardRepo->getClientPayments(1);
+record('DashboardRepository', 'getClientPayments', is_array($clientPayments));
+
+$clientInvoices = $dashboardRepo->getClientInvoices(1);
+record('DashboardRepository', 'getClientInvoices', is_array($clientInvoices));
+
+$clientDocuments = $dashboardRepo->getClientDocuments(1);
+record('DashboardRepository', 'getClientDocuments', is_array($clientDocuments));
+
+$clientQuotations = $dashboardRepo->getClientQuotations(1);
+record('DashboardRepository', 'getClientQuotations', is_array($clientQuotations));
+
+$clientSchedules = $dashboardRepo->getClientSchedules(1);
+record('DashboardRepository', 'getClientSchedules', is_array($clientSchedules));
+
+$clientMessages = $dashboardRepo->getClientMessages(1);
+record('DashboardRepository', 'getClientMessages', is_array($clientMessages));
+
+$clientProfile = $dashboardRepo->getClientProfile(1);
+record('DashboardRepository', 'getClientProfile', $clientProfile === null || is_array($clientProfile));
+
+$clientNotifications = $dashboardRepo->getClientNotifications(1);
+record('DashboardRepository', 'getClientNotifications', is_array($clientNotifications));
+
+$clientTickets = $dashboardRepo->getClientSupportTickets(1);
+record('DashboardRepository', 'getClientSupportTickets', is_array($clientTickets));
+
+$clientTimelines = $dashboardRepo->getClientProjectTimelines(1);
+record('DashboardRepository', 'getClientProjectTimelines', is_array($clientTimelines));
+
+$clientReceipts = $dashboardRepo->getClientPaymentReceipts(1);
+record('DashboardRepository', 'getClientPaymentReceipts', is_array($clientReceipts));
+
+$clientTransactions = $dashboardRepo->getClientPaymentTransactions(1);
+record('DashboardRepository', 'getClientPaymentTransactions', is_array($clientTransactions));
+
+$clientFeedback = $dashboardRepo->getClientFeedback(1);
+record('DashboardRepository', 'getClientFeedback', is_array($clientFeedback));
+
+$projectMedia = $dashboardRepo->getProjectMedia(1);
+record('DashboardRepository', 'getProjectMedia', is_array($projectMedia));
+
+$projectGallery = $dashboardRepo->getProjectGallery(1);
+record('DashboardRepository', 'getProjectGallery', is_array($projectGallery));
+
+$projectMilestones = $dashboardRepo->getProjectMilestones(1);
+record('DashboardRepository', 'getProjectMilestones', is_array($projectMilestones));
+
+$projectUpdates = $dashboardRepo->getProjectUpdates(1);
+record('DashboardRepository', 'getProjectUpdates', is_array($projectUpdates));
+
+$projectById = $dashboardRepo->getProjectById(1);
+record('DashboardRepository', 'getProjectById', $projectById === null || is_array($projectById));
+
+$ticketById = $dashboardRepo->getSupportTicketById(1);
+record('DashboardRepository', 'getSupportTicketById', $ticketById === null || is_array($ticketById));
+
+$ticketMessages = $dashboardRepo->getSupportMessagesByTicketId(1);
+record('DashboardRepository', 'getSupportMessagesByTicketId', is_array($ticketMessages));
+
+$clientImages = $dashboardRepo->getClientUploadedImages(1);
+record('DashboardRepository', 'getClientUploadedImages', is_array($clientImages));
+
+$clientVideos = $dashboardRepo->getClientUploadedVideos(1);
+record('DashboardRepository', 'getClientUploadedVideos', is_array($clientVideos));
+
+$clientTestimonials = $dashboardRepo->getClientUploadedTestimonials(1);
+record('DashboardRepository', 'getClientUploadedTestimonials', is_array($clientTestimonials));
+
+$clientPermits = $dashboardRepo->getClientPermits(1);
+record('DashboardRepository', 'getClientPermits', is_array($clientPermits));
+
+$clientAgreements = $dashboardRepo->getClientAgreements(1);
+record('DashboardRepository', 'getClientAgreements', is_array($clientAgreements));
+
+$clientDownloads = $dashboardRepo->getClientDownloads(1);
+record('DashboardRepository', 'getClientDownloads', is_array($clientDownloads));
+
+$quotationById = $dashboardRepo->getQuotationById(1, 1);
+record('DashboardRepository', 'getQuotationById', $quotationById === null || is_array($quotationById));
+
+// ============================================================================
+// 22. INVOICE REPOSITORY
+// ============================================================================
+echo "\n--- 22. InvoiceRepository ---\n";
+$invoiceRepo = smoke_repo('InvoiceRepository', $pdo);
+
+$invoices = $invoiceRepo->findByClientId(1);
+record('InvoiceRepository', 'findByClientId', is_array($invoices));
+
+$invoiceById = $invoiceRepo->findById(1);
+record('InvoiceRepository', 'findById', $invoiceById === null || is_array($invoiceById));
+
+$transactions = $invoiceRepo->getTransactionsByClientId(1);
+record('InvoiceRepository', 'getTransactionsByClientId', is_array($transactions));
+
+$allInvoices = $invoiceRepo->getAllInvoices();
+record('InvoiceRepository', 'getAllInvoices', is_array($allInvoices));
+
+$payments = $invoiceRepo->getPaymentsByClientId(1);
+record('InvoiceRepository', 'getPaymentsByClientId', is_array($payments));
+
+// ============================================================================
+// 23. REPORT REPOSITORY
+// ============================================================================
+echo "\n--- 23. ReportRepository ---\n";
+$reportRepo = smoke_repo('ReportRepository', $pdo);
+
+$revenueReports = $reportRepo->getRevenueReports();
+record('ReportRepository', 'getRevenueReports', is_array($revenueReports));
+
+$projectReports = $reportRepo->getProjectReports();
+record('ReportRepository', 'getProjectReports', is_array($projectReports));
+
+$estimatorReports = $reportRepo->getEstimatorReports();
+record('ReportRepository', 'getEstimatorReports', is_array($estimatorReports));
+
+$quotationReports = $reportRepo->getQuotationReports();
+record('ReportRepository', 'getQuotationReports', is_array($quotationReports));
+
+$leadReports = $reportRepo->getLeadReports();
+record('ReportRepository', 'getLeadReports', is_array($leadReports));
+
+// ============================================================================
+// 24. SECURITY ADMIN REPOSITORY
+// ============================================================================
+echo "\n--- 24. SecurityAdminRepository ---\n";
+$securityRepo = smoke_repo('SecurityAdminRepository', $pdo);
+
+$adminSessions = $securityRepo->getAdminSessions();
+record('SecurityAdminRepository', 'getAdminSessions', is_array($adminSessions));
+
+$securityLogs = $securityRepo->getSecurityLogs();
+record('SecurityAdminRepository', 'getSecurityLogs', is_array($securityLogs));
+
+$loginAttempts = $securityRepo->getLoginAttempts();
+record('SecurityAdminRepository', 'getLoginAttempts', is_array($loginAttempts));
+
+$blockedUsers = $securityRepo->getBlockedUsers();
+record('SecurityAdminRepository', 'getBlockedUsers', is_array($blockedUsers));
+
+$auditLogs = $securityRepo->getAuditLogs();
+record('SecurityAdminRepository', 'getAuditLogs', is_array($auditLogs));
+
+// ============================================================================
+// 25. SUPPORT REPOSITORY
+// ============================================================================
+echo "\n--- 25. SupportRepository ---\n";
+$supportRepo = smoke_repo('SupportRepository', $pdo);
+
+$tickets = $supportRepo->getTicketsByClientId(1);
+record('SupportRepository', 'getTicketsByClientId', is_array($tickets));
+
+$ticketById = $supportRepo->getTicketById(1);
+record('SupportRepository', 'getTicketById', $ticketById === null || is_array($ticketById));
+
+$messages = $supportRepo->getMessagesByTicketId(1);
+record('SupportRepository', 'getMessagesByTicketId', is_array($messages));
+
+// ============================================================================
+// 26. MAIL REPOSITORY
+// ============================================================================
+echo "\n--- 26. MailRepository ---\n";
+$mailRepo = smoke_repo('MailRepository', $pdo);
+
+$mailLogged = $mailRepo->log('smoke@test.com', 'Smoke Test', 'sent', '', '127.0.0.1');
+record('MailRepository', 'log', $mailLogged);
+
+$recentMail = $mailRepo->getRecent(5);
+record('MailRepository', 'getRecent', is_array($recentMail));
+
+$pruned = $mailRepo->prune(365);
+record('MailRepository', 'prune', is_int($pruned));
+
+// ============================================================================
+// 27. SMS REPOSITORY
+// ============================================================================
+echo "\n--- 27. SmsRepository ---\n";
+$smsRepo = smoke_repo('SmsRepository', $pdo);
+
+$lastSent = $smsRepo->getLastSent('9876500000');
+record('SmsRepository', 'getLastSent', $lastSent === null || is_array($lastSent));
+
+$smsLogged = $smsRepo->log('9876500000', 'Smoke test SMS', 'sent', 'test');
+record('SmsRepository', 'log', $smsLogged);
+
+// ============================================================================
+// 28. AUTH SERVICE FLOW
+// ============================================================================
+echo "\n--- 28. AuthService Flow ---\n";
+require_once ROOT_PATH . '/app/services/AuthService.php';
+$authService = new AuthService($userRepo, $sessionRepo, $auditRepo);
+
+// Register
+$regResult = $authService->register([
+    'full_name' => 'Smoke Auth User',
+    'email' => 'smoke_auth_' . time() . '@test.com',
+    'phone' => '98765' . substr((string)(time() + 3), -5),
+    'password' => 'Test@12345',
+]);
+record('AuthService', 'register', ($regResult['status'] ?? false) === true, $regResult['message'] ?? '');
+
+// Login with invalid credentials
+$badLogin = $authService->loginWithCredentials('nonexistent@test.com', 'wrongpass');
+record('AuthService', 'loginWithCredentials_invalid', ($badLogin['status'] ?? true) === false, 'expected failure');
+
+// Send OTP (will fail for non-existent user)
+$otpResult = $authService->sendOtp('9999999999');
+record('AuthService', 'sendOtp', is_array($otpResult));
+
+// Logout
+$logoutResult = $authService->logout();
+record('AuthService', 'logout', ($logoutResult['status'] ?? false) === true);
+
+// ============================================================================
+// 29. MEDIA SERVICE (CRITICAL FIX VERIFICATION)
+// ============================================================================
+echo "\n--- 29. MediaService ---\n";
+require_once ROOT_PATH . '/app/services/MediaService.php';
+$mediaService = new \App\Services\MediaService($mediaRepo);
+
+// Test delete with non-existent media (should return error, not crash)
+$deleteResult = $mediaService->delete(999999);
+record('MediaService', 'delete_non_existent', ($deleteResult['status'] ?? true) === false, 'expected error for non-existent');
+
+// ============================================================================
+// 30. QUOTATION SERVICE
+// ============================================================================
+echo "\n--- 30. QuotationService ---\n";
+require_once ROOT_PATH . '/app/services/QuotationService.php';
+$quotationService = new QuotationService($quotationRepo);
+
+$allQuotations = $quotationService->getAll();
+record('QuotationService', 'getAll', ($allQuotations['status'] ?? false) === true);
+
+$quotationById = $quotationService->getById(1);
+record('QuotationService', 'getById', is_array($quotationById));
+
+$quotationStats = $quotationService->getStats();
+record('QuotationService', 'getStats', ($quotationStats['status'] ?? false) === true);
+
+// ============================================================================
+// 31. LEAD SERVICE
+// ============================================================================
+echo "\n--- 31. LeadService ---\n";
+require_once ROOT_PATH . '/app/services/LeadService.php';
+$leadService = new LeadService($leadRepo);
+
+$allLeads = $leadService->getAll();
+record('LeadService', 'getAll', ($allLeads['status'] ?? false) === true);
+
+$leadStats = $leadService->getStats();
+record('LeadService', 'getStats', ($leadStats['status'] ?? false) === true);
+
+$searchResult = $leadService->search('test');
+record('LeadService', 'search', ($searchResult['status'] ?? false) === true);
+
+// ============================================================================
+// 32. PROJECT SERVICE
+// ============================================================================
+echo "\n--- 32. ProjectService ---\n";
+require_once ROOT_PATH . '/app/services/ProjectService.php';
+$projectService = new \App\Services\ProjectService($projectRepo);
+
+$allProjects = $projectService->getAll();
+record('ProjectService', 'getAll', ($allProjects['status'] ?? false) === true);
+
+$projectById = $projectService->getById(1);
+record('ProjectService', 'getById', is_array($projectById));
+
+$projectStats = $projectService->getStats();
+record('ProjectService', 'getStats', ($projectStats['status'] ?? false) === true);
+
+// ============================================================================
+// 33. ESTIMATOR SERVICE
+// ============================================================================
+echo "\n--- 33. EstimatorService ---\n";
+require_once ROOT_PATH . '/app/services/EstimatorService.php';
+$estimatorService = new \App\Services\EstimatorService($estimatorRepo);
+
+$estimatorPackages = $estimatorService->getPackages();
+record('EstimatorService', 'getPackages', is_array($estimatorPackages));
+
+$calcResult = $estimatorService->calculateEstimate(['plot_size' => 1000, 'floors' => 2, 'package_id' => 1]);
+record('EstimatorService', 'calculateEstimate', is_array($calcResult));
+
+// ============================================================================
+// 34. OTP SERVICE
+// ============================================================================
+echo "\n--- 34. OTPService ---\n";
+require_once ROOT_PATH . '/app/services/OTPService.php';
+$otpService = new \App\Services\OTPService($otpRepo);
+
+$otpGenResult = $otpService->generateAndSendOTP('9876511111', null, '127.0.0.1');
+record('OTPService', 'generateAndSendOTP', $otpGenResult === true);
+
+$otpVerifyResult = $otpService->verifyOTP('9876511111', '000000');
+record('OTPService', 'verifyOTP', is_array($otpVerifyResult));
+
+// ============================================================================
+// SUMMARY
+// ============================================================================
+echo "\n\n=== SMOKE MATRIX SUMMARY ===\n";
+echo "Total tests: {$totalCount}\n";
+echo "Passed: {$passCount}\n";
+echo "Failed: {$failCount}\n";
+echo "Pass rate: " . round(($passCount / max(1, $totalCount)) * 100, 1) . "%\n";
+
+if ($failCount > 0) {
+    echo "\n--- FAILURES ---\n";
+    foreach ($results as $r) {
+        if (!$r['ok']) {
+            echo "  [FAIL] {$r['area']}::{$r['method']}" . ($r['detail'] ? " - {$r['detail']}" : '') . "\n";
+        }
+    }
+}
+
+exit($failCount > 0 ? 1 : 0);

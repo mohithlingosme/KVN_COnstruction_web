@@ -19,6 +19,7 @@ require_once '../../../config/app.php';
 require_once '../../../middleware/admin.php';
 require_once '../../../helpers/security.php';
 require_once '../../../helpers/formatter.php';
+require_once '../../includes/repositories.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -34,24 +35,22 @@ if ($quotationId <= 0) {
 
 /*
 |--------------------------------------------------------------------------
+| REPOSITORY
+|--------------------------------------------------------------------------
+*/
+
+$quotationRepo = repo('Quotation');
+
+/*
+|--------------------------------------------------------------------------
 | FETCH QUOTATION
 |--------------------------------------------------------------------------
 */
 
 try {
-    $query = "
-        SELECT q.*, c.name AS client_name, c.email AS client_email, 
-               c.phone AS client_phone, c.address AS client_address,
-               u.full_name AS created_by_name
-        FROM quotations q
-        LEFT JOIN clients c ON q.client_id = c.id
-        LEFT JOIN users u ON q.created_by = u.id
-        WHERE q.id = :id
-        LIMIT 1
-    ";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([':id' => $quotationId]);
-    $quotation = $stmt->fetch();
+    $quotation = $quotationRepo
+        ? $quotationRepo->findByIdWithClientInfo($quotationId)
+        : null;
 
     if (!$quotation) {
         die('Quotation not found.');
@@ -68,14 +67,9 @@ try {
 
 $items = [];
 try {
-    $itemQuery = "
-        SELECT * FROM quotation_items
-        WHERE quotation_id = :quotation_id
-        ORDER BY id ASC
-    ";
-    $itemStmt = $conn->prepare($itemQuery);
-    $itemStmt->execute([':quotation_id' => $quotationId]);
-    $items = $itemStmt->fetchAll();
+    if ($quotationRepo) {
+        $items = $quotationRepo->getItems($quotationId);
+    }
 } catch (Exception $e) {
     error_log('Quotation items fetch error: ' . $e->getMessage());
 }

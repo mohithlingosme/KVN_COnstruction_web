@@ -15,7 +15,7 @@ class LeadController
 {
     private LeadService $leadService;
 
-    public function __construct(?PDO $database = null)
+    public function __construct()
     {
         $this->leadService = ServiceProvider::get('LeadService');
     }

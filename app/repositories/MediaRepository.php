@@ -25,12 +25,20 @@ class MediaRepository extends Repository
 
     public function findByType(string $type): array
     {
-        return $this->findBy(['media_type' => $type]);
+        $stmt = $this->db->prepare(
+            "SELECT * FROM media WHERE file_type = :file_type AND deleted_at IS NULL ORDER BY id DESC"
+        );
+        $stmt->execute([':file_type' => $type]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function findByUploader(int $userId): array
     {
-        return $this->findBy(['uploaded_by' => $userId]);
+        $stmt = $this->db->prepare(
+            "SELECT * FROM media WHERE uploaded_by = :uploaded_by AND deleted_at IS NULL ORDER BY id DESC"
+        );
+        $stmt->execute([':uploaded_by' => $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getProjectMedia(int $projectId): array

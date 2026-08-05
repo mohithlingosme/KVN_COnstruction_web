@@ -62,13 +62,15 @@ public static function getDatabase(): PDO
             'QuotationRepository' => new QuotationRepository($db),
             'BlogRepository' => new BlogRepository($db),
             'EstimatorRepository' => new EstimatorRepository($db),
+            'SessionRepository' => new SessionRepository($db),
+            'AuditRepository' => new AuditRepository($db),
 
             // Services
             'LeadService' => new LeadService(self::get('LeadRepository')),
             'ProjectService' => new ProjectService(self::get('ProjectRepository')),
             'AuthService' => self::createAuthService($db),
-            'OtpService' => new OtpService($db),
-            'MediaService' => new MediaService(self::get('MediaRepository'), $db),
+            'OtpService' => new OtpService(new OtpRepository($db)),
+            'MediaService' => new MediaService(self::get('MediaRepository')),
             'QuotationService' => new QuotationService(self::get('QuotationRepository')),
             'EstimatorService' => new EstimatorService(self::get('EstimatorRepository')),
 
@@ -82,7 +84,9 @@ public static function getDatabase(): PDO
     private static function createAuthService(PDO $db): AuthService
     {
         $userRepo = self::get('UserRepository');
-        return new AuthService($userRepo, $db);
+        $sessionRepo = self::get('SessionRepository');
+        $auditRepo = self::get('AuditRepository');
+        return new AuthService($userRepo, $sessionRepo, $auditRepo);
     }
 
     /**

@@ -23,6 +23,8 @@ require_once '../../../helpers/session.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | PAGE TITLE
@@ -34,6 +36,14 @@ $pageTitle =
 
 /*
 |--------------------------------------------------------------------------
+| REPOSITORY
+|--------------------------------------------------------------------------
+*/
+
+$quotationRepo = repo('Quotation');
+
+/*
+|--------------------------------------------------------------------------
 | FETCH CLIENTS
 |--------------------------------------------------------------------------
 */
@@ -42,28 +52,9 @@ $clients = [];
 
 try {
 
-    $clientQuery = "
-
-        SELECT
-            id,
-            full_name,
-            phone,
-            email
-
-        FROM users
-
-        WHERE role = 'client'
-
-        ORDER BY full_name ASC
-    ";
-
-    $clientStmt =
-    $conn->prepare($clientQuery);
-
-    $clientStmt->execute();
-
-    $clients =
-    $clientStmt->fetchAll();
+    if ($quotationRepo) {
+        $clients = $quotationRepo->getClientOptions();
+    }
 
 } catch(Exception $e){}
 
@@ -77,24 +68,9 @@ $projects = [];
 
 try {
 
-    $projectQuery = "
-
-        SELECT
-            id,
-            project_name
-
-        FROM projects
-
-        ORDER BY project_name ASC
-    ";
-
-    $projectStmt =
-    $conn->prepare($projectQuery);
-
-    $projectStmt->execute();
-
-    $projects =
-    $projectStmt->fetchAll();
+    if ($quotationRepo) {
+        $projects = $quotationRepo->getProjectOptions();
+    }
 
 } catch(Exception $e){}
 
@@ -287,189 +263,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
 
-        $conn->beginTransaction();
+        $quotationId = $quotationRepo
+            ? $quotationRepo->createWithItems([
+                'quotation_number' => $quotationNo,
+                'client_id'        => $clientId,
+                'project_id'       => $projectId,
+                'quotation_date'   => $quotationDate,
+                'valid_till'       => $validTill,
+                'subtotal'         => $subTotal,
+                'gst_percentage'   => $gstPercent,
+                'gst_amount'       => $gstAmount,
+                'grand_total'      => $grandTotal,
+                'notes'            => $notes,
+                'terms_conditions' => $terms,
+                'status'           => $status,
+                'created_by'       => currentUserId(),
+            ], $quotationItems)
+            : 0;
 
-        /*
-        |--------------------------------------------------------------------------
-        | INSERT QUOTATION
-        |--------------------------------------------------------------------------
-        */
+        if ($quotationId > 0) {
 
-        $quotationQuery = "
+            /*
+            |--------------------------------------------------------------------------
+            | LOG EVENT
+            |--------------------------------------------------------------------------
+            */
 
-            INSERT INTO quotations (
+            logSecurityEvent(
 
-                quotation_number,
-                client_id,
-                project_id,
-                quotation_date,
-                valid_till,
-                subtotal,
-                gst_percentage,
-                gst_amount,
-                grand_total,
-                notes,
-                terms_conditions,
-                status,
-                created_by,
-                created_at
+                currentUserId(),
 
-            ) VALUES (
+                'quotation_created',
 
-                :quotation_number,
-                :client_id,
-                :project_id,
-                :quotation_date,
-                :valid_till,
-                :subtotal,
-                :gst_percentage,
-                :gst_amount,
-                :grand_total,
-                :notes,
-                :terms_conditions,
-                :status,
-                :created_by,
-                NOW()
-            )
-        ";
+                'info',
 
-        $quotationStmt =
-        $conn->prepare($quotationQuery);
+                'Quotation created: ' . $quotationNo
+            );
 
-        $quotationStmt->execute([
+            $_SESSION['success'] =
+            'Quotation created successfully.';
 
-            ':quotation_number' =>
-            $quotationNo,
+            redirect(
 
-            ':client_id' =>
-            $clientId,
+                'admin/quotations/view.php?id='
+                .
+                $quotationId
+            );
 
-            ':project_id' =>
-            $projectId,
+        } else {
 
-            ':quotation_date' =>
-            $quotationDate,
-
-            ':valid_till' =>
-            $validTill,
-
-            ':subtotal' =>
-            $subTotal,
-
-            ':gst_percentage' =>
-            $gstPercent,
-
-            ':gst_amount' =>
-            $gstAmount,
-
-            ':grand_total' =>
-            $grandTotal,
-
-            ':notes' =>
-            $notes,
-
-            ':terms_conditions' =>
-            $terms,
-
-            ':status' =>
-            $status,
-
-            ':created_by' =>
-            currentUserId()
-        ]);
-
-        $quotationId =
-        $conn->lastInsertId();
-
-        /*
-        |--------------------------------------------------------------------------
-        | INSERT ITEMS
-        |--------------------------------------------------------------------------
-        */
-
-        foreach($quotationItems as $item){
-
-            $itemQuery = "
-
-                INSERT INTO quotation_items (
-
-                    quotation_id,
-                    item_name,
-                    description,
-                    quantity,
-                    price,
-                    total,
-                    created_at
-
-                ) VALUES (
-
-                    :quotation_id,
-                    :item_name,
-                    :description,
-                    :quantity,
-                    :price,
-                    :total,
-                    NOW()
-                )
-            ";
-
-            $itemStmt =
-            $conn->prepare($itemQuery);
-
-            $itemStmt->execute([
-
-                ':quotation_id' =>
-                $quotationId,
-
-                ':item_name' =>
-                $item['item_name'],
-
-                ':description' =>
-                $item['description'],
-
-                ':quantity' =>
-                $item['quantity'],
-
-                ':price' =>
-                $item['price'],
-
-                ':total' =>
-                $item['total']
-            ]);
+            $_SESSION['error'] =
+            'Failed to create quotation.';
         }
 
-        $conn->commit();
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOG EVENT
-        |--------------------------------------------------------------------------
-        */
-
-        logSecurityEvent(
-
-            currentUserId(),
-
-            'quotation_created',
-
-            'info',
-
-            'Quotation created: ' . $quotationNo
-        );
-
-        $_SESSION['success'] =
-        'Quotation created successfully.';
-
-        redirect(
-
-            'admin/quotations/view.php?id='
-            .
-            $quotationId
-        );
-
     } catch(Exception $e){
-
-        $conn->rollBack();
 
         $_SESSION['error'] =
         'Failed to create quotation.';

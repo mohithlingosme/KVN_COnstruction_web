@@ -23,6 +23,8 @@ require_once '../../../helpers/session.php';
 
 require_once '../../../helpers/rateLimiter.php';
 
+require_once '../../includes/repositories.php';
+
 /*
 |--------------------------------------------------------------------------
 | VALIDATE ID
@@ -42,33 +44,24 @@ if ($quotationId <= 0) {
 
 /*
 |--------------------------------------------------------------------------
+| REPOSITORY
+|--------------------------------------------------------------------------
+*/
+
+$quotationRepo = repo('Quotation');
+
+/*
+|--------------------------------------------------------------------------
 | FETCH QUOTATION
 |--------------------------------------------------------------------------
 */
 
 try {
 
-    $query = "
-
-        SELECT *
-
-        FROM quotations
-
-        WHERE id = :id
-
-        LIMIT 1
-    ";
-
-    $stmt =
-    $conn->prepare($query);
-
-    $stmt->execute([
-
-        ':id' => $quotationId
-    ]);
-
     $quotation =
-    $stmt->fetch();
+        $quotationRepo
+        ? $quotationRepo->findByIdWithDetails($quotationId)
+        : null;
 
     if (!$quotation) {
 
@@ -96,26 +89,9 @@ $quotationItems = [];
 
 try {
 
-    $itemQuery = "
-
-        SELECT *
-
-        FROM quotation_items
-
-        WHERE quotation_id = :quotation_id
-    ";
-
-    $itemStmt =
-    $conn->prepare($itemQuery);
-
-    $itemStmt->execute([
-
-        ':quotation_id' =>
-        $quotationId
-    ]);
-
-    $quotationItems =
-    $itemStmt->fetchAll();
+    if ($quotationRepo) {
+        $quotationItems = $quotationRepo->getItems($quotationId);
+    }
 
 } catch(Exception $e){}
 
@@ -129,26 +105,9 @@ $clients = [];
 
 try {
 
-    $clientQuery = "
-
-        SELECT
-            id,
-            full_name
-
-        FROM users
-
-        WHERE role = 'client'
-
-        ORDER BY full_name ASC
-    ";
-
-    $clientStmt =
-    $conn->prepare($clientQuery);
-
-    $clientStmt->execute();
-
-    $clients =
-    $clientStmt->fetchAll();
+    if ($quotationRepo) {
+        $clients = $quotationRepo->getClientOptions();
+    }
 
 } catch(Exception $e){}
 
@@ -162,24 +121,9 @@ $projects = [];
 
 try {
 
-    $projectQuery = "
-
-        SELECT
-            id,
-            project_name
-
-        FROM projects
-
-        ORDER BY project_name ASC
-    ";
-
-    $projectStmt =
-    $conn->prepare($projectQuery);
-
-    $projectStmt->execute();
-
-    $projects =
-    $projectStmt->fetchAll();
+    if ($quotationRepo) {
+        $projects = $quotationRepo->getProjectOptions();
+    }
 
 } catch(Exception $e){}
 
@@ -375,193 +319,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
 
-        $conn->beginTransaction();
+        $ok = false;
 
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE QUOTATION
-        |--------------------------------------------------------------------------
-        */
-
-        $updateQuery = "
-
-            UPDATE quotations
-
-            SET
-
-                quotation_number = :quotation_number,
-                client_id = :client_id,
-                project_id = :project_id,
-                quotation_date = :quotation_date,
-                valid_till = :valid_till,
-                subtotal = :subtotal,
-                gst_percentage = :gst_percentage,
-                gst_amount = :gst_amount,
-                grand_total = :grand_total,
-                notes = :notes,
-                terms_conditions = :terms_conditions,
-                status = :status,
-                updated_at = NOW()
-
-            WHERE id = :id
-        ";
-
-        $updateStmt =
-        $conn->prepare($updateQuery);
-
-        $updateStmt->execute([
-
-            ':quotation_number' =>
-            $quotationNumber,
-
-            ':client_id' =>
-            $clientId,
-
-            ':project_id' =>
-            $projectId,
-
-            ':quotation_date' =>
-            $quotationDate,
-
-            ':valid_till' =>
-            $validTill,
-
-            ':subtotal' =>
-            $subTotal,
-
-            ':gst_percentage' =>
-            $gstPercent,
-
-            ':gst_amount' =>
-            $gstAmount,
-
-            ':grand_total' =>
-            $grandTotal,
-
-            ':notes' =>
-            $notes,
-
-            ':terms_conditions' =>
-            $terms,
-
-            ':status' =>
-            $status,
-
-            ':id' =>
-            $quotationId
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE OLD ITEMS
-        |--------------------------------------------------------------------------
-        */
-
-        $deleteQuery = "
-
-            DELETE FROM quotation_items
-
-            WHERE quotation_id = :quotation_id
-        ";
-
-        $deleteStmt =
-        $conn->prepare($deleteQuery);
-
-        $deleteStmt->execute([
-
-            ':quotation_id' =>
-            $quotationId
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | INSERT UPDATED ITEMS
-        |--------------------------------------------------------------------------
-        */
-
-        foreach($quotationItemsData as $item){
-
-            $insertQuery = "
-
-                INSERT INTO quotation_items (
-
-                    quotation_id,
-                    item_name,
-                    description,
-                    quantity,
-                    price,
-                    total,
-                    created_at
-
-                ) VALUES (
-
-                    :quotation_id,
-                    :item_name,
-                    :description,
-                    :quantity,
-                    :price,
-                    :total,
-                    NOW()
-                )
-            ";
-
-            $insertStmt =
-            $conn->prepare($insertQuery);
-
-            $insertStmt->execute([
-
-                ':quotation_id' =>
-                $quotationId,
-
-                ':item_name' =>
-                $item['item_name'],
-
-                ':description' =>
-                $item['description'],
-
-                ':quantity' =>
-                $item['quantity'],
-
-                ':price' =>
-                $item['price'],
-
-                ':total' =>
-                $item['total']
+        if ($quotationRepo) {
+            $ok = $quotationRepo->updateQuotation($quotationId, [
+                'quotation_number'  => $quotationNumber,
+                'client_id'         => $clientId,
+                'project_id'        => $projectId,
+                'quotation_date'    => $quotationDate,
+                'valid_till'        => $validTill,
+                'subtotal'          => $subTotal,
+                'gst_percentage'    => $gstPercent,
+                'gst_amount'        => $gstAmount,
+                'grand_total'       => $grandTotal,
+                'notes'             => $notes,
+                'terms_conditions'  => $terms,
+                'status'            => $status,
             ]);
+
+            if ($ok) {
+                $ok = $quotationRepo->replaceItems($quotationId, $quotationItemsData);
+            }
         }
 
-        $conn->commit();
+        if ($ok) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | LOG EVENT
-        |--------------------------------------------------------------------------
-        */
+            /*
+            |--------------------------------------------------------------------------
+            | LOG EVENT
+            |--------------------------------------------------------------------------
+            */
 
-        logSecurityEvent(
+            logSecurityEvent(
 
-            currentUserId(),
+                currentUserId(),
 
-            'quotation_updated',
+                'quotation_updated',
 
-            'info',
+                'info',
 
-            'Quotation updated: ' . $quotationNumber
-        );
+                'Quotation updated: ' . $quotationNumber
+            );
 
-        $_SESSION['success'] =
-        'Quotation updated successfully.';
+            $_SESSION['success'] =
+            'Quotation updated successfully.';
 
-        redirect(
+            redirect(
 
-            'admin/quotations/view.php?id='
-            .
-            $quotationId
-        );
+                'admin/quotations/view.php?id='
+                .
+                $quotationId
+            );
+
+        } else {
+
+            $_SESSION['error'] =
+            'Failed to update quotation.';
+        }
 
     } catch(Exception $e){
-
-        $conn->rollBack();
 
         $_SESSION['error'] =
         'Failed to update quotation.';
