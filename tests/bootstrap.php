@@ -35,6 +35,7 @@ require_once ROOT_PATH . '/helpers/functions.php';
 require_once ROOT_PATH . '/helpers/security.php';
 require_once ROOT_PATH . '/helpers/rateLimiter.php';
 require_once ROOT_PATH . '/helpers/otp.php';
+require_once ROOT_PATH . '/public/includes/repositories.php';
 
 
 // SQLite compatibility: AuthController + helpers use NOW() in SQL.
@@ -52,23 +53,67 @@ function registerSqliteNow(PDO $pdo): void
     }
 }
 
-
-
-
-// Ensure base helpers / models are loaded for non-namespaced controller usage
-
-
-
 // AuthController refers to User class without namespace; create an alias if needed.
 if (!class_exists('User') && class_exists('App\Models\User')) {
     class_alias('App\Models\User', 'User');
 }
 
+// Simple autoloader for App\* classes without composer
+spl_autoload_register(function (string $class): void {
+    if (str_starts_with($class, 'App\\')) {
+        $file = ROOT_PATH . '/' . str_replace('\\', '/', $class) . '.php';
+        if (is_file($file)) {
+            require_once $file;
+        }
+    }
+});
+
+// Aliases for repository classes used in controllers/tests without namespace prefix
+$repoAliases = [
+    'UserRepository'       => 'App\Repositories\UserRepository',
+    'LeadRepository'       => 'App\Repositories\LeadRepository',
+    'ProjectRepository'    => 'App\Repositories\ProjectRepository',
+    'QuotationRepository'  => 'App\Repositories\QuotationRepository',
+    'BlogRepository'       => 'App\Repositories\BlogRepository',
+    'MediaRepository'      => 'App\Repositories\MediaRepository',
+    'PortfolioRepository'  => 'App\Repositories\PortfolioRepository',
+    'ServiceRepository'    => 'App\Repositories\ServiceRepository',
+    'TestimonialRepository'=> 'App\Repositories\TestimonialRepository',
+    'VideoRepository'      => 'App\Repositories\VideoRepository',
+    'ContentRepository'    => 'App\Repositories\ContentRepository',
+    'SettingsRepository'   => 'App\Repositories\SettingsRepository',
+    'CmsRepository'        => 'App\Repositories\CmsRepository',
+    'AuditRepository'      => 'App\Repositories\AuditRepository',
+    'SessionRepository'    => 'App\Repositories\SessionRepository',
+    'RateLimitRepository'  => 'App\Repositories\RateLimitRepository',
+    'OtpRepository'        => 'App\Repositories\OtpRepository',
+    'MailRepository'       => 'App\Repositories\MailRepository',
+    'SmsRepository'        => 'App\Repositories\SmsRepository',
+    'SupportRepository'    => 'App\Repositories\SupportRepository',
+    'DashboardRepository'  => 'App\Repositories\DashboardRepository',
+    'ReportRepository'     => 'App\Repositories\ReportRepository',
+    'SecurityAdminRepository' => 'App\Repositories\SecurityAdminRepository',
+    'EstimatorRepository'  => 'App\Repositories\EstimatorRepository',
+    'ClientRepository'     => 'App\Repositories\ClientRepository',
+    'InvoiceRepository'    => 'App\Repositories\InvoiceRepository',
+];
+
+foreach ($repoAliases as $global => $fqcn) {
+    if (!class_exists($global) && class_exists($fqcn)) {
+        class_alias($fqcn, $global);
+    }
+}
 
 // Ensure auth controller class is loaded
-require_once ROOT_PATH . '/app/controllers/auth/AuthController.php';
-
-
+$authControllerPath = ROOT_PATH . '/app/controllers/AuthController.php';
+if (file_exists($authControllerPath)) {
+    require_once $authControllerPath;
+} else {
+    $authControllerPath = ROOT_PATH . '/app/controllers/auth/AuthController.php';
+    if (file_exists($authControllerPath)) {
+        require_once $authControllerPath;
+    }
+}
 
 // Stubs for external side effects
 if (!function_exists('sendOtpSms')) {
@@ -106,14 +151,6 @@ if (!function_exists('destroySession')) {
         // no session_destroy to keep tests isolated
     }
 }
-
-// logSecurityEvent is defined in helpers/security.php (strict typed). We rely on
-// the production function but ensure argument types are compatible in tests.
-
-
-
-
-
 
 if (!function_exists('logAdminAction')) {
     function 
@@ -155,6 +192,3 @@ if (!function_exists('sanitize')) {
         return trim($value);
     }
 }
-
-
-

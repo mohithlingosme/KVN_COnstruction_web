@@ -16,12 +16,16 @@ class ServiceProvider
     /**
      * Get database connection (singleton)
      */
-public static function getDatabase(): PDO
+    public static function getDatabase(): PDO
     {
         if (self::$db === null) {
             require_once __DIR__ . '/../../config/database.php';
-            $database = new Database();
-            self::$db = $database->getConnection();
+            $database = Database::getInstance();
+            $connection = $database->getConnection();
+            if (!$connection) {
+                throw new RuntimeException('Database connection failed');
+            }
+            self::$db = $connection;
         }
         return self::$db;
     }

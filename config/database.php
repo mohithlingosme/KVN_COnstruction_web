@@ -1,8 +1,5 @@
 <?php
 
-use PDO;
-use PDOException;
-
 /**
  * Database connection class (global namespace)
  *
