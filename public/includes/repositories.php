@@ -44,7 +44,6 @@ if (!function_exists('repo')) {
             'Sms'           => \App\Repositories\SmsRepository::class,
             'Portfolio'     => \App\Repositories\PortfolioRepository::class,
             'Dashboard'     => \App\Repositories\DashboardRepository::class,
-            'Otp'           => \App\Repositories\OtpRepository::class,
             'Mail'          => \App\Repositories\MailRepository::class,
             'SecurityAdmin' => \App\Repositories\SecurityAdminRepository::class,
             'Report'        => \App\Repositories\ReportRepository::class,

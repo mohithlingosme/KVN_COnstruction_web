@@ -29,10 +29,15 @@ class AuditRepository
         }
     }
 
-    /**
+/**
      * Log a security event.
+     *
+     * @param int|null $userId Authenticated user id, or null for
+     *                         unauthenticated events (e.g. OTP send/verify).
+     *                         NULL is stored so the FK fk_security_logs_user
+     *                         (ON DELETE SET NULL) is satisfied.
      */
-    public function logEvent(int $userId, string $eventType, string $severity, string $details, string $ip, string $ua): bool
+    public function logEvent(?int $userId, string $eventType, string $severity, string $details, string $ip, string $ua): bool
     {
         $stmt = $this->db->prepare(
             "INSERT INTO security_logs (user_id, event_type, severity, details, ip_address, user_agent, created_at)

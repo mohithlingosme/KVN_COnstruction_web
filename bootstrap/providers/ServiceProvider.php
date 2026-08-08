@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 /**
  * KVN Construction - Service Provider
- * 
+ *
  * Provides dependency injection for services and repositories.
  * This is a simple factory that creates the required dependencies.
+ *
+ * IMPORTANT: This codebase uses a MIXED naming convention.
+ * Some classes are declared in the global namespace (no `namespace`
+ * declaration) and others in App\Services / App\Repositories.
+ * Each reference below uses the ACTUAL namespace of its class so that
+ * the custom PSR-4 / legacy autoloader in config/app.php resolves it on
+ * Linux (case-sensitive) as well as Windows.
  */
 class ServiceProvider
 {
@@ -59,24 +66,23 @@ class ServiceProvider
 
         return match ($class) {
             // Repositories
-            'LeadRepository' => new LeadRepository($db),
-            'ProjectRepository' => new ProjectRepository($db),
-            'UserRepository' => new UserRepository($db),
-            'MediaRepository' => new MediaRepository($db),
-            'QuotationRepository' => new QuotationRepository($db),
-            'BlogRepository' => new BlogRepository($db),
-            'EstimatorRepository' => new EstimatorRepository($db),
-            'SessionRepository' => new SessionRepository($db),
-            'AuditRepository' => new AuditRepository($db),
+            'LeadRepository'      => new \LeadRepository($db),
+            'ProjectRepository'   => new \ProjectRepository($db),
+            'UserRepository'      => new \App\Repositories\UserRepository($db),
+            'MediaRepository'     => new \MediaRepository($db),
+            'QuotationRepository' => new \QuotationRepository($db),
+            'BlogRepository'      => new \BlogRepository($db),
+            'EstimatorRepository' => new \App\Repositories\EstimatorRepository($db),
+            'SessionRepository'   => new \App\Repositories\SessionRepository($db),
+            'AuditRepository'     => new \App\Repositories\AuditRepository($db),
 
             // Services
-            'LeadService' => new LeadService(self::get('LeadRepository')),
-            'ProjectService' => new ProjectService(self::get('ProjectRepository')),
-            'AuthService' => self::createAuthService($db),
-            'OtpService' => new OtpService(new OtpRepository($db)),
-            'MediaService' => new MediaService(self::get('MediaRepository')),
-            'QuotationService' => new QuotationService(self::get('QuotationRepository')),
-            'EstimatorService' => new EstimatorService(self::get('EstimatorRepository')),
+            'LeadService'      => new \LeadService(self::get('LeadRepository')),
+            'ProjectService'   => new \App\Services\ProjectService(self::get('ProjectRepository')),
+            'AuthService'      => self::createAuthService($db),
+            'MediaService'     => new \App\Services\MediaService(self::get('MediaRepository')),
+            'QuotationService' => new \QuotationService(self::get('QuotationRepository')),
+            'EstimatorService' => new \App\Services\EstimatorService(self::get('EstimatorRepository')),
 
             default => throw new RuntimeException("Unknown service: {$class}")
         };
@@ -85,12 +91,12 @@ class ServiceProvider
     /**
      * Create AuthService with its dependencies
      */
-    private static function createAuthService(PDO $db): AuthService
+    private static function createAuthService(PDO $db): \AuthService
     {
         $userRepo = self::get('UserRepository');
         $sessionRepo = self::get('SessionRepository');
         $auditRepo = self::get('AuditRepository');
-        return new AuthService($userRepo, $sessionRepo, $auditRepo);
+        return new \AuthService($userRepo, $sessionRepo, $auditRepo);
     }
 
     /**

@@ -415,11 +415,17 @@ class AuthService extends Service
     /**
      * Log security event
      */
-    private function logEvent(string $event, string $details): void
+private function logEvent(string $event, string $details): void
     {
         try {
+            // Use NULL (not 0) for unauthenticated events so the FK
+            // fk_security_logs_user (ON DELETE SET NULL) is satisfied.
+            $userId = $_SESSION['user_id'] ?? null;
+            if ($userId === 0) {
+                $userId = null;
+            }
             $this->auditRepo->logEvent(
-                $_SESSION['user_id'] ?? 0,
+                $userId,
                 $event,
                 'info',
                 $details,

@@ -8,7 +8,7 @@ declare(strict_types=1);
  * public handler still instantiates AdminAuthController.  Keep the endpoint
  * stable and delegate to the consolidated AuthController implementation.
  */
-require_once __DIR__ . '/AuthController.php';
+require_once __DIR__ . '/../AuthController.php';
 
 class AdminAuthController extends AuthController
 {
