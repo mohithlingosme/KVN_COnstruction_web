@@ -123,7 +123,7 @@ class AuthOtpTest
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $this->assertEquals('1', (string)($row['is_used'] ?? '0'));
 
-    }
+}
 
     public function test_verifyPhoneOtp_expired_otp(): void
     {
@@ -136,7 +136,8 @@ class AuthOtpTest
 
         $res = $c->verifyPhoneOtp('9999999999', '123456');
         $this->assertEquals(false, $res['status']);
-        $this->assertEquals('OTP expired.', $res['message']);
+        // Canonical AuthService message for expired/missing OTP.
+        $this->assertEquals('OTP expired or not found.', $res['message']);
     }
 
     public function test_verifyPhoneOtp_attempt_limit(): void
@@ -150,7 +151,8 @@ class AuthOtpTest
 
         $res = $c->verifyPhoneOtp('9999999999', '123456');
         $this->assertEquals(false, $res['status']);
-        $this->assertEquals('Too many attempts.', $res['message']);
+        // Canonical AuthService message for attempt-limit exceeded.
+        $this->assertEquals('Too many attempts. Request a new OTP.', $res['message']);
     }
 
 }

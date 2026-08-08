@@ -1,118 +1,129 @@
 <?php
 
-require_once __DIR__ . '/../Core/SessionManager.php';
-require_once __DIR__ . '/../Repositories/UserRepository.php';
-require_once __DIR__ . '/../Services/OTPService.php';
+declare(strict_types=1);
 
-class AuthController {
-    private $userRepo;
-    private $otpService;
-    private $sessionManager;
+/**
+ * KVN Construction - Auth Controller (canonical compatibility facade)
+ *
+ * This controller is a thin facade over the canonical authentication
+ * implementation (App\Services\AuthService).  It exists so that legacy
+ * procedural handlers and compatibility controllers can continue to
+ * call a stable controller API without coupling to the service layer.
+ *
+ * All authentication, session and OTP behaviour is delegated to
+ * AuthService + UserRepository / SessionRepository / AuditRepository.
+ *
+ * NOTE: OTP handling is owned entirely by the single canonical
+ * AuthService implementation (sendOtp / verifyOtpAndLogin).
+ */
 
-    public function __construct() {
-        $this->userRepo = new UserRepository();
-        $this->otpService = new OTPService();
-        $this->sessionManager = new SessionManager();
+require_once __DIR__ . '/../services/AuthService.php';
+require_once __DIR__ . '/../repositories/UserRepository.php';
+require_once __DIR__ . '/../repositories/SessionRepository.php';
+require_once __DIR__ . '/../repositories/AuditRepository.php';
+require_once __DIR__ . '/../../core/Service.php';
+
+use App\Repositories\UserRepository;
+use App\Repositories\SessionRepository;
+use App\Repositories\AuditRepository;
+
+class AuthController
+{
+    private AuthService $auth;
+
+    /**
+     * @param \PDO|null $db Optional PDO connection (used by tests).
+     */
+    public function __construct(?\PDO $db = null)
+    {
+        $userRepo    = $db !== null ? new UserRepository($db) : new UserRepository();
+        $sessionRepo = $db !== null ? new SessionRepository($db) : new SessionRepository();
+        $auditRepo   = $db !== null ? new AuditRepository($db) : new AuditRepository();
+        $this->auth  = new AuthService($userRepo, $sessionRepo, $auditRepo);
     }
 
-    public function requestLoginOTP() {
-        // Ensure this is a POST request
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'Method Not Allowed'], 405);
-            return;
-        }
+    /**
+     * Admin login with email + password.
+     *
+     * @return array{status:bool, message:string, ...}
+     */
+    public function adminLogin(string $email, string $password): array
+    {
+        $result = $this->auth->adminLogin($email, $password);
+        return $this->toControllerResult($result);
+    }
 
-        // Parse JSON payload
-        $data = json_decode(file_get_contents("php://input"), true);
-        $phone = $data['phone'] ?? null;
+    /**
+     * Send a login OTP to a phone number (used by phone-login flows).
+     *
+     * @return array{status:bool, message:string, ...}
+     */
+    public function sendLoginOtp(string $phone): array
+    {
+        $result = $this->auth->sendOtp(trim($phone));
+        return $this->toControllerResult($result);
+    }
 
-        if (!$phone) {
-            $this->jsonResponse(['error' => 'Phone number is required.'], 400);
-            return;
-        }
-
-        // Check if user exists
-        $user = $this->userRepo->findByPhone($phone);
+    /**
+     * Verify a phone OTP and log the user in.
+     *
+     * @return array{status:bool, message:string, ...}
+     */
+    public function verifyPhoneOtp(string $phone, string $otp): array
+    {
+        // Locate the user for this phone via the canonical repository.
+        $userRepo = $this->resolveUserRepo();
+        $user = $userRepo->findByPhone(trim($phone));
         if (!$user) {
-            $this->jsonResponse(['error' => 'No account found with this phone number.'], 404);
-            return;
+            return ['status' => false, 'message' => 'Unable to process request.'];
         }
 
-        // Generate the OTP
-        $otp = $this->otpService->generateOTP($phone, $user['id']);
-        
-        if ($otp) {
-            // TODO: Integrate actual SMS Gateway (Twilio/Msg91) here.
-            // For now, we simulate success. (Never log raw OTPs in production!)
-            error_log("SIMULATED SMS to $phone: Your KVN login OTP is $otp");
-            $this->jsonResponse(['message' => 'OTP sent successfully.']);
-        } else {
-            $this->jsonResponse(['error' => 'Failed to generate OTP. Please try again.'], 500);
-        }
+        $userId = (int) $user['id'];
+        $result = $this->auth->verifyOtpAndLogin($userId, trim($otp), 'login');
+        return $this->toControllerResult($result);
     }
 
-    public function verifyLoginOTP() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'Method Not Allowed'], 405);
-            return;
-        }
+    /**
+     * Log the current user out.
+     */
+    public function logout(): void
+    {
+        $this->auth->logout();
+    }
 
-        $data = json_decode(file_get_contents("php://input"), true);
-        $phone = $data['phone'] ?? null;
-        $otp = $data['otp'] ?? null;
+    /**
+     * Compatibility: session destroy wrapper exposed for legacy callers.
+     */
+    public function destroySession(): void
+    {
+        $this->auth->logout();
+    }
 
-        if (!$phone || !$otp) {
-            $this->jsonResponse(['error' => 'Phone and OTP are required.'], 400);
-            return;
-        }
-
-        // Verify the OTP against the database
-        if ($this->otpService->verifyOTP($phone, $otp)) {
-            
-            $user = $this->userRepo->findByPhone($phone);
-            
-            // Get client environmental variables for security logging
-            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
-            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'UNKNOWN';
-            
-            // Create a secure, database-backed session
-            $sessionId = $this->sessionManager->createSession($user['id'], $ipAddress, $userAgent);
-            
-            if ($sessionId) {
-                // Do not return password hashes or sensitive data
-                unset($user['password_hash']);
-                
-                $this->jsonResponse([
-                    'message' => 'Login successful',
-                    'user' => $user,
-                    'token' => $sessionId
-                ]);
-            } else {
-                $this->jsonResponse(['error' => 'Failed to initiate secure session.'], 500);
+    /**
+     * Normalise AuthService result keys (success => status) for legacy callers.
+     */
+    private function toControllerResult(array $result): array
+    {
+        $status = (bool) ($result['success'] ?? false);
+        $message = (string) ($result['message'] ?? '');
+        $out = ['status' => $status, 'message' => $message];
+        foreach ($result as $k => $v) {
+            if (!in_array($k, ['success', 'message'], true)) {
+                $out[$k] = $v;
             }
-        } else {
-            $this->jsonResponse(['error' => 'Invalid or expired OTP.'], 401);
         }
+        return $out;
     }
 
-    public function logout() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+    private function resolveUserRepo(): UserRepository
+    {
+        // Re-read from property via reflection-free approach: AuthService exposes no
+        // repo getter, so build a fresh repository for the facade lookups.
+        static $repo = null;
+        if ($repo === null) {
+            $repo = new UserRepository();
         }
-        
-        $sessionId = session_id();
-        
-        if ($sessionId) {
-            $this->sessionManager->destroySession($sessionId);
-        }
-        
-        $this->jsonResponse(['message' => 'Logged out successfully.']);
-    }
-
-    private function jsonResponse($data, $statusCode = 200) {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit();
+        return $repo;
     }
 }
+

@@ -1,137 +1,81 @@
-# KVN Construction Platform - Production Deployment TODO
+# KVN Construction — v1.0.0-rc.1 Blocker Resolution TODO
 
-## ✅ COMPLETED
+Current release: **v1.0.0-rc.1** — NOT READY FOR PRODUCTION
+Objective: Resolve P0/P1 blockers → Linux-compatible → OTP/auth working → DB migration verified → ready for full release audit.
 
-### Critical Fixes
-- [x] Remove `innodb_force_recovery=3` from MySQL config
-- [x] Rebuild database from canonical schema
-- [x] Fix test bootstrap autoloader
-- [x] Update .env for local development
-- [x] Validate repository layer (17/17 tests passing)
-- [x] Generate project_validation.md
-- [x] Generate fix_log.md
-- [x] Generate final_readiness.md
-- [x] Generate testing_summary.md
+## Phase 1 — Linux Case-Sensitivity Audit ✅
+- [x] Scan entire repo for case-mismatched require/include/use/namespace/class paths
+- [x] Fix all mismatches (controllers, repositories, services, Core, helpers, middleware, routes, public)
+- [x] Create `reports/linux_case_sensitivity_audit.md`
 
-### Validation Complete
-- [x] Application boots without fatal errors
-- [x] Database connection functional
-- [x] 113 tables operational
-- [x] Repository pattern intact
-- [x] No SQL injection vulnerabilities
-- [x] PSR-4 namespaces correct
-- [x] Dependency injection working
+## Phase 2 — OTP Service Normalization ✅
+- [x] Confirm `OtpService.php`, `OtpRepository.php`, `AuthController.php` are orphaned (repo-wide ref scan)
+- [x] Remove orphaned legacy files (Option A approved)
+- [x] Update any active references to canonical `AuthService`/`OtpService`/`OtpRepository`
+- [x] Verify all OTP handlers use canonical path
+- [x] Create `reports/otp_validation.md`
 
-## 🔄 REMAINING (Pre-Production)
+## Phase 3 — Database Migration Integrity ✅
+- [x] Confirm target is local dev DB (kvnc_platform), not production
+- [x] Verify `database/schema.sql` is authoritative
+- [x] Rebuild DB from schema.sql
+- [x] Create migration runner (`scripts/run_migrations.php`) that records into schema_migrations
+- [x] Create `reports/database_migration_integrity.md`
 
-### Database
-- [ ] Import database triggers manually (user_otps sync triggers)
-- [ ] Run `database/seeders/001_defaults.sql` on production database
-- [ ] Verify foreign key constraints on production data
+## Phase 4 — OTP Database Triggers ✅
+- [x] Rebuild applies `tr_user_otps_sync_insert` + `tr_user_otps_sync_update`
+- [x] Verify exactly 2 triggers, idempotent
+- [x] Document trigger necessity
 
-### Configuration
-- [ ] Set APP_KEY in .env (generate secure random key)
-- [ ] Update DB_HOST, DB_NAME, DB_USER, DB_PASS for production
-- [ ] Configure MAIL_HOST, MAIL_USERNAME, MAIL_PASSWORD
-- [ ] Configure SMS_API_KEY, SMS_ACCOUNT_SID, SMS_FROM_NUMBER
-- [ ] Set APP_ENV=production
-- [ ] Set APP_DEBUG=false
-- [ ] Configure HTTPS certificates
-- [ ] Set SESSION_SECURE_COOKIE=true for HTTPS
+## Phase 5 — Required System Seed Data ✅
+- [x] Seed only required system data (roles, permissions, statuses, admin, settings, base services)
+- [x] Ensure optional content tables have graceful empty states
+- [x] Do NOT insert fake customer/content data
 
-### Testing
-- [ ] Fix OTPService class (add to app/services/)
-- [ ] Fix test assertions for admin dashboard counts
-- [ ] Add seed data for estimator_packages table
-- [ ] Run full test suite in production environment
-- [ ] Add browser functional tests
+## Phase 6 — Environment Hardening ✅
+- [x] Fix `.env.example` → production, APP_DEBUG=false, secure APP_KEY pattern
+- [x] Ensure all secrets via env vars, `.env` gitignored
 
-### Security
-- [ ] Review file upload permissions (uploads/ directory)
-- [ ] Verify CSRF tokens on all forms
-- [ ] Test rate limiting under load
-- [ ] Audit user permissions and RBAC
-- [ ] Review password hashing (bcrypt cost factor)
+## Phase 7 — Deployment Tooling ✅
+- [x] Create authoritative migration/deploy mechanism (`scripts/run_migrations.php`, `scripts/clear_opcache.php`, `scripts/smoke_test.php`, `public/health.php`)
+- [x] Correct PRODUCTION_CONFIGURATION.md to match reality (removed artisan/triggers.sql/seeders-run.php)
+- [x] Create `reports/deployment_integrity.md`
 
-### Performance
-- [ ] Enable query caching
-- [ ] Optimize image assets
-- [ ] Configure CDN for static files
-- [ ] Review slow query log
-- [ ] Add database indexes where needed
+## Phase 8 — HTTPS Readiness ✅ (documented; live SSL NOT TESTED)
+- [x] Document secure cookies, HSTS, redirect, trusted proxies
+- [ ] ⚠️ Live SSL cert validation on production host (out of scope for local env)
 
-### Deployment
-- [ ] Set up backup schedule (daily automated backups)
-- [ ] Configure error logging (production log file)
-- [ ] Set up monitoring (UptimeRobot, Pingdom, etc.)
-- [ ] Configure firewall rules
-- [ ] Set up SSL certificate
-- [ ] Configure web server (Apache/Nginx) for production
-- [ ] Set proper file permissions (chmod 644 for files, 755 for dirs)
-- [ ] Disable directory listing
-- [ ] Configure .htaccess for security headers
+## Phase 9 — Validation ✅
+- [x] PHP lint, case audit, composer/autoload, DB test, repo smoke, OTP tests, auth tests, migration test, seed test, public/admin/client smoke, deploy tooling test
 
-### Documentation
-- [ ] Create deployment guide
-- [ ] Create user manual
-- [ ] Document API endpoints
-- [ ] Create admin guide
-- [ ] Document backup/restore procedures
+## Phase 10 — Regression Protection ✅
+- [x] Auth, OTP, password reset, sessions, admin/client login, CMS, projects, leads, quotations, reports, settings, uploads, public site
 
-## 📊 CURRENT STATUS
+## Reports ✅
+- [x] `reports/linux_case_sensitivity_audit.md`
+- [x] `reports/otp_validation.md`
+- [x] `reports/database_migration_integrity.md`
+- [x] `reports/deployment_integrity.md`
+- [x] `reports/production_blocker_resolution.md`
+- [x] `reports/rc1_validation.md`
 
-**Production Readiness: 92%**
+## STOP CONDITIONS (do NOT declare production ready)
+- [x] Zero Linux case-sensitivity errors
+- [x] One canonical OTP implementation
+- [x] OTP auth tests pass
+- [x] DB migration mechanism verified
+- [x] schema_migrations populated through migrations
+- [x] Required OTP DB behavior verified
+- [x] Required system seed data verified
+- [x] Optional content graceful empty states
+- [x] Production env config documented
+- [x] No production secrets committed
+- [x] Deployment tooling works
+- [x] Deployment docs match reality
+- [x] HTTPS requirements verified/documented (⚠️ live SSL pending)
+- [x] PHP lint passes
+- [x] Regression tests pass
 
-**Last Updated:** 2026-08-05  
-**Validated By:** Principal Software Architect / Senior PHP Engineer
-
-## 🚀 DEPLOYMENT PLAN
-
-1. **Pre-Deployment** (15 min)
-   - Update .env with production credentials
-   - Import triggers via phpMyAdmin
-   - Set APP_KEY
-
-2. **Deployment** (30 min)
-   - Upload code to production server
-   - Import database schema
-   - Run seeders
-   - Configure web server
-
-3. **Post-Deployment** (1 hour)
-   - Run smoke tests
-   - Verify all pages load
-   - Test authentication flows
-   - Monitor error logs
-
-4. **Monitoring** (24 hours)
-   - Watch for errors
-   - Check performance metrics
-   - Verify backups running
-   - Monitor user registrations
-
-## ⚠️ KNOWN ISSUES
-
-1. **Database Triggers Not Imported**
-   - Impact: OTP sync won't auto-populate otp_hash
-   - Workaround: Manually import via phpMyAdmin
-   - Priority: Low
-
-2. **Test Harness Issues (14 failures)**
-   - Impact: Development testing only
-   - Production Impact: None
-   - Priority: Low (fix in next sprint)
-
-3. **Missing OTPService Class**
-   - Impact: Tests fail, production code unaffected
-   - Priority: Medium (add stub for testability)
-
-## 📝 NOTES
-
-- Application uses Repository Pattern correctly
-- No SQL injection vulnerabilities detected
-- All core functionality validated
-- Database schema is production-ready
-- Code follows PSR-4 standards
-- Error handling is centralized
-- Security best practices implemented
+## Final Status
+**v1.0.0-rc.1 → BLOCKERS RESOLVED → FULL RELEASE AUDIT REQUIRED**
+Not production-ready until a separate full release audit (incl. live HTTPS) passes.
